@@ -5,6 +5,7 @@
     %title Coesfau - Documento Pdf
     %meta{:content => "width=device-width, initial-scale=1, shrink-to-fit=no", :name => "viewport"}/
     = wicked_pdf_stylesheet_link_tag "pdf"
+    = wicked_pdf_asset_pack_path "pdf"
 
-  %body
+  %body.background
     = yield

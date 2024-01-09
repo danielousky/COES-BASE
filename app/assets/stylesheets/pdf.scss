@@ -74,6 +74,31 @@ text-left{
 
 }
 
+.background {
+	background-image: url('bg_validation.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+	background-position: center center;
+	opacity: 0.5;
+}
+
+.firma_jefe{
+	content: url('firma_jefe_coes.png');
+	display: block;
+	opacity: 0.8;
+	margin-left: auto;
+	margin-right: auto;
+	width: 27%;
+}
+
+.sello_coes{
+	content: url('sello_coesfhe_azul.png');
+	display: block;
+	opacity: 0.8;
+	margin-left: auto;
+	margin-right: auto;
+	width: 27%;
+}
 
 .alert-message{
 	background-color: #fdf1cc; 

@@ -1,5 +1,4 @@
-
-= render partial: 'layouts/banner_pdf', locals: {title: @title, school: @school, user: @user} 
+= render partial: 'layouts/banner_pdf', locals: {title: @title, school: @school, user: @user}
 
 %br
 %p.text-justify
@@ -18,7 +17,7 @@
       %th Asignatura
       %th Sección
       %th Créditos
-      / %th Estado
+    /  %th Estado
 
   %tbody
     - @academic_records.each do |acre|
@@ -27,7 +26,7 @@
         %td= acre.subject_name_with_retiro.html_safe
         %td.text-center= acre.section.code
         %td.text-center= acre.subject.unit_credits
-        / %td.text-center=# acre.status.titleize
+      /  %td.text-center= acre.status.titleize
 
 
 %br
@@ -49,7 +48,7 @@
   - enlace +="&study=true" if @study_contance.eql? true
 
   - imagen_qr = CodigoQr.generate_image enlace
-  - #pdf.image imagen_qr, width: 120, at: [10, (pdf.y)+40]
+  - pdf.image imagen_qr, width: 120, at: [10, (pdf.y)+40]
 
   .text-center= image_tag imagen_qr
 
@@ -59,10 +58,11 @@
 
 %br
 %br
-%br
-%br
+.firma_jefe
 .text-center= @school&.faculty&.coes_boss_name
+
 .text-center= "Jefe(a) de Control de Estudio"
+.sello_coes
 
 - if @school&.code.eql? 'EACRV'
   %br
