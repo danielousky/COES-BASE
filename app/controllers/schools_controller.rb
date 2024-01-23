@@ -1,4 +1,6 @@
 class SchoolsController < ApplicationController
+  layout 'logged'
+  
   before_action :logged_as_admin?
   before_action :set_school, only: %i[ show edit update destroy export_grades export_grades_stream]
 

@@ -7,6 +7,44 @@ module ApplicationHelper
 		ActionController::Base.helpers.number_to_currency(value, unit: 'Bs.', separator: ",", delimiter: ".")
 	end
 
+	def badge_toggle_section_qualified section
+
+		if section.qualified?
+			title = 'Habilitar para Calificar de Nuevo (Abrir)'
+			value = false
+			icon = 'fas fa-rotate-right'
+			type = 'bg-warning'
+		else
+			title = 'Marcar como Calificada (Cerrar)'
+			value = true
+			icon = 'fas fa-check'
+			type = 'bg-success'
+		end
+
+		url = "/sections/#{section.id}/change_qualification_status?section[qualified]=#{value}"
+		badge_toggle type, icon, url, title, ''
+	end
+
+	def bs_badge_tooltip_link url, icon, type, tooltip_title, value
+		link_to url, class: "badge #{type} text-decoration-none", 'data-bs-toggle': :tooltip, title: tooltip_title do
+			capture_haml{"<i class= '#{icon}'></i> #{value}".html_safe}
+		end
+	end
+
+	def badge_toggle type, icon, href, title_tooltip, value, onclick_action=nil
+
+		target = ''
+		rel = ''
+
+		if (icon.include? 'fa-download')
+			target = '_blank'
+			rel = 'noopener noreferrer'
+		end
+		link_to href, class: "badge #{type}", title: title_tooltip, onclick: onclick_action, target: target, rel: rel do
+			capture_haml{"<i class= '#{icon}'></i> #{value}".html_safe}
+		end
+	end
+
 	def btn_toggle type, icon, href, title_tooltip, value, onclick_action=nil
 
 		target = ''

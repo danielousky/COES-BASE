@@ -1,29 +1,89 @@
-%h1 Listing schools
+%h1 Escuelas
 
-%table
-  %thead
-    %tr
-      %th Code
-      %th Name
-      %th Enable subject retreat
-      %th Enable change course
-      %th Enable dependents
-      %th
-      %th
-      %th
+.row
 
-  %tbody
-    - @schools.each do |school|
-      %tr
-        %td= school.code
-        %td= school.name
-        %td= school.enable_subject_retreat
-        %td= school.enable_change_course
-        %td= school.enable_dependents
-        %td= link_to 'Show', school
-        %td= link_to 'Edit', edit_school_path(school)
-        %td= link_to 'Destroy', school, method: :delete, data: { confirm: 'Are you sure?' }
+  - @schools.each do |school|
+    .col-3
+      .card.border.mb-1.bg-transparent
+        / Card image
+        = link_to school.short_name, school, class: 'bg-info btn rounded-0'
+        - if false
+          %img.card-img-top(alt="Card image" src="assets/images/university/02.jpg")/
+        / Card body
+        .card-body
+          .d-flex.justify-content-between.align-items-center.mt-n6.mb-3
+            / Logo image
+            - if false
+              .bg-white.p-2.rounded-2.shadow
+                %img.rounded-1.h-60px(alt="university logo" src="assets/images/client/uni-logo-01.svg")/
+            / Badge
+            .h5.mb-0.text-center.text-wrap
+              - if school.enroll_process
+                = link_to "Inscripción #{school.enroll_process.period.name} abierta", '#', class: 'badge text-bg-success'
+              - else
+                .badge.text-bg-danger= 'Inscripción Cerrada' 
+              - if school.active_process
+                = link_to "Período activo: #{school.active_process.period.name}", '#', class: 'badge text-bg-success'
+              - else
+                .badge.text-bg-danger= 'Sin Período Activo'                 
+          / Badge and rating
+          .d-flex.justify-content-between.mb-3
+            - if false
+              / Badge
+              %span
+                %a.badge.text-bg-dark(href="#") Private
+              / Rating star
+              %ul.list-inline.hstack.mb-0
+                %li.list-inline-item.me-0.small
+                  %i.fas.fa-star.text-warning
+                %li.list-inline-item.me-0.small
+                  %i.fas.fa-star.text-warning
+                %li.list-inline-item.me-0.small
+                  %i.fas.fa-star.text-warning
+                %li.list-inline-item.me-0.small
+                  %i.fas.fa-star.text-warning
+                %li.list-inline-item.me-0.small
+                  %i.fas.fa-star-half-alt.text-warning
+                %li.list-inline-item.ms-2.h6.fw-light.mb-0 (4.5)
+          / Title
+          %h5.card-title.mb-3.text-center
+            = link_to school.name, school
+          %p.mb-3
+            =# btn_toggle 'bg-success', 'fas fa-regular fa-landmark-dome', "/areas?schools_id=#{school.id}", 'Departamentos', school.areas.count
+            / %a.badge.bg-success.text-decoration-none{'data-bs-toggle': :tooltip, title: 'bootóooon!!'} BOTÓN
+            = bs_badge_tooltip_link "/areas?schools_id=#{school.id}", 'fas fa-regular fa-landmark-dome', 'bg-success', 'Departamentos', school.areas.count
+            = bs_badge_tooltip_link "/areas?schools_id=#{school.id}", 'fas fa-regular fa-book-open', 'bg-success', 'Cátedras', school.areas.count
+            = bs_badge_tooltip_link "/subjects?schools_id=#{school.id}", 'fas fa-regular fa-book', 'bg-success', 'Asignaturas', school.subjects.count
 
-%br
-
-= link_to 'New School', new_school_path
+          / Info
+          %ul.nav.nav-divider.h6.fw-light.mb-3
+            %li.nav-item BSC
+            %li.nav-item BBA
+            %li.nav-item Engineer
+            %li.nav-item BCA
+            %li.nav-item MBBS
+          / Content
+          .row.item-collapse
+            .col-6
+              %ul.list-group.list-group-borderless
+                %li.list-group-item.text-body.py-1
+                  %i.fas.fa-fw.fa-check.text-success>
+                  Canteen
+                %li.list-group-item.text-body.py-1
+                  %i.fas.fa-fw.fa-check.text-success>
+                  Stationary
+                %li.list-group-item.text-body.py-1
+                  %i.fas.fa-fw.fa-check.text-success>
+                  Hostel
+            .col-6
+              %ul.list-group.list-group-borderless
+                %li.list-group-item.text-body.py-1
+                  %i.fas.fa-fw.fa-check.text-success>
+                  Library
+                %li.list-group-item.text-body.py-1
+                  %i.fas.fa-fw.fa-check.text-success>
+                  Playground
+            / Button
+            .mt-3
+              %a.btn.btn-primary-soft(href="#") View more
+              #tns2-item0.tns-item.tns-slide-active

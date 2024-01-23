@@ -94,7 +94,7 @@ Rails.application.routes.draw do
     resources :payment_reports
   end
   resources :payment_reports
-  resources :schools, only: [:update] do
+  resources :schools do
     member do
       get 'export_grades'
       get 'export_grades_stream'
