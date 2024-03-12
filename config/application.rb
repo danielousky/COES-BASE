@@ -6,7 +6,7 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-module Coesfau
+module Coes2
   class Application < Rails::Application
     config.generators do |generate|
       generate.assets false
@@ -15,6 +15,14 @@ module Coesfau
     end
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
+
+
+    # For PDFs
+    config.assets.precompile += %w(imagen.png)
+    config.assets.precompile << 'pdf.scss'
+
+    # config.middleware.use ActionDispatch::Cookies
+    # config.middleware.use ActionDispatch::Session::CookieStore
 
 
     config.i18n.load_path += Dir[Rails.root.join('config', 'locales', '*.{rb,yml}')]

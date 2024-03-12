@@ -1,17 +1,16 @@
-%form#new_section.main{"accept-charset": "UTF-8", action: "/admin/section/new", "data-title": "Nuevo", enctype: "multipart/form-data", method: "post"}
+%form#new_section.main{"accept-charset": "UTF-8", action: "/admin/section/new", enctype: "multipart/form-data", method: "post"}
   %input{autocomplete: "off", name: "authenticity_token", type: "hidden", value: session[:_csrf_token]}
   = hidden_field_tag '[section]course_id', nil
-  %span.object-infos{"data-model-label" => "Sección", "data-object-label" => "Nuevo", :style => "display:none"}
   %fieldset
     #section_code_field.control-group.row.mb-3.string_type.code_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_code"} Sección
+      %label.col-sm-2.col-form-label.text-md-end{for: "section_code"} Sección
       .col-sm-2.controls
         %input#section_code.form-control{:length => "8", :name => "section[code]", :oninput => "$(this).val($(this).val().toUpperCase().replace(/[^A-Za-z0-9]/g,''))", :required => "required", :size => "8", :type => "text"}/
         .form-text
-          %span.label.label-danger> Requerido
-          \. Caracteres entre 1-7.
+          %span.label.label-danger Requerido
+          Caracteres entre 1-7.
     #section_modality_field.control-group.row.mb-3.enum_type.modality_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_modality"} Tipo
+      %label.col-sm-2.col-form-label.text-md-end{for: "section_modality"} Tipo
       .col-sm-10.controls
         .row
           .col-sm-4
@@ -20,14 +19,19 @@
               %option{:value => "0"} nota_final
               %option{:value => "1"} equivalencia
             .input-group.filtering-select{"data-input-for" => "section_modality"}
-              %input.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :required => "required", :style => "", :type => "text"}/
+              %input#section_modality_filter.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :required => "required", :style => "", :type => "text"}/
               %span.input-group-btn
-                %label.btn.btn-info.dropdown-toggle{"aria-label" => "Show All Items", "data-bs-original-title" => "Show All Items", :role => "button"}
+                %label.btn.btn-info.dropdown-toggle{:role => "button", for: 'section_modality_filter'}
         .form-text
-          %span.label.label-danger> Requerido
-          \.
+          %span.label.label-danger Requerido
+    #section_capacity_field.control-group.row.mb-3.integer_type.capacity_field
+      %label.col-sm-2.col-form-label.text-md-end{for: "section_capacity"} Capacidad
+      .col-sm-10.controls
+        %input#section_capacity.form-control{:min => "1", :name => "section[capacity]", :required => "required", :type => "number"}/
+        .form-text
+          %span.label.label-danger Requerido
     #section_teacher_id_field.control-group.row.mb-3.belongs_to_association_type.teacher_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_teacher_id"} Profesor
+      %label.col-sm-2.col-form-label.text-md-end{for: "section_teacher_id"} Profesor
       .col-sm-10.controls
         .row
           .col-sm-4
@@ -35,38 +39,28 @@
               %option{:label => " ", :value => ""}
               %option{:value => ""}
             .input-group.filtering-select{"data-input-for" => "section_teacher_id"}
-              %input.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :style => "", :type => "text"}/
+              %input#section_teacher_id_filter.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :style => "", :type => "text"}/
               %span.input-group-btn
-                %label.btn.btn-info.dropdown-toggle{"aria-label" => "Show All Items", "data-bs-original-title" => "Show All Items", :role => "button"}
+                %label.btn.btn-info.dropdown-toggle{:role => "button", for: 'section_teacher_id_filter'}
         .form-text
-          %span.label.label-default> Opcional
-          \.
+          %span.label.label-default Opcional
     #section_classroom_field.control-group.row.mb-3.string_type.classroom_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_classroom"} Aula
+      %label.col-sm-2.col-form-label.text-md-end{for: "section_classroom"} Aula
       .col-sm-10.controls
         %input#section_classroom.form-control{:name => "section[classroom]", :oninput => "$(this).val($(this).val().toUpperCase().replace(/[^A-Za-z0-9| ]/g,''))", :type => "text"}/
         .form-text
-          %span.label.label-default> Opcional
-          \.
-    #section_capacity_field.control-group.row.mb-3.integer_type.capacity_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_capacity"} Capacidad
-      .col-sm-10.controls
-        %input#section_capacity.form-control{:min => "1", :name => "section[capacity]", :required => "required", :type => "number"}/
-        .form-text
-          %span.label.label-danger> Requerido
-          \.
+          %span.label.label-default Opcional
     #section_schedules_attributes_field.control-group.row.mb-3.has_many_association_type.schedules_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes"} Horarios
+      .col-sm-2.col-form-label.text-md-end Horarios
       .controls.col-sm-10{"data-nestedmany" => "true"}
         .btn-group
-          %a.btn.btn-info.toggler.disabled{"data-bs-target" => "#section_schedules_attributes_field .collapse", "data-bs-toggle" => "collapse", :role => "button"}
+          %a.btn.btn-info.toggler.disabled{"data-bs-toggle" => "collapse", :role => "button"}
             %i.fas.fa-chevron-right
           %a.btn.btn-info.add_nested_fields{"data-association" => "schedules", "data-blueprint-id" => "schedules_fields_blueprint", :href => "javascript:void(0)"}
             %i.fas.fa-plus
             Agregar
         .form-text
-          %span.label.label-default> Opcional
-          \.
+          %span.label.label-default Opcional
         %ul.nav.nav-tabs.collapse
       .tab-content.collapse
   .form-actions.row.justify-content-end.my-3

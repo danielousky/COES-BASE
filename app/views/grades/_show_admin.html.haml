@@ -1,0 +1,26 @@
+
+= render partial: 'grades/general'
+- if (current_user&.admin&.authorized_manage? 'EnrollAcademicProcess')
+	= render partial: 'grades/enroll_process'
+
+- id = 'ChangePermanenceStatus'
+- title = 'Cambiar Estado de Permanencia'
+
+- content = render '/enroll_academic_processes/change_permanence_status_form'
+= render partial: '/layouts/scaffold-modal', locals: {content: content, title: title, id: id, long: ' '}
+
+= render partial: 'grades/academic_resume'
+
+= render template: 'enroll_academic_processes/index'
+
+:javascript
+
+	function setValuesPermanenceStatus(id, status){
+		// $('#formChangePermanenceStatus').action(`/enroll_academic_processes/${id}/update_permanece_status`);
+
+		$('#formChangePermanenceStatus').attr('action', `/enroll_academic_processes/${id}/update_permanece_status`);
+		$('#permanenceStatusId').val(status);
+		// console.log('This: '+this);
+		// console.log('$(This): '+$(this));
+		// $('#_sectioncourse_id').val(this.attributes['course_id'].value);
+	}

@@ -7,11 +7,10 @@
         %button(data-bs-slide-to="2" data-bs-target="#mainCarousel" type="button")
     / The slideshow/carousel
     .carousel-inner
-        .carousel-item.active
-            = image_tag 'bg_vista_fau_cuadros2.jpeg', class:'d-block w-100', alt: 'Vista FAU'
-        - billboards.each do |c|
-            .carousel-item{style: 'width: 550px'}
-                %div{style: 'text-align:center; margin: auto'}
+        - billboards.each_with_index do |c, i|
+            - active = (i.eql? 0) ? 'active' : '' 
+            .carousel-item{style: '', class: active}
+                .text-center
                     = raw c.content
 
     / Left and right controls/icons

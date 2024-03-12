@@ -62,9 +62,9 @@
                     %option{:value => "4"} Viernes
                     %option{:value => "5"} Sábado
                   .input-group.filtering-select{"data-input-for" => "section_schedules_attributes_1686693872560_day"}
-                    %input.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :style => "", :type => "text"}/
+                    %input#section_schedules_day.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :style => "", :type => "text"}/
                     %span.input-group-btn
-                      %label.btn.btn-info.dropdown-toggle{"aria-label" => "Show All Items", "data-bs-original-title" => "Show All Items", :role => "button"}
+                      %label.btn.btn-info.dropdown-toggle{:role => "button", for: 'section_schedules_day'}
               .form-text
                 %span.label.label-danger> Requerido
                 \.
@@ -95,81 +95,4 @@
                 %span.label.label-danger> Requerido
                 \.
 
-
-
-
-  - if false
-    .controls.col-sm-10{"data-nestedmany": true}
-      .btn-group
-        %a.btn.btn-info.toggler{"aria-expanded": true, "data-bs-target": "#modal #section_schedules_attributes_field .collapse", "data-bs-toggle": :collapse, role: :button}
-          %i.fas.fa-chevron-right
-        %a.btn.btn-info.add_nested_fields{"data-association": :schedules, "data-blueprint-id": "schedules_fields_blueprint", href: "javascript:void(0)"}
-          %i.fas.fa-plus
-          Agregar
-      .form-text
-        %span.label.label-default> Opcional
-        \.
-      %ul.nav.nav-tabs.collapse{role: :tablist}
-        %li.nav-item{role: :presentation}
-          %a.nav-link.active{"aria-selected": true, "data-bs-toggle": :tab, href: "#newSection", :role => "tab"} Nuevo
-
-
-
-    .tab-content.collapse
-      #newSection.fields.tab-pane.active{role: :tabpanel}
-        %input#section_schedules_attributes_1686693872560__destroy{:autocomplete => "off", :name => "section[schedules_attributes][1686693872560][_destroy]", :type => "hidden", :value => "false"}/
-        %a.remove_nested_fields{"data-association" => "schedules", :href => "javascript:void(0)"}
-          %span.btn.btn-danger
-            %i.fas.fa-trash
-        %span.object-infos{"data-model-label" => "Horario", "data-object-label" => "Nuevo", :style => "display:none"}
-        %fieldset
-          %legend{:style => "display:none"}
-            %i.fas.fa-chevron-down
-            Información Básica
-          #section_schedules_attributes_1686693872560_day_field.control-group.row.mb-3.enum_type.day_field
-            %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_1686693872560_day"} Día
-            .col-sm-10.controls
-              .row
-                .col-sm-4
-                  %select#section_schedules_attributes_1686693872560_day{"data-enumeration" => "true", :name => "section[schedules_attributes][1686693872560][day]", :placeholder => "Buscar", :style => "display: none;"}
-                    %option{:label => " ", :value => ""}
-                    %option{:value => "0"} Lunes
-                    %option{:value => "1"} Martes
-                    %option{:value => "2"} Miércoles
-                    %option{:value => "3"} Jueves
-                    %option{:value => "4"} Viernes
-                    %option{:value => "5"} Sábado
-                  .input-group.filtering-select{"data-input-for" => "section_schedules_attributes_1686693872560_day"}
-                    %input.form-control.ra-filtering-select-input.ui-autocomplete-input{:autocomplete => "off", :placeholder => "Buscar", :required => "required", :style => "", :type => "text"}/
-                    %span.input-group-btn
-                      %label.btn.btn-info.dropdown-toggle{"aria-label" => "Show All Items", "data-bs-original-title" => "Show All Items", :role => "button"}
-              .form-text
-                %span.label.label-danger> Requerido
-                \.
-          #section_schedules_attributes_1686693872560_starttime_field.control-group.row.mb-3.time_type.starttime_field
-            %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_1686693872560_starttime"} Hora Inicio
-            .col-sm-10.controls
-              .row
-                .col-sm-4
-                  .input-group
-                    %input#section_schedules_attributes_1686693872560_starttime.form-control.flatpickr-input{:autocomplete => "off", "data-datetimepicker" => "true", "data-options" => "{\"allowInput\":true,\"altFormat\":\"H:i\",\"enableTime\":true,\"noCalendar\":true}", :name => "section[schedules_attributes][1686693872560][starttime]", :required => "required", :size => "22", :type => "hidden", :value => ""}/
-                    %input.form-control.form-control.input{:placeholder => "", :required => "", :tabindex => "0", :type => "text"}/
-                    %label.input-group-text{:for => "section_schedules_attributes_1686693872560_starttime"}
-                      %i.fa.fa-fw.fa-calendar
-              .form-text
-                %span.label.label-danger> Requerido
-                \.
-          #section_schedules_attributes_1686693872560_endtime_field.control-group.row.mb-3.time_type.endtime_field
-            %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_1686693872560_endtime"} Hora Final
-            .col-sm-10.controls
-              .row
-                .col-sm-4
-                  .input-group
-                    %input#section_schedules_attributes_1686693872560_endtime.form-control.flatpickr-input{:autocomplete => "off", "data-datetimepicker" => "true", "data-options" => "{\"allowInput\":true,\"altFormat\":\"H:i\",\"enableTime\":true,\"noCalendar\":true}", :name => "section[schedules_attributes][1686693872560][endtime]", :required => "required", :size => "22", :type => "hidden", :value => ""}/
-                    %input.form-control.form-control.input{:placeholder => "", :required => "", :tabindex => "0", :type => "text"}/
-                    %label.input-group-text{:for => "section_schedules_attributes_1686693872560_endtime"}
-                      %i.fa.fa-fw.fa-calendar
-              .form-text
-                %span.label.label-danger> Requerido
-                \.
 

@@ -25,7 +25,7 @@
         = f.input :last_name, required: true, input_html: {oninput: '$(this).val($(this).val().toUpperCase());'}
         
         - # Emails:
-        %div{'data-bs-toggle': :tooltip, title: 'Atención: Recuerde que el correo electrónico es el medio principal de comunicación para COESFAU, complételo de manera correcta.'}
+        %div{'data-bs-toggle': :tooltip, title: 'Atención: Recuerde que el correo electrónico es el medio principal de comunicación para COES, complételo de manera correcta.'}
           = f.input :email, required: true
         - # Phone
         = f.input :number_phone, required: true, input_html: {class: 'upcase', oninput: "$(this).val($(this).val().replace(/[^0-9]/g,''));"}

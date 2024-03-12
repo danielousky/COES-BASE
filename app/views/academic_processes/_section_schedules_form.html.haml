@@ -1,16 +1,16 @@
 .fields
-  %input#section_schedules_attributes_new_schedules__destroy{:autocomplete => "off", :name => "section[schedules_attributes][new_schedules][_destroy]", :type => "hidden", :value => "false"}
-  %a.remove_nested_fields{"data-association" => "schedules", :href => "javascript:void(0)"}
+  %input#section_schedules_attributes_new_schedules__destroy{autocomplete: :off, name: "section[schedules_attributes][new_schedules][_destroy]", type: "hidden", value: "false"}
+  %a.remove_nested_fields{"data-association": "schedules", href: "javascript:void(0)"}
     %span.btn.btn-danger
       %i.fas.fa-trash
-  %span.object-infos{"data-model-label" => "Horario", "data-object-label" => "Nuevo", :style => "display:none"}
+  %span.object-infos{"data-model-label": "Horario", "data-object-label": "Nuevo", style: "display:none"}
   %fieldset
     #section_schedules_attributes_new_schedules_day_field.control-group.row.mb-3.enum_type.day_field
-      %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_new_schedules_day"} Día
+      .col-sm-2.col-form-label.text-md-end Día
       .col-sm-10.controls
         .row
           .col-sm-4
-            %select#section_schedules_attributes_new_schedules_day{"data-enumeration" => "true", :name => "section[schedules_attributes][new_schedules][day]", :placeholder => "Buscar", :required => "required"}
+            %select#section_schedules_attributes_new_schedules_day{"data-enumeration": "true", name: "section[schedules_attributes][new_schedules][day]", placeholder: "Buscar", required: "required"}
               %option{:label => " ", :value => ""}
               %option{:value => "0"} Lunes
               %option{:value => "1"} Martes
@@ -21,30 +21,21 @@
         .form-text
           %span.label.label-danger Requerido
   #section_schedules_attributes_new_schedules_starttime_field.control-group.row.mb-3.time_type.starttime_field
-    %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_new_schedules_starttime"} Hora Inicio
+    .col-sm-2.col-form-label.text-md-end Hora Inicio
     .col-sm-10.controls
       .row
         .col-sm-4
           .input-group
-            - if false
-              %input#section_schedules_attributes_new_schedules_starttime.form-control{autocomplete: :off, "data-datetimepicker": true, "data-options" => "{\"allowInput\":true,\"altFormat\":\"H:i\",\"enableTime\":true,\"noCalendar\":true}", :name => "section[schedules_attributes][new_schedules][starttime]", :required => "required", :size => "22", :type => "text"}/
-              %label.input-group-text{:for => "section_schedules_attributes_new_schedules_starttime"}
-                %i.fa.fa-fw.fa-calendar
             = time_field_tag 'section[schedules_attributes][new_schedules][starttime]', nil, class: 'form-control', required: true
       .form-text
         %span.label.label-danger> Requerido
-        \.
+
   #section_schedules_attributes_new_schedules_endtime_field.control-group.row.mb-3.time_type.endtime_field
-    %label.col-sm-2.col-form-label.text-md-end{:for => "section_schedules_attributes_new_schedules_endtime"} Hora Final
+    .col-sm-2.col-form-label.text-md-end Hora Final
     .col-sm-10.controls
       .row
         .col-sm-4
           .input-group
-            - if false
-              %input#section_schedules_attributes_new_schedules_endtime.form-control{autocomplete: :off, "data-datetimepicker": true, "data-options" => "{\"allowInput\":true,\"altFormat\":\"H:i\",\"enableTime\":true,\"noCalendar\":true}", :name => "section[schedules_attributes][new_schedules][endtime]", :required => "required", :size => "22", :type => "text"}/
-              %label.input-group-text{:for => "section_schedules_attributes_new_schedules_endtime"}
-                %i.fa.fa-fw.fa-calendar
             = time_field_tag 'section[schedules_attributes][new_schedules][endtime]', nil, class: 'form-control', required: true
       .form-text
         %span.label.label-danger> Requerido
-        \.

@@ -1,6 +1,6 @@
 
 
-- if (current_user&.admin&.authorized_read? 'Student')
+- if (session[:rol].eql? 'admin' and current_user&.admin&.authorized_read? 'Student')
   - user = @object&.user
   %h3.text-center.bg-primary.text-light.mb-4 Datos Personales
 

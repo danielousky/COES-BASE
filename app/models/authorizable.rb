@@ -1,9 +1,25 @@
+# == Schema Information
+#
+# Table name: authorizables
+#
+#  id                   :bigint           not null, primary key
+#  description          :string
+#  icon                 :string
+#  klazz                :string           not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  area_authorizable_id :bigint           not null
+#
+# Indexes
+#
+#  index_authorizables_on_area_authorizable_id            (area_authorizable_id)
+#  index_authorizables_on_klazz_and_area_authorizable_id  (klazz,area_authorizable_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (area_authorizable_id => area_authorizables.id)
+#
 class Authorizable < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "area_authorizable_id", null: false
-  # t.string "klazz", null: false
-  # t.string "description"
-  # t.string "icon"
 
   IMPORTABLES = ['Student', 'Teacher', 'Subject', 'Section', 'AcademicRecord']
   UNEXPORTABLES = ['School', 'Faculty', 'StudyPlan']

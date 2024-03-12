@@ -56,11 +56,8 @@ es:
         menu: "Cita Horaria"
         breadcrumb: "Cita Horaria"
         link: "Cita Horaria"
-      programation: 
-        title: "Período"
-        menu: "Programación"
-        breadcrumb: "Programación"
-        link: "Programación"
+      index:
+        title: 'Listado'
       organization_chart: 
         title: "Escuela"
         menu: "Organigrama"
@@ -71,8 +68,18 @@ es:
         menu: "Datos Personales"
         breadcrumb: "Datos Personales"
         link: "Datos Personales"
+      programation: 
+        title: "Período"
+        menu: "Programación"
+        breadcrumb: "Programación"
+        link: "Programación"
       index:
         title: 'Listado'
+      structure:
+        title: Estructura
+        menu: Estructura del Plan
+        link: Estructura
+        breadcrumb: Estructura        
     flash:
       object_not_found: 'Recurso no encontrado'
       model_not_found: 'Modelo no encontrado'
@@ -191,11 +198,11 @@ es:
       even: debe ser par
       exclusion: está reservado
       greater_than: debe ser mayor que %{count}
-      greater_than_or_equal_to: debe ser mayor que o igual a %{count}
+      greater_than_or_equal_to: debe ser mayor o igual a %{count}
       inclusion: no está incluido en la lista
       invalid: no es válido
       less_than: debe ser menor que %{count}
-      less_than_or_equal_to: debe ser menor que o igual a %{count}
+      less_than_or_equal_to: debe ser menor o igual a %{count}
       not_a_number: no es un número
       not_an_integer: debe ser un entero
       odd: debe ser impar
@@ -317,6 +324,7 @@ es:
             env_authorizable:
               required: 'requerido'
         area:
+          departaments: Departamentos
           attributes:
             base:
               restrict_dependent_destroy:
@@ -347,22 +355,22 @@ es:
               required: requerido
             payable:
               required: 'requerido'
-        parent_area:
+        departament:
           attributes:
             base:
               restrict_dependent_destroy:
-                has_many: 'Tiene áreas de conocimiento asociadas'
+                has_many: 'Tiene departamentos asociadas'
             school:
               required: 'requerida'
         school:
           attributes:
             faculty:
               required: 'requerida'
-        sections:
+        section:
           attributes:
             course:
               required: Curso
-        students:
+        student:
           attributes:
             user:
               required: requerido
@@ -374,7 +382,7 @@ es:
           attributes:
             depend_subject:
               required: requerido
-        subject_type:
+        requirement_by_subject_type:
           attributes:
             required_credits:
               required: requerido
@@ -383,6 +391,8 @@ es:
           attributes:
             area:
               required: 'requerida'
+            subject_type:
+              required: 'Requerido'
         qualification:
           attributes:
             value:
@@ -410,8 +420,8 @@ es:
         one: 'Tipo de Admisión'  
         other: 'Tipos de Admisión'
       area:
-        one: 'Área de Conocimiento'
-        other: 'Áreas de Conocimiento'
+        one: 'Cátedra'
+        other: 'Cátedras'
       bank:
         one: 'Banco'
         other: 'Bancos'
@@ -439,12 +449,15 @@ es:
       general_setup:
         one: 'Configuración General'
         other: 'Configuraciones generales'
+      mention:
+        one: Mención
+        other: Menciones        
       payment_report:
         one: 'Reporte de Pago'
         other: 'Reportes de Pago'
-      parent_area:
-        one: 'Área Madre'
-        other: 'Áreas Madres'
+      departament:
+        one: 'Departamento'
+        other: 'Departamentos'
       period:
         one: 'Período'
         other: 'Períodos'
@@ -522,6 +535,7 @@ es:
         grade: 'Grado'
         academic_process: 'Período'
         period_type: 'Tipo de Período'
+        school: Escuela
         user: 'Usuario'
         status: Estado
         subject: 'Asignatura'
@@ -556,15 +570,18 @@ es:
         school: 'Escuela'
         total_students: 'Total Estudiantes'
         created_at: 'Fecha de Registro'
+      # Catedra
       area:
         name: 'Nombre'
         school: 'Escuela'
-        parent_area: 'Área Madre'
+        departaments: 'Departamentos'
         subjects: 'Asignaturas'
         subarea: 'Subáreas'
-      parent_area:
+      # Departamento
+      departament:
         name: 'Nombre'
         school: 'Escuela'
+        areas: Cátedras
       bank:
         code: 'Código'
         name: 'Nombre'
@@ -580,7 +597,7 @@ es:
         updated_at: 'Fecha de Edición'
         content: 'Contenido de Cartelera'
       course:
-        area: 'Área'
+        area: 'Cátedra'
         period: Período
         school: Escuela
         sections: Secciones
@@ -601,6 +618,8 @@ es:
         simple_average: Promedio Simple
         weighted_average: Promedio Ponderado
         study_plan: Plan de Estudio
+        school: Escuela
+        period: Periodo
       enrollment_day:
         start: Inicio
         total_duration_hours: Total Duración de la Jornada
@@ -609,6 +628,10 @@ es:
       faculty:
         code: 'Código'
         name: 'Nombre'
+        short_name: Nombre Corto
+        contact_email: Correo de Contacto
+        coes_boss_name: Nombre Jefe Control Estudio
+        bank_accounts: Cuentas Bancarias Asociadas
       grade:
         numbers: Números
         description: Descripción
@@ -636,6 +659,11 @@ es:
         house_type: 'Tipo de Vivienda'
         house_name: 'Nombre de Vivienda'
         student: 'Estudiante'
+      mention:
+        name: Nombre
+        study_plan: Plan de Estudio
+        subjects: Asignaturas
+        total_required_subjects: Total Asignaturas Requeridas        
       payment_report:
         amount: 'Monto'
         transaction_id: 'Número de Transacción'
@@ -659,10 +687,13 @@ es:
         value: valor
         type_q: Tipo de Calificación
       school:
-        description: Descripción        
-        contact_email: Correo de contacto
+        description: Descripción
         code: 'Código'
         name: 'Nombre'
+        modality: Modalidad
+        mentions: Menciones
+        levels: Niveles
+        short_name: 'Nombre Corto'
         type_entity: 'Tipo de Entidad'
         enable_subject_retreat: 'Activar retiro de Asignturas'
         enable_change_course: 'Activar cambio de Sección'
@@ -671,17 +702,17 @@ es:
         enroll_process: Inscripción en Período
         faculty: 'Facultad'
         periods: 'Períodos'
-        areas: 'Áreas'
+        departaments: Departamentos
+        areas: 'Cátedras'
         bank_accounts: Cuentas Bancarias
         study_plans: Planes de Estudio
         admission_types: Tipos de Admisión
-        boss_name: Nombre del Jefe de Control Estudios
       schedule:
         day: Día
         starttime: Hora Inicio
         endtime: Hora Final
       section:
-        area: 'Área'
+        area: 'Cátedra'
         code: 'Sección'
         capacity: 'Capacidad'
         course: 'Curso (Período/Asignatura)'
@@ -726,6 +757,7 @@ es:
         code: 'Código'
         name: 'Nombre'
         subject_types: 'Tipos de Asignatura'
+        requirement_by_subject_types: Requerimientos por Tipo de Asignatura
       subject:
         school: Escuela
         courses: Cursos
@@ -733,23 +765,27 @@ es:
         name: 'Nombre'
         active: 'Activa'
         unit_credits: 'Unidad de Créditos'
-        ordinal: 'Orden'
+        ordinal: 'Nivel'
         qualification_type: 'Tipo de calificación'
-        modality: 'Tipo'
-        area: 'Área'
+        area: 'Cátedra'
+        modality: Modalidad
         prelate_subjects: Prelaciones
         depend_subjects: Asignaturas que prela
         created_at: 'Fecha de Registro'
         updated_at: 'Fecha de Actualización'
+        subject_type: Tipo de Asignatura
       subject_type:
-        study_plan: Plan de Estudio
         name: Nombre
-        code: Letra Identificativa
-        required_credits: Créditos Requeridos 
+        code: Identificador
+        
         created_at: Creado en
         updated_at: Actualizado en
+      requirement_by_subject_type:
+        subject_type: Tipo de Asignatura
+        study_plan: Plan de Estudio
+        required_credits: Créditos Requeridos 
       teacher:
-        area: 'Área'
+        area: 'Cátedra'
         user: 'Usuario'
         created_at: 'Fecha de Registro'
         sections: 'Secciones'

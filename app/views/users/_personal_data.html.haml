@@ -1,24 +1,30 @@
 .table-responsive
-  %table.table.table-sm.text-center.table-bordered
+  %table.table.table-sm.text-center
+    %thead
+      %tr
+        %th Perfil
+        %th CI
+        %th Nombres
+        %th Apellidos
+        %th Correo Electrónico
+        %th Número Telefónico
+        %th
     %tbody
       %tr
-        - if (session[:rol] and session[:rol].eql? 'admin') and user.profile_picture and user.profile_picture.attached? and user.profile_picture.representable?
-          %td
-            = render partial: "layouts/set_image", locals: {image: user.profile_picture_as_thumb, size: '40x40', alt: "foto perfil #{user.nick_name}"}
+        %td
+          - if (session[:rol]&.eql? 'admin') and user.profile_picture and user.profile_picture.attached? and user.profile_picture.representable?
+            = render partial: "layouts/set_image", locals: {image: user.profile_picture_as_thumb, size: '30x30', alt: "foto perfil #{user.nick_name}"}
+          - else
+            = image_tag user.profile_picture_as_thumb, size: '30'  
 
-        %td.string_type= user.student&.sede
         %td.string_type= user.ci
         %td.string_type= user.first_name
         %td.string_type= user.last_name
         %td.string_type= user.email
-        %td.string_type= user.password
-        - if user.number_phone
-          %td.string_type= user.number_phone
-        - if user.sex  
-          %td.string_type= user.sex.titleize 
+        %td.string_type= user.number_phone
 
-        %td
-          - if (current_user&.admin&.authorized_read? 'Student')
-            = link_to "/admin/student/#{student_id}/personal_data", title: 'Datos personales completos' do
+        - if (session[:rol]&.eql? 'admin' and current_user&.admin&.authorized_read? 'Student')
+          %td
+            = link_to "/admin/student/#{student_id}/personal_data", title: 'Más detalles' do
               .btn.btn-sm.btn-info
                 %i.fa-solid.fa-id-card

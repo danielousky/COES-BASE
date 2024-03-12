@@ -1,7 +1,7 @@
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
-  config.action_mailer.default_url_options = { host: "coesfau.com" }
+  config.action_mailer.default_url_options = { host: "plus.coesfhe.com" }
   
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -13,13 +13,13 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :smtp
   config.action_mailer.smtp_settings = {
-    address:                'smtp.mailersend.net',
-    port:                   587,
-    domain:                 ENV['PROVIDER_DOMAIN_ADRESS'],
-    user_name:              ENV['USERNAME'],
-    password:               ENV['PASSWORD'],
-    authentication:         'plain',
-    enable_starttls_auto:   true
+    address:            ENV['PROVIDER_EMAIL_SERVER'],
+    port:               ENV['PROVIDER_EMAIL_PORT'],
+    domain:             ENV['PROVIDER_EMAIL_ADDRESS'],
+    user_name:          ENV['PROVIDER_EMAIL_USERNAME'],
+    password:           ENV['PROVIDER_EMAIL_PASSWORD'],
+    authentication:     'plain',
+    enable_starttls_auto: true
   }
 
   config.cache_classes = true

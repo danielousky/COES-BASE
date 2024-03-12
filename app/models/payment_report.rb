@@ -1,13 +1,31 @@
+# == Schema Information
+#
+# Table name: payment_reports
+#
+#  id                        :bigint           not null, primary key
+#  amount                    :float
+#  payable_type              :string
+#  transaction_date          :date
+#  transaction_type          :integer
+#  created_at                :datetime         not null
+#  updated_at                :datetime         not null
+#  origin_bank_id            :bigint           not null
+#  payable_id                :bigint
+#  receiving_bank_account_id :bigint
+#  transaction_id            :string
+#
+# Indexes
+#
+#  index_payment_reports_on_origin_bank_id             (origin_bank_id)
+#  index_payment_reports_on_payable                    (payable_type,payable_id)
+#  index_payment_reports_on_receiving_bank_account_id  (receiving_bank_account_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (origin_bank_id => banks.id)
+#  fk_rails_...  (receiving_bank_account_id => bank_accounts.id) ON DELETE => nullify ON UPDATE => cascade
+#
 class PaymentReport < ApplicationRecord
-  # SCHEMA:
-  # t.float "amount"
-  # t.string "transaction_id"
-  # t.integer "transaction_type"
-  # t.date "transaction_date"
-  # t.bigint "origin_bank_id", null: false
-  # t.string "payable_type"
-  # t.bigint "payable_id"  
-  # t.bigint "receiving_bank_account_id"  
 
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]

@@ -37,7 +37,7 @@ es:
       updated_not_active: "Su contraseña fue modificada correctamente."
     registrations:
       destroyed: "Adiós, su cuenta ha sido eliminada. Esperamos verle de vuelta pronto!"
-      signed_up: "¡Se ha registrado correctamente! Le damos la más cordial bienvenida a nuestra Plataforma COESFAU"
+      signed_up: "¡Se ha registrado correctamente! Le damos la más cordial bienvenida a nuestra Plataforma COES"
       signed_up_but_inactive: "Se ha registrado correctamente, pero su cuenta aun no ha sido activada."
       signed_up_but_locked: "Se ha registrado correctamente, pero tu cuenta está bloqueada."
       signed_up_but_unconfirmed: "Le hemos enviado un email con instrucciones para que confirme su cuenta."
@@ -45,7 +45,7 @@ es:
       updated: "Actualizó su cuenta correctamente."
       updated_but_not_signed_in: "Actualizó su cuenta correctamente, pero debe iniciar sesión nuevamente debido a que su contraseña ha cambiado."
     sessions:
-      signed_in: "¡Hola, bienvenido a tu sesión de COESFAU!"
+      signed_in: "¡Hola, bienvenido a tu sesión de COES!"
       signed_out: "¡Hasta luego, nos vemos pronto!"
       already_signed_out: "Se cerró sesión correctamente."
     unlocks:

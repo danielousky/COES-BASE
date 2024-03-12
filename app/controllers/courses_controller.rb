@@ -18,6 +18,22 @@ class CoursesController < ApplicationController
     end
   end
 
+  def update
+    begin
+      respond_to do |format|
+        course = Course.find_by(course_params)
+        if course.update!(offer_as_pci: params[:offer_as_pci])
+          data = course.offer_as_pci? ? "activado" : "desactivado"
+          format.json {render json: {data: "¡Curso #{data} como PCI para el período #{course.academic_process.period_name}!", status: :success, type: :update} }
+        else
+          format.json { render json: {data: course.errors, status: :unprocessable_entity} }
+        end
+      end
+    rescue Exception => e
+      format.json { render json: {data: e, status: :unprocessable_entity} }
+    end
+  end 
+
   # DELETE /courses/1 or /courses/1.json
   def destroy
     begin

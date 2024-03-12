@@ -1,0 +1,12 @@
+.row
+    %small.text-center.bg-dark.text-light Requerimientos
+- SubjectType.all.each do |st|
+    - max = st.subjects.where(ordinal: level).count
+    = hidden_field_tag 'requirement_by_levels[][level]', level
+    = hidden_field_tag 'requirement_by_levels[][subject_type_id]', st.id
+    - rbl = @object.requirement_by_levels.where(level: level, subject_type_id: st.id).first
+    .row.mt-1
+        .col-sm-8.text-end.text-sm
+            %small{style: 'font-size: 11px'}= "#{st.name.downcase.pluralize.titleize}"
+        .col-sm-4 
+            %input.form-control.form-control-sm{placeholder: "Asignaturas ", type: :number, value: rbl&.required_subjects, id: "subjects#{st.id}#{level}", name: "requirement_by_levels[][required_subjects]", required: true, min: 0, max: max,step: 1, style: 'font-size: 11px'}

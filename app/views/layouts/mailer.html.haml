@@ -8,14 +8,14 @@
       body {background: #f2f2f2, padding-top: 40px;}
   %body{style: "font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;"}
 
-    %div{style: "background-image: url('https://coesfau.nyc3.cdn.digitaloceanspaces.com/own%2Fbg_banner_main.png'); background-position: center center; background-size: auto auto; background-repeat: no-repeat; ext-align: center;background-color: #E8EFFD;bs-bg-opacity: 0.1;"}
+    %div{style: "background-image: url('https://coes-base.nyc3.digitaloceanspaces.com/bg_banner_main.png'); background-position: center center; background-size: auto auto; background-repeat: no-repeat; ext-align: center;background-color: #E8EFFD;bs-bg-opacity: 0.1;"}
       .my-2.p-1{style: 'letter-spacing: 1px;padding: 0.25rem !important;margin-top: 0.5rem !important;margin-bottom: 0.5rem !important;text-align: center;'}
         %p{style: 'margin-bottom: 0 !important;'} UNIVERSIDAD CENTRAL DE VENEZUELA
         - if Faculty.count.eql? 1
           %p{style: 'margin-bottom: 0 !important;'}= Faculty.first&.name&.titleize
         - if School.count.eql? 1
           %p{style: 'margin-bottom: 0 !important;'}= School.first.name.titleize
-        %p{style: 'font-weight: 400 !important;'} Sistema de Control de Estudios COES-FAU
+        %p{style: 'font-weight: 400 !important;'} Sistema de Control de Estudios COES
 
 
 
@@ -25,7 +25,7 @@
     %div{style: 'background-color: #E8EFFD'}
       %div{style: "text-align: center;"}
         %h4{style: "color: #555555; margin: 0px;font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;"} UCV La casa que vence la sombra
-        %h4{style: "color: #555555;margin: 0px;font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;"} COES-FAU - UCV 
+        %h4{style: "color: #555555;margin: 0px;font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;"} COES - UCV 
 
-    - if email = School.first&.contact_email
+    - if email = Faculty.first&.contact_email
       %h4{style: "text-align: center !important;color: #555555;font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;"}= "IMPORTANTE: No dude en contactarnos por el correo #{email} si requiere de algún tipo de apoyo."

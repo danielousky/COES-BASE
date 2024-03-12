@@ -1,7 +1,23 @@
+# == Schema Information
+#
+# Table name: admission_types
+#
+#  id         :bigint           not null, primary key
+#  code       :string
+#  name       :string
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  school_id  :bigint           not null
+#
+# Indexes
+#
+#  index_admission_types_on_school_id  (school_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (school_id => schools.id)
+#
 class AdmissionType < ApplicationRecord
-  # SCHEMA:
-  # t.string "name"
-  # t.bigint "school_id", null: false
 
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
@@ -73,16 +89,16 @@ class AdmissionType < ApplicationRecord
       # changed_fields = self.changes.keys - ['created_at', 'updated_at']
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
       # self.paper_trail_event = "¡#{object} actualizado en #{changed_fields.to_sentence}"
-      self.paper_trail_event = "¡#{object} actualizado!"
+      self.paper_trail_event = "¡#{object} actualizada!"
     end  
 
     def paper_trail_create
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
-      self.paper_trail_event = "¡#{object} registrado!"
+      self.paper_trail_event = "¡#{object} registrada!"
     end  
 
     def paper_trail_destroy
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
-      self.paper_trail_event = "¡Tipo de Admisión eliminado!"
+      self.paper_trail_event = "¡Tipo de Admisión eliminada!"
     end
 end

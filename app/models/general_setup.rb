@@ -1,3 +1,14 @@
+# == Schema Information
+#
+# Table name: general_setups
+#
+#  id          :bigint           not null, primary key
+#  clave       :string
+#  description :string
+#  valor       :string
+#  created_at  :datetime         not null
+#  updated_at  :datetime         not null
+#
 class GeneralSetup < ApplicationRecord
 
   def self.enabled_post_qualification?

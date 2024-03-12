@@ -1,9 +1,29 @@
+# == Schema Information
+#
+# Table name: enroll_academic_processes
+#
+#  id                  :bigint           not null, primary key
+#  efficiency          :float            default(1.0)
+#  enroll_status       :integer
+#  permanence_status   :integer
+#  simple_average      :float            default(0.0)
+#  weighted_average    :float            default(0.0)
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  academic_process_id :bigint           not null
+#  grade_id            :bigint           not null
+#
+# Indexes
+#
+#  index_enroll_academic_processes_on_academic_process_id  (academic_process_id)
+#  index_enroll_academic_processes_on_grade_id             (grade_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (academic_process_id => academic_processes.id)
+#  fk_rails_...  (grade_id => grades.id)
+#
 class EnrollAcademicProcess < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "grade_id", null: false
-  # t.bigint "academic_process_id", null: false
-  # t.integer "enroll_status"
-  # t.integer "permanence_status"
 
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
@@ -246,12 +266,11 @@ class EnrollAcademicProcess < ApplicationRecord
           (current_user and current_user.admin and current_user.admin.authorized_manage? 'EnrollAcademicProcess')
         end
         formatted_value do          
-          grade = bindings[:object].grade          
           if bindings[:object].enrolling?
             totalCreditsReserved = bindings[:object].total_credits_not_retired
             totalSubjectsReserved = bindings[:object].total_subjects_not_retired
 
-            bindings[:view].render(partial: '/enroll_academic_processes/form', locals: {grade: grade, academic_process: bindings[:object].academic_process, totalCreditsReserved: totalCreditsReserved, totalSubjectsReserved: totalSubjectsReserved})
+            bindings[:view].render(partial: '/enroll_academic_processes/form', locals: {grade: bindings[:object].grade, academic_process: bindings[:object].academic_process, totalCreditsReserved: totalCreditsReserved, totalSubjectsReserved: totalSubjectsReserved})
           else
             bindings[:view].render(partial: "/academic_records/making_historical", locals: {enroll: bindings[:object]})
           end
@@ -279,8 +298,14 @@ class EnrollAcademicProcess < ApplicationRecord
         end
       end
 
+      field :school do
+        sticky true 
+        searchable :name
+        sortable :name               
+      end
+
       field :period do
-        label 'Período'
+        sticky true
         column_width 100
         searchable :name
         # filterable 'periods.name'
@@ -409,6 +434,7 @@ class EnrollAcademicProcess < ApplicationRecord
   end
 
   def calculate_efficiency
+
     cursados = self.total_subjects_coursed
     aprobados = self.total_subjects_approved
     if cursados < 0 or aprobados < 0
@@ -431,33 +457,57 @@ class EnrollAcademicProcess < ApplicationRecord
     (cursados > 0 and aux) ? (aux.to_f/cursados.to_f).round(4) : self.weighted_average
   end
 
+  def efficiency_desc
+    if efficiency.nil?
+      '--'
+    else
+      (efficiency).round(2)
+    end
+  end
+
+  def simple_average_desc
+    if simple_average.nil?
+      '--'
+    else
+      (simple_average).round(2)
+    end
+  end
+
+  def weighted_average_desc
+    if weighted_average.nil?
+      '--'
+    else
+      (weighted_average).round(2)
+    end
+  end
+
   private
 
-    def update_current_permanence_status_on_grade
-      grade.update(current_permanence_status: self.permanence_status) if is_the_last_enroll_of_grade?
-      
-    end
+  def update_current_permanence_status_on_grade
+    grade.update(current_permanence_status: self.permanence_status) if is_the_last_enroll_of_grade?
+    
+  end
 
-    def paper_trail_update
-      changed_fields = self.changes#.keys - ['created_at', 'updated_at']
-      changed_fields = changed_fields.map do |fi|
-        if fi[0] != 'updated_at'
-          elem = I18n.t("activerecord.attributes.#{self.model_name.param_key}.#{fi[0]}").to_s
-          elem += " de #{fi[1][0]} a #{fi[1][1]}"
-        end
+  def paper_trail_update
+    changed_fields = self.changes#.keys - ['created_at', 'updated_at']
+    changed_fields = changed_fields.map do |fi|
+      if fi[0] != 'updated_at'
+        elem = I18n.t("activerecord.attributes.#{self.model_name.param_key}.#{fi[0]}").to_s
+        elem += " de #{fi[1][0]} a #{fi[1][1]}"
       end
-      object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
-      self.paper_trail_event = "¡#{object} actualizada en: #{changed_fields.to_sentence}"
-    end  
-    def paper_trail_create
-      object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
-      self.paper_trail_event = "¡#{object} registrado!"
-    end  
-
-    def paper_trail_destroy
-      object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
-      self.paper_trail_event = "¡Proceso Académico eliminado!"
     end
+    object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+    self.paper_trail_event = "¡#{object} actualizada en: #{changed_fields.to_sentence}"
+  end  
+  def paper_trail_create
+    object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+    self.paper_trail_event = "¡#{object} registrado!"
+  end  
+
+  def paper_trail_destroy
+    object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+    self.paper_trail_event = "¡Proceso Académico eliminado!"
+  end
 
 
 end

@@ -1,7 +1,7 @@
 .p-md-1
   %h6.alert.alert-warning.text-justify
     %b Atención:
-    = "Estimad#{grade.student.user.genero} #{grade.student.user.nick_name.titleize}, le informamos que su Cita Horaria es el"
-    %b= grade.appointment_from_to
+    = "Estimad#{@grade.student.user.genero} #{@grade.student.user.nick_name.titleize}, le informamos que su Cita Horaria es el"
+    %b= @grade.appointment_from_to
     %br
-    = render partial: 'enroll_academic_processes/msg_enroll_info_complete', locals: {grade: grade}
+    = render partial: 'enroll_academic_processes/msg_enroll_info_complete'

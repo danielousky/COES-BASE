@@ -5,6 +5,6 @@
 .p-3
   = render partial: '/users/personal_data', locals: {user: @student.user}
 
-  = render partial: '/students/show', locals: {student: @student}
+  = render template: '/students/show'
 
 =# link_to show_path(@grade, format: :pdf), target: '_blank', title: 'Click para Exportar como PDF', class: 'btn btn-default'

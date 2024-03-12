@@ -1,3 +1,12 @@
+# == Schema Information
+#
+# Table name: billboards
+#
+#  id         :bigint           not null, primary key
+#  active     :boolean          default(FALSE)
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#
 class Billboard < ApplicationRecord
 	# HISTORY:
 	has_paper_trail on: [:create, :destroy, :update]

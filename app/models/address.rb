@@ -1,13 +1,28 @@
+# == Schema Information
+#
+# Table name: addresses
+#
+#  id           :bigint           not null, primary key
+#  city         :string
+#  house_name   :string
+#  house_type   :integer
+#  municipality :string
+#  sector       :string
+#  state        :string
+#  street       :string
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
+#  student_id   :bigint           not null
+#
+# Indexes
+#
+#  index_addresses_on_student_id  (student_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (student_id => students.user_id) ON DELETE => cascade ON UPDATE => cascade
+#
 class Address < ApplicationRecord
-  # SCHEMA:
-  # t.references :student, null: false, foreign_key: true
-  # t.string :state
-  # t.string :municipality
-  # t.string :city
-  # t.string :sector
-  # t.string :street
-  # t.integer :house_type
-  # t.string :house_name
 
   # ENUMERIZE:
   enum house_type: [:casa, :quinta, :apartamento]

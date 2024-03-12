@@ -8,11 +8,17 @@ RailsAdmin.config do |config|
   config.asset_source = :webpack
 
   ### Popular gems integration
-  config.main_app_name = Proc.new { |controller| [ "Coes", "FAU" ] }
+  config.main_app_name = Proc.new { |controller| [ "Coes", "FHE" ] }
 
   ## == Devise ==
   config.authenticate_with do
-    warden.authenticate! scope: :user
+    begin
+      warden.authenticate! scope: :user
+    rescue Exception => e
+      # flash[:danger] = 'Error!!!'
+      # No manda el error o resetea la session (flash)
+      redirect_to '/', notice: 'Error'
+    end
   end
   config.current_user_method(&:current_user)
 
@@ -25,13 +31,15 @@ RailsAdmin.config do |config|
   ## == PaperTrail ==
   config.audit_with :paper_trail, 'User', 'PaperTrail::Version' # PaperTrail >= 3.0.0
 
+  
   ### More at https://github.com/railsadminteam/rails_admin/wiki/Base-configuration
-
+  
   ## == Gravatar integration ==
   ## To disable Gravatar integration in Navigation Bar set to false
   config.show_gravatar = false
-
-  config.label_methods << :description # Default is [:name, :title]
+  
+  # config.label_methods << :description # Default is [:name, :title]
+  config.label_methods = [:desc, :name]
 
   # NO FUNCIONA
   # config.show_gravatar do |config|
@@ -79,13 +87,21 @@ RailsAdmin.config do |config|
       end
     end
 
-    member :organization_chart do 
+    # member :organization_chart do 
 
-      only [School]
+    #   only [School]
+    #   link_icon do
+    #       'fa-solid fa-shapes'
+    #   end
+    # end
+
+    member :structure do 
+
+      only [StudyPlan]
       link_icon do
-          'fa-solid fa-shapes'
+          'fa-solid fa-folder-tree'
       end
-    end
+    end    
 
     member :enrollment_day do 
 
@@ -103,12 +119,12 @@ RailsAdmin.config do |config|
     end
 
     new do
-      except [School, Faculty, EnrollAcademicProcess, Course]
+      except [EnrollAcademicProcess, Course]
     end
 
     export do
       require_relative '../../lib/rails_admin/config/actions/export'
-      except [Faculty, School, StudyPlan, GroupTutorial, Tutorial, ParentArea]
+      except [Faculty, School, StudyPlan, GroupTutorial, Tutorial, Departament]
     end
 
     bulk_delete do
@@ -116,7 +132,7 @@ RailsAdmin.config do |config|
     end
 
     show do
-      except [StudyPlan, AcademicRecord]
+      except [AcademicRecord]
     end
 
     edit do
@@ -134,11 +150,11 @@ RailsAdmin.config do |config|
 
     ## With an audit adapter, you can add:
     history_index do
-      except [School, StudyPlan, ParentArea]
+      except [School, StudyPlan, Departament]
     end
 
     history_show do
-      except [School, StudyPlan, ParentArea]
+      except [School, StudyPlan, Departament]
     end
   end
 

@@ -1,0 +1,4 @@
+.form-switch
+  = check_box_tag "pci_subject#{subject_id}", subject_id, course&.offer_as_pci?, class: "form-check-input switch", title: "Ofertar como pci", disabled: course.nil?, onclick: 'updateCourse(this);'
+
+

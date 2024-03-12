@@ -1,14 +1,27 @@
+# == Schema Information
+#
+# Table name: periods
+#
+#  id             :bigint           not null, primary key
+#  name           :string
+#  year           :integer          not null
+#  created_at     :datetime         not null
+#  updated_at     :datetime         not null
+#  period_type_id :bigint
+#
+# Indexes
+#
+#  index_periods_on_period_type_id  (period_type_id)
+#
 class Period < ApplicationRecord
-	#SCHEMA:
-    # t.integer "year", null: false
-    # t.string "name"
-	
+
 	#ASSOCIATIONS:
 	# belongs_to
 	belongs_to :period_type
 
 	# has_many:
 	has_many :academic_processes, dependent: :destroy
+	has_many :courses, through: :academic_processes
 	has_many :schools, through: :academic_processes
 	has_many :enroll_academic_processes, through: :academic_processes
 

@@ -1,5 +1,4 @@
-
-= render partial: 'layouts/banner_pdf', locals: {title: @title, school: @school, user: @user} 
+= render partial: 'layouts/banner_pdf', locals: {title: @title, school: @school, user: @user}
 
 %br
 %p.text-justify
@@ -18,7 +17,7 @@
       %th Asignatura
       %th Sección
       %th Créditos
-      / %th Estado
+    /  %th Estado
 
   %tbody
     - @academic_records.each do |acre|
@@ -27,7 +26,7 @@
         %td= acre.subject_name_with_retiro.html_safe
         %td.text-center= acre.section.code
         %td.text-center= acre.subject.unit_credits
-        / %td.text-center=# acre.status.titleize
+      /  %td.text-center= acre.status.titleize
 
 
 %br
@@ -43,7 +42,7 @@
 
 %p.text-justify= "Constancia que se expide a solicitud de la parte interesada en la Ciudad Universitaria en Caracas, el día #{I18n.l(Time.now, format: "%d de %B de %Y")}.".html_safe
 
-- unless @school&.code.eql? 'EACRV'
+- unless false #@school&.code.eql? 'EACRV'
 
   - enlace = "https://coesfau.com/validar/#{@version.id}/constancias?object_id=#{@enroll_academic_process.id}"
   - enlace +="&study=true" if @study_contance.eql? true
@@ -51,7 +50,10 @@
   - imagen_qr = CodigoQr.generate_image enlace
   - #pdf.image imagen_qr, width: 120, at: [10, (pdf.y)+40]
 
-  .text-center= image_tag imagen_qr
+  .text-center
+    = image_tag imagen_qr
+    =# image_tag main_app.url_for(imagen_qr), size: size, alt: alt
+  
 
   .alert-message.text-justify
     %p= "<b>ATENCIÓN:</b> Para verificar la autenticidad del presente documento escanee el código QR, haga clic en la siguiente dirección o escríbala en su navegador web:".html_safe
@@ -59,14 +61,11 @@
 
 %br
 %br
-%br
-%br
-.text-center= @school.boss_name
-.text-center= "Jefe(a) de Control de Estudio"
-
-- if @school&.code.eql? 'EACRV'
+#firma_jefe
   %br
   %br
-  %h4.text-center 
-    %b ATENCIÓN: 
-    Esta constancia será válida sólo si tiene la firma y el sello húmedo de Control de Estudios
+  %br
+  %br
+  .text-center= @faculty.coes_boss_name
+  .text-center= "Jefe(a) de Control de Estudio"
+#sello_coes

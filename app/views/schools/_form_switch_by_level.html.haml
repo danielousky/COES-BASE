@@ -1,0 +1,28 @@
+.text-center
+  .form-check.form-switch
+    - url = "/schools/#{school.id}"
+    = check_box_tag "enable_by_level#{school.id}", school.id, school.enable_by_level?, class: "form-check-input switch", onclick: 'updateElem(`'+url+'`, `{"school":{"enable_by_level":${this.checked}}}`);', title: 'Activar o desactivar inscripciones por nivel aprobado'
+
+:javascript
+
+  function updateElem(url, attrs){
+    $.ajax({
+      url: `${url}`,
+      type: 'PUT',
+      data: JSON.parse(attrs),
+      dataType: 'json',
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+      },
+      success: function(json) {
+        toastr.success(json.data);
+      },
+      error: function(json) {
+        toastr.error(json.data);
+      },
+      unprocessable_entity: function(json) {
+        toastr.error(json.data);
+      }
+    });
+
+  }

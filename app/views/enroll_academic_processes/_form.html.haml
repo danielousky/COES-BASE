@@ -1,26 +1,31 @@
--# grade ||= Grade.find params[:grade_id]
-- school = grade.school
+-# grade ||= @Grade.find params[:grade_id]
+- @grade ||= grade 
+- school = @grade.school
 -# academic_process = school.enroll_process
 - courses_offer = academic_process.courses
-- user = grade.student.user
+- user = @grade.student.user
 
-- if current_user.student? and (session[:rol].eql? 'student') and school.enable_dependents?
-  - subjects_offer_by_dependency = grade.subjects_offer_by_dependent
-  - courses_offer = courses_offer.where(subject_id: subjects_offer_by_dependency.ids)
+- if current_user.student? and (session[:rol].eql? 'student')
+  - if school.enable_by_level?
+    - subjects_offer_by_dependency = @grade.subjects_offer_by_level_approved
+    - courses_offer = courses_offer.where(subject_id: subjects_offer_by_dependency.ids)
+  - elsif school.enable_dependents?
+    - subjects_offer_by_dependency = @grade.subjects_offer_by_dependent
+    - courses_offer = courses_offer.where(subject_id: subjects_offer_by_dependency.ids)
 
 - courses_offer = courses_offer.order_by_subject_code
 - limitCredits = academic_process.max_credits
 - limitSubjects = academic_process.max_subjects
-- msgDanger = "Seleccione las asignaturas que desea preinscribir. Recuerde mover el scroll para ver todas las asignaturas ofertadas. Finalmente haga clíc en 'Completar' "
+- msgDanger = "<b>Atención:</b> </br> <ul><li>Seleccione la sección de las asignaturas que desea preinscribir.</li> <li>Puede usar el scroll para ver todas las asignaturas ofertadas o filtrarlas por el nombre o código de la asignatura.</li> <li>Finalmente haga clíc en 'Completar' para terminar su preinscripción.</li> </ul>"
 
 
 - if current_user&.admin? and session[:rol].eql? 'admin'
   .bg-info.text-primary.p-3.text-center
-    = link_to "/admin/student/#{grade.student_id}", class: 'float-start btn btn-sm btn-primary align-middle', title: "Ir al detalle de #{user.nick_name}" do
+    = link_to "/admin/student/#{@grade.student_id}", class: 'float-start btn btn-sm btn-primary align-middle', title: "Ir al detalle de #{user.nick_name}" do
       %i.fa-regular.fa-chevron-left
       Ir a Detalle
 
-    - records_from_subjects_approved = grade.academic_records_from_subjects_approved.order('subjects.ordinal, subjects.code')
+    - records_from_subjects_approved = @grade.academic_records_from_subjects_approved.order('subjects.ordinal, subjects.code')
 
     - if records_from_subjects_approved.any?
       %button.btn.btn-sm.btn-primary.float-start.mx-2{"data-bs-target": "#subjectsApproved", "data-bs-toggle": :modal, type: :button}
@@ -42,24 +47,23 @@
     INSCRIPCIÓN
     %b= academic_process.period.name
     de
-    %b= grade.student.name
+    %b= @grade.student.name
 
-  .alert.alert-warning.text-center.fase.show.p-1{role: :alert}
+  .alert.alert-warning.text-justify.fase.show.p-1{role: :alert}
     = msgDanger.html_safe
-    %button.btn-close{"aria-label": "Close", "data-bs-dismiss": :alert, type: :button}
 
-
-= form_tag('/enroll_academic_processes/enroll', id: "#{grade.id}Form", class: 'form-horizontal', multipart: true) do
-  = hidden_field_tag 'grade_id', grade.id
+= form_tag('/enroll_academic_processes/enroll', id: "#{@grade.id}Form", class: 'form-horizontal', multipart: true) do
+  = hidden_field_tag 'grade_id', @grade.id
   = hidden_field_tag 'academic_process_id', academic_process.id  
-  .border{style: 'overflow-y:scroll;max-height:280px'}
-    = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: courses_offer, pcis: false, grade: grade}
+  .border.p-1{style: 'overflow-y:scroll;max-height:280px'}
+    %h5.bg-light Asignaturas
+    = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: courses_offer, pcis: false}
 
-    - pcis = academic_process.courses.pcis.order_by_subject_code
+    - pcis = academic_process.period.courses.joins(:school).where("schools.id != '?'", school.id).pcis.order_by_subject_code.uniq
     - if pcis.any?
       %hr
-      %h4 Asignaturas PCI 
-      = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: pcis, pcis: true, grade: grade}
+      %h5.mt-1.bg-light Asignaturas PCI 
+      = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: pcis, pcis: true}
 
   = render partial: 'enroll_academic_processes/total_credits', locals: {limitCredits: limitCredits, limitSubjects: limitSubjects, totalCreditsReserved: totalCreditsReserved, totalSubjectsReserved: totalSubjectsReserved }
 
@@ -82,10 +86,10 @@
   //   $(".col-sm-10").toggleClass('col-sm-10', 'col-sm-8');
   // });
 
-  function filterSections(ele){
+  function filterSections(ele, tableId){
     var keyword = ele.value;
     keyword = keyword.toUpperCase();
-    var table_1 = document.getElementById("courses_offer");
+    var table_1 = document.getElementById(tableId);
     var all_tr = table_1.getElementsByTagName("tr");
 
     for(var i=0; i<all_tr.length; i++){
@@ -142,7 +146,7 @@
 
 
   function totalizar() {
-
+    console.log('Totalizando...');
     let selecteds = $(".selectInscripcion option:selected");
 
     let totalCredSel = 0;
@@ -157,18 +161,21 @@
       }
     });
 
+    console.log("Total Créditos Seleccionados: "+totalCredSel);
+
     totalCred.text(totalCredSel);
     totalSubj.text(totalSubjSel);
 
+    console.log("Total Créditos Set: "+totalCred.text());
     $('#total_credits').val(totalCred.text());
     $('#total_subjects').val(totalSubj.text());
     let limiteCreditos = Number(#{limitCredits})
     let limiteAsignaturas = Number(#{limitSubjects})
     let submitBtn = $('#submitBtn');
 
-    let activo = ((totalSubjSel > 0) & (totalSubjSel <= limiteAsignaturas) & (totalCredSel <= limiteCreditos)),
-    tr = totalCred.closest('tr');
-    tr2 = totalSubj.closest('tr');
+    let activo = ((totalSubjSel > 0) & (totalSubjSel <= limiteAsignaturas) & (totalCredSel <= limiteCreditos));
+    let tr = totalCred.closest('tr');
+    let tr2 = totalSubj.closest('tr');
 
     submitBtn.toggleClass('disabled', !activo);
     submitBtn.prop('disabled', !activo);
@@ -210,7 +217,7 @@
       alert('ATENCIÓN: DEBE SELECCIONAR AL MENOS UNA ASIGNATURA A INSCRIBIR');
 
     }else{
-      msg = `${total} Asignaturas a preinscribir en el período académico #{academic_process.period.name} de #{grade.school.name}:`;
+      msg = `${total} Asignaturas a preinscribir en el período académico #{academic_process.period.name} de #{@grade.school.name}:`;
       msg += selected;
       msg += '\n';
       msg += '\n';

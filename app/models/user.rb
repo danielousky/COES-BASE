@@ -1,24 +1,37 @@
+# == Schema Information
+#
+# Table name: users
+#
+#  id                     :bigint           not null, primary key
+#  ci                     :string           not null
+#  current_sign_in_at     :datetime
+#  current_sign_in_ip     :string
+#  email                  :string           default(""), not null
+#  encrypted_password     :string           default(""), not null
+#  first_name             :string
+#  last_name              :string
+#  last_sign_in_at        :datetime
+#  last_sign_in_ip        :string
+#  number_phone           :string
+#  remember_created_at    :datetime
+#  reset_password_sent_at :datetime
+#  reset_password_token   :string
+#  sex                    :integer
+#  sign_in_count          :integer          default(0), not null
+#  updated_password       :boolean          default(FALSE), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#
+# Indexes
+#
+#  index_users_on_ci                    (ci) UNIQUE
+#  index_users_on_email                 (email) UNIQUE
+#  index_users_on_reset_password_token  (reset_password_token) UNIQUE
+#
 class User < ApplicationRecord
-  # Include default devise modules. Others available are:
-  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+
   devise :database_authenticatable,
          :recoverable, :rememberable, :validatable, :trackable, :timeoutable
-
-
-  # SCHEMA:
-  # t.string "email", default: "", null: false
-  # t.string "ci", null: false
-  # t.string "encrypted_password", default: "", null: false
-  # t.string "name"
-  # t.string "last_name"
-  # t.string "number_phone"
-  # t.integer "sex"
-  # t.datetime "remember_created_at"
-  # t.integer "sign_in_count", default: 0, null: false
-  # t.datetime "current_sign_in_at"
-  # t.datetime "last_sign_in_at"
-  # t.string "current_sign_in_ip"
-  # t.string "last_sign_in_ip"  
 
   # ENUMERIZE:
   enum sex: [:Femenino, :Masculino]

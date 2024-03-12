@@ -1,0 +1,12 @@
+- if (current_user&.admin&.authorized_manage? 'StudyPlan')
+  - school = @object.school  
+  - subjects = school.subjects.order(:ordinal)
+  - if subjects.any?
+    = form_tag("/study_plans/#{@object.id}/save_requirement_by_level", class: 'form-horizontal') do
+      = render(partial: "/schools/subjects_organization", locals: {subjects: subjects, orders: subjects.group(:ordinal).count})
+          
+  - else
+    %h3.alert.alert-warning Sin asignaturas
+
+- else
+  %h1.text-center.alert.alert-warning Acceso Restringido

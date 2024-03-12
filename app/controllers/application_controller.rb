@@ -2,11 +2,17 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   before_action :set_paper_trail_whodunnit
   before_action :set_current_process
+  before_action :set_paper_trail_whodunnit
+
 
   # around_action :set_session_data
 
   helper_method :logged_as_teacher_or_admin?, :logged_as_teacher?, :logged_as_student?, :logged_as_admin?, :current_admin, :current_teacher, :current_student, :current_academic_process#, :set_current_course
 
+
+  def user_for_paper_trail
+    current_user ? current_user.id : 'Sistema, consola o no_loggin'  # or whatever
+  end
 
   def set_current_process
     @academic_process = AcademicProcess.where(id: session[:academic_process_id]).first
@@ -58,7 +64,8 @@ class ApplicationController < ActionController::Base
   end
 
   def logged_as_admin?
-    !current_user.nil? and !current_user.admin.nil? and session[:rol].eql? 'admin'
+    # !current_user.nil? and !current_user.admin.nil? and session[:rol].eql? 'admin'
+    current_user&.admin? and session[:rol].eql? 'admin'
   end
 
   def current_schools
@@ -91,7 +98,7 @@ class ApplicationController < ActionController::Base
         pages_multirols_path(roles: rols)
       elsif current_user.admin?
         session[:rol] = 'admin'
-        session[:academic_processes_id] = School.first&.academic_processes.first&.id 
+        session[:academic_processes_id] = School.first&.academic_processes&.first&.id 
         rails_admin_path
       elsif current_user.student?
         session[:rol] = 'student'

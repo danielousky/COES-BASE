@@ -1,8 +1,8 @@
 
 
 .input-group.input-group-sm    
-  = link_to 'javascript:void(0)', onclick: "$('.arbol').toggleClass('d-none'); $('.fa-chevron-right').toggleClass('fa-rotate-90');", class: 'btn btn-sm btn-success', style: 'margin-right: 15px' do
-    Desplegar todos
+  = link_to 'javascript:void(0)', onclick: "$('.arbol').toggleClass('d-none'); $('.fa-chevron-right').toggleClass('fa-rotate-90');", class: 'btn btn-sm btn-info', style: 'margin-right: 15px' do
+    Desplegar Todo el Árbol de Asignaturas 
     %i.fa.fa-chevron-right
   %input.form-control{"aria-label": "", type: "text", placeholder: 'Buscar asignaturas por código', id: 'filterTable', name: 'filterSubject'}
 
@@ -18,13 +18,20 @@
             - title = "Optativas"
             - bg = 'bg-info'
           - else
-            - title = "#{Subject.ordinal_to_cardinal(k,'Sem')}"
+            - title = "#{Subject.ordinal_to_cardinal(k, @object.modality_to_tipo)}"
             - bg = 'bg-success'
-          %th{class: bg}
-            = title
-            %span.badge.bg-dark{title: 'Total de Asignaturas'}= "#{v}"
-
-
+            
+          %td{class: bg}
+            %b= title
+            - if false 
+              - # OJO REVISAR ESTÁ SUMANDO TODAS LAS ASIGNATURAS!!! 
+              %span.badge.bg-dark{title: 'Total de Asignaturas'}= "#{v}"
+      %tr
+        - orders.each do |k,v|
+          %td= render partial: '/requirement_by_levels/card', locals: {level: k, subjects: subjects} #@object.modality_to_tipo
+      %tr
+        %td{colspan: orders.max.first}
+          .text-center.mt-1= submit_tag 'Guardar', class: 'btn btn-sm btn-info p-1', style: 'font-size: 11px'
     %tbody
       %tr
         - orders.each do |k,v|
@@ -39,11 +46,21 @@
                 - table = ''
 
               %table.table.table-bordered.table-sm.table.table-striped
-                %thead
-                %tbody
-                  - subjects.where(ordinal: k).order(:code).each do |asig|
-                    %tr.trFiltrable{class: table}
-                      = render partial: '/subject_links/tree_by_school', locals: {subject: asig}
+                - SubjectType.all.order(:name).each do |s_type|
+                  - tipo = s_type.name.downcase
+                  - subjects_by_type = s_type.subjects.where(ordinal: k).order(:code)
+                  - if subjects_by_type.any? 
+                    %thead
+                      %tr
+                        %td.text-center.bg-dark.text-light
+                          - title = "#{s_type.name.downcase.pluralize.titleize}"
+                          %small
+                            = title
+                            %span.label{title: "Total Asignaturas #{title}"}= "#{subjects_by_type.count}"
+                    %tbody
+                      - subjects_by_type.each do |asig|
+                        %tr.trFiltrable{class: table}
+                          = render partial: '/subject_links/tree_by_school', locals: {subject: asig}
 
 
 :javascript

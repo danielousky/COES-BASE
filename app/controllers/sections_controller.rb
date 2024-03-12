@@ -1,5 +1,5 @@
 class SectionsController < ApplicationController
-  before_action :set_section, only: %i[ show update export change]
+  before_action :set_section, only: %i[ show update export change_qualification_status]
 
   layout 'logged'
 
@@ -78,6 +78,16 @@ class SectionsController < ApplicationController
     redirect_back fallback_location: section_url(@section)
 
   end
+
+  def change_qualification_status
+    if @section.update(qualified: params[:section][:qualified])
+      flash[:success] = "Sección Actualizada"
+    else
+      flash[:danger] = "Error: #{@section.errors.full_messages.to_sentence}"
+    end
+    
+    redirect_back fallback_location: '/admin/section'
+  end  
 
   private
     # Use callbacks to share common setup or constraints between actions.

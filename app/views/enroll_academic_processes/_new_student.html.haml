@@ -1,0 +1,103 @@
+- school = @grade.school
+- faculty = @grade.school&.faculty
+- # NUEVO SECUENCIA DE INSCRIPCIÓN:
+
+- if academic_process = school&.enroll_process
+  - academic_process_before = academic_process&.process_before
+  - # INSCRIPCIÓN ABIERTA!
+  .border.border-success.mb-3
+    - title = "PROCESO DE INSCRIPCIÓN #{academic_process.period.name} - #{school&.name} "
+    - if academic_process.enrollment_days&.of_today.first&.active_now?
+      - title += " CON CITA HORARIA"
+    %h5.text-center.bg-success.text-light.py-2.mt-0= title
+    .p-2
+      - inscripcion = @grade.enroll_academic_processes.of_academic_process(academic_process.id).first
+
+      - if inscripcion&.confirmado?
+        - msg = 'Generar Constancia de Inscripción'
+        .text-center
+          = link_to "/enroll_academic_processes/#{inscripcion.id}.pdf", class: 'btn btn-primary text-center btn-lg align-middle', target: '_blank', rel: "noopener noreferrer", 'data-bs-toggle': :tooltip, 'data-bs-placement': :top, title: msg, rel: :tooltip do
+            .fa.fa-download
+            .fa-solid.fa-graduation-cap
+            = msg
+
+      - elsif inscripcion&.preinscrito?
+        - if school.enable_enroll_payment_report? 
+          - if inscripcion.payment_reports.any?
+            = render '/enroll_academic_processes/show_planilla'
+          - else
+            .alert.alert-danger.text-center
+              %b ¡Atención!
+              Es necesario realizar el pago de su inscripción para posteriormente reportarlo. A Continuación los datos necesarios
+              - bank_accounts = school.bank_accounts.any? ? school.bank_accounts : faculty.bank_accounts
+              = render partial: '/payment_reports/show_data_bank_account', locals: {bank_accounts: bank_accounts, amount: academic_process.registration_amount}
+
+              - id = "paymentReportModal#{inscripcion.id}"
+              - titlePayment = "Reportar Pago inscripción #{academic_process.short_desc}"
+              %br
+              %a.btn.btn-success.btn-lg.my-3{"data-bs-target": "##{id}", "data-bs-toggle": :modal, type: :button}
+                .fa.fa-receipt
+                = titlePayment
+            - reportable = inscripcion
+            - @payment_report_new = PaymentReport.new(payable: inscripcion, amount: academic_process.registration_amount)
+            - content = render partial: "/payment_reports/form"
+            = render partial: '/layouts/scaffold-modal', locals: {content: content, title: titlePayment, id: id}
+        - else
+          = render '/enroll_academic_processes/show_planilla'
+
+      - else
+        - if @grade.valid_to_enroll_in academic_process
+          - # "REGULAR"
+
+          - # ROYER RABIT
+          = render partial: '/grades/regulation'
+
+          - if (inscripcion.nil? or inscripcion&.reservado?)
+            - # PROCESO DE INSCRIPCIÓN NO COMPLETADO
+            - if academic_process.enroll_instructions
+              .border.m-2.p-2.text-center
+                = raw academic_process.enroll_instructions
+
+            - if academic_process.enrollment_days.any?
+              - # PLANIFICACIÓN POR CITA HORARIA
+              - if @grade.has_a_appointment_time?
+                - if @grade.can_enroll_by_apponintment?
+                  - if inscripcion&.reservado?
+                    - # INSCRIPCIÓN EN PROCESO
+                    = render partial: '/enroll_academic_processes/msg_enroll_in_progress'
+
+                  - # MOMENTO DE INSCRIBIRSE (It's Time!)
+                  = render partial: '/grades/msg_its_time_to_enroll'
+                  - # Incluir cuenta regresiva js
+
+                  - enabled_to_enroll = true
+                - elsif (@grade.enroll_is_in_future? and inscripcion.nil?)
+                  - # message future enrollment_day:
+                  = render partial: 'grades/msg_appointment_time'
+                - else
+                  = render partial: 'enroll_academic_processes/msg_the_time_to_enroll_passed'
+
+            - else
+              - # PLANIFICACION DIRECTA, SIN CITA HORARIA
+              - enabled_to_enroll = true
+
+          - if enabled_to_enroll
+            .m-3.p-3.text-center= render template: 'enroll_academic_processes/new'
+        - elsif ['articulo3', 'articulo6', 'articulo7'].include? @grade.current_permanence_status
+          - # ROYER RABIT
+          = render partial: '/grades/regulation'
+        - elsif ['nuevo', 'intercambio', 'egresado', 'egresado_doble_titulo'].include? @grade.current_permanence_status
+          .alert.alert-warning
+            %b ATENCIÓN:
+            Si desea inscribirse debe realizarlo directamente por Control de Estudio.
+            = @grade.help_msg
+        - elsif ['desertor', 'permiso_para_no_cursar'].include? @grade.current_permanence_status
+          .alert.alert-danger 
+            %b ATENCIÓN: 
+            Su estado actual de permanencia lo imposibilita para inscribirse. Contacte al personal de Control de Estudio de la escuela para solventar su situación si considera que el caso lo amerita.
+            = @grade.help_msg
+        - elsif (academic_process_before and @grade.enroll_academic_processes.of_academic_process(academic_process_before.id).any?)
+          .alert.alert-danger 
+            %b ATENCIÓN: 
+            = "Usted no realizó un proceso de inscripción en el período anterior (#{academic_process_before.period_name}) por lo que su preinscripción no podrá realizarla. Debe dirigirse a Control de Estudio para solventar su situación."
+            = @grade.help_msg
