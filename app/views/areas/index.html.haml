@@ -1,25 +1,24 @@
-%h1 Listing areas
 
-%table
+%table.table.table-hover.border
   %thead
     %tr
-      %th Name
-      %th School
-      %th Area
-      %th
-      %th
-      %th
+      %th Cátedra
+      %th.col-1 T. Asig
+      %th.col-1 T. Sec
+      %th.col-1 T. Insc 
+
 
   %tbody
-    - @areas.each do |area|
+    - areas.each do |area|
       %tr
-        %td= area.name
-        %td= area.school
-        %td= area.area
-        %td= link_to 'Show', area
-        %td= link_to 'Edit', edit_area_path(area)
-        %td= link_to 'Destroy', area, method: :delete, data: { confirm: 'Are you sure?' }
-
-%br
-
-= link_to 'New Area', new_area_path
+        %td= link_to area.name, "/admin/area/#{area.id}"
+        %td= area.subjects.count
+        %td= area.sections.count
+        %td= area.academic_records.count
+    - if false #departament
+      %tfoot
+        %tr
+          %td
+          %td= departament.subjects.count
+          %td= departament.sections.count
+          %td= departament.academic_records.count

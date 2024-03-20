@@ -1,0 +1,13 @@
+%ul#DepsTab.nav.nav-tabs{role: "tablist"}
+    - departaments.each_with_index do |dep, i|
+        - active = (i.eql? 0) ? 'active' : ''
+        %li.nav-item{role: "presentation"}
+            = link_to dep.name.titleize, "#", class: "nav-link #{active}", id: "Tab#{dep.id}", "aria-controls": "Content#{dep.id}", "aria-selected": true, "data-bs-target": "#Content#{dep.id}", "data-bs-toggle": :tab, role: :tab
+
+#DepsContent.tab-content
+    - departaments.each_with_index do |dep, i|
+        - show = (i.eql? 0) ? 'active show' : ''
+        .tab-pane.fade.border.p-3{id: "Content#{dep.id}", "aria-labelledby": "#Tab#{dep.id}", role: "tabpanel", class: "#{show}"}
+            = link_to "/admin/departament/#{dep.id}", class: "btn btn-info btn-sm float-end my-2" do
+                Ir al detalle
+            = render template: '/areas/index', locals: {areas: dep.areas.order(name: :asc), departament: dep}

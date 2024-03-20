@@ -1,5 +1,5 @@
 
-.p-2{style: 'max-height:400px; overflow:scroll;font-size: small;'}
+.table-responsite{style: 'max-height:400px; overflow:scroll;font-size: small;'}
   %table#programation.table.table-condensed.table-striped.table-hover
     %thead{style: "position: sticky;top: 0; background-color:#F4F4F4"}
       %tr
@@ -9,6 +9,7 @@
             %input.form-control{"aria-describedby" => "inputGroup-sizing-sm", "aria-label" => "", type: "text", placeholder: 'Asignaturas', autofocus: true, id: 'filterSubject', name: 'filterSubject'}
 
         %th.col-1.text-center Activa
+        %th.col-1.text-center PCI
         - if (current_user&.admin&.authorized_read? 'Section') or (current_user&.admin&.authorized_create? 'Section')
           %th Secciones
     %tbody.table-group-divider
@@ -24,6 +25,7 @@
         %tr.trFiltrable{style: 'overflow: scroll;'}
           %td= i+1
           %td{title: subj_desc}= link_to_if (current_user&.admin&.authorized_read? 'Subject'), subj_desc, "/admin/subject/#{subject.id}"
+          - # Subject Enable 
           %td.text-center
             - if course
               - if (current_user&.admin&.authorized_delete? 'Course')
@@ -36,6 +38,20 @@
                 = render partial: 'academic_processes/form_active_subject', locals: {subject_id: subject.id, course: course, has_sections: has_sections}
               - else
                 %i.fas.fa-remove
+          - # PCI 
+          %td.text-center
+            - if course
+              - if (current_user&.admin&.authorized_delete? 'Course')
+                = render partial: 'academic_processes/form_active_pci_subject', locals: {subject_id: subject.id, course: course, has_sections: has_sections}
+              - else
+                %i.fas.fa-check
+
+            - else
+              - if (current_user&.admin&.authorized_create? 'Course')
+                = render partial: 'academic_processes/form_active_pci_subject', locals: {subject_id: subject.id, course: course, has_sections: has_sections}
+              - else
+                %i.fas.fa-remove
+          - # Sections
           %td.overflow-scroll
             - if course
               %table

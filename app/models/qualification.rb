@@ -1,6 +1,24 @@
+# == Schema Information
+#
+# Table name: qualifications
+#
+#  id                 :bigint           not null, primary key
+#  definitive         :boolean          default(TRUE), not null
+#  type_q             :integer          default("final"), not null
+#  value              :integer          not null
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  academic_record_id :bigint           not null
+#
+# Indexes
+#
+#  index_qualifications_on_academic_record_id  (academic_record_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (academic_record_id => academic_records.id)
+#
 class Qualification < ApplicationRecord
-  # t.integer "value"
-  # t.integer "type_q"
   
   belongs_to :academic_record
   # accepts_nested_attributes_for :academic_record

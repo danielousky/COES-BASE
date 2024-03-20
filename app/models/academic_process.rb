@@ -1,14 +1,32 @@
+# == Schema Information
+#
+# Table name: academic_processes
+#
+#  id                  :bigint           not null, primary key
+#  max_credits         :integer
+#  max_subjects        :integer
+#  modality            :integer          default("Semestral"), not null
+#  name                :string
+#  registration_amount :float            default(0.0)
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  period_id           :bigint           not null
+#  process_before_id   :bigint
+#  school_id           :bigint           not null
+#
+# Indexes
+#
+#  index_academic_processes_on_period_id          (period_id)
+#  index_academic_processes_on_process_before_id  (process_before_id)
+#  index_academic_processes_on_school_id          (school_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (period_id => periods.id)
+#  fk_rails_...  (process_before_id => academic_processes.id)
+#  fk_rails_...  (school_id => schools.id)
+#
 class AcademicProcess < ApplicationRecord
-  # SCHEMA:
-    # t.bigint "school_id", null: false
-    # t.bigint "period_id", null: false
-    # t.integer "max_credits"
-    # t.integer "max_subjects"
-    # t.integer "modality"
-    # t.bigint "process_before_id"
-    # t.string "name"
-    # has_rich_text :enroll_instructions
-    # AcademicProcess.all.map{|ap| ap.update(name: 'x')}
 
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
@@ -39,7 +57,7 @@ class AcademicProcess < ApplicationRecord
   has_many :subjects, through: :courses
 
   # ENUMERIZE:
-  enum modality: [:Semestral, :Anual]
+  enum modality: [:Semestral, :Anual, :Intensivo, :Unico]
 
   #VALIDATIONS:
   validates :school, presence: true
@@ -313,7 +331,6 @@ class AcademicProcess < ApplicationRecord
         inline_edit false
       end
       field :school do
-        hide
         inline_edit false
         inline_add false
       end
@@ -390,11 +407,11 @@ class AcademicProcess < ApplicationRecord
     end
   end
 
-  after_initialize do
-    if new_record?
-      self.school_id ||= School.first.id
-    end
-  end
+  # after_initialize do
+  #   if new_record?
+  #     self.school_id ||= School.first.id
+  #   end
+  # end
 
   def redundant_subjects
     subj = self.courses.group(:subject_id).having('count(*) > 1').count

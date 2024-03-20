@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
+ActiveRecord::Schema[7.0].define(version: 2024_02_27_155352) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -123,12 +123,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
 
   create_table "areas", force: :cascade do |t|
     t.string "name", null: false
-    t.bigint "school_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.bigint "parent_area_id"
-    t.index ["parent_area_id"], name: "index_areas_on_parent_area_id"
-    t.index ["school_id"], name: "index_areas_on_school_id"
+  end
+
+  create_table "areas_departaments", id: false, force: :cascade do |t|
+    t.bigint "area_id", null: false
+    t.bigint "departament_id", null: false
+    t.index ["area_id", "departament_id"], name: "index_areas_departaments_on_area_id_and_departament_id"
+    t.index ["departament_id", "area_id"], name: "index_areas_departaments_on_departament_id_and_area_id"
   end
 
   create_table "authorizables", force: :cascade do |t|
@@ -162,12 +165,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.string "code", null: false
     t.string "holder", null: false
     t.bigint "bank_id", null: false
-    t.bigint "school_id", null: false
     t.integer "account_type"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["bank_id"], name: "index_bank_accounts_on_bank_id"
-    t.index ["school_id"], name: "index_bank_accounts_on_school_id"
   end
 
   create_table "banks", force: :cascade do |t|
@@ -209,6 +210,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.index ["priority", "run_at"], name: "delayed_jobs_priority"
   end
 
+  create_table "departaments", force: :cascade do |t|
+    t.string "name"
+    t.bigint "school_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["school_id"], name: "index_departaments_on_school_id"
+  end
+
   create_table "enroll_academic_processes", force: :cascade do |t|
     t.bigint "grade_id", null: false
     t.bigint "academic_process_id", null: false
@@ -234,11 +243,33 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.index ["academic_process_id"], name: "index_enrollment_days_on_academic_process_id"
   end
 
+  create_table "entity_bank_accounts", force: :cascade do |t|
+    t.string "bank_accountable_type", null: false
+    t.bigint "bank_accountable_id", null: false
+    t.bigint "bank_account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bank_account_id"], name: "index_entity_bank_accounts_on_bank_account_id"
+    t.index ["bank_accountable_type", "bank_accountable_id"], name: "index_entity_bank_accounts_on_bank_accountable"
+  end
+
   create_table "faculties", force: :cascade do |t|
     t.string "code"
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "short_name"
+    t.string "coes_boss_name"
+    t.string "contact_email"
+  end
+
+  create_table "faculty_bank_accounts", force: :cascade do |t|
+    t.bigint "faculty_id", null: false
+    t.bigint "bank_account_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bank_account_id"], name: "index_faculty_bank_accounts_on_bank_account_id"
+    t.index ["faculty_id"], name: "index_faculty_bank_accounts_on_faculty_id"
   end
 
   create_table "general_setups", force: :cascade do |t|
@@ -282,12 +313,21 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "parent_areas", force: :cascade do |t|
+  create_table "mentions", force: :cascade do |t|
     t.string "name"
-    t.bigint "school_id", null: false
+    t.bigint "study_plan_id", null: false
+    t.integer "total_required_subjects", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["school_id"], name: "index_parent_areas_on_school_id"
+    t.index ["study_plan_id"], name: "index_mentions_on_study_plan_id"
+  end
+
+  create_table "mentions_subjects", id: false, force: :cascade do |t|
+    t.bigint "mention_id", null: false
+    t.bigint "subject_id", null: false
+    t.index ["mention_id", "subject_id"], name: "index_mentions_subjects_on_mention_id_and_subject_id", unique: true
+    t.index ["mention_id"], name: "index_mentions_subjects_on_mention_id"
+    t.index ["subject_id"], name: "index_mentions_subjects_on_subject_id"
   end
 
   create_table "payment_reports", force: :cascade do |t|
@@ -338,6 +378,28 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.index ["academic_record_id"], name: "index_qualifications_on_academic_record_id"
   end
 
+  create_table "requirement_by_levels", force: :cascade do |t|
+    t.integer "level"
+    t.bigint "study_plan_id", null: false
+    t.bigint "subject_type_id", null: false
+    t.integer "required_subjects"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["study_plan_id", "level", "subject_type_id"], name: "study_plan_level_subject_type_unique", unique: true
+    t.index ["study_plan_id"], name: "index_requirement_by_levels_on_study_plan_id"
+    t.index ["subject_type_id"], name: "index_requirement_by_levels_on_subject_type_id"
+  end
+
+  create_table "requirement_by_subject_types", force: :cascade do |t|
+    t.bigint "study_plan_id", null: false
+    t.bigint "subject_type_id", null: false
+    t.integer "required_credits", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["study_plan_id"], name: "index_requirement_by_subject_types_on_study_plan_id"
+    t.index ["subject_type_id"], name: "index_requirement_by_subject_types_on_subject_type_id"
+  end
+
   create_table "schedules", force: :cascade do |t|
     t.bigint "section_id", null: false
     t.integer "day"
@@ -358,11 +420,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "faculty_id"
-    t.string "contact_email", default: "coes.fau@gmail.com", null: false
     t.bigint "active_process_id"
     t.bigint "enroll_process_id"
-    t.string "boss_name", default: ""
     t.boolean "enable_enroll_payment_report", default: false, null: false
+    t.string "short_name"
+    t.boolean "enable_by_level", default: false
     t.index ["active_process_id"], name: "index_schools_on_active_process_id"
     t.index ["enroll_process_id"], name: "index_schools_on_enroll_process_id"
     t.index ["faculty_id"], name: "index_schools_on_faculty_id"
@@ -414,6 +476,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "total_credits", default: 0
+    t.integer "modality", default: 0, null: false
+    t.integer "levels", default: 10, null: false
     t.index ["school_id"], name: "index_study_plans_on_school_id"
   end
 
@@ -428,28 +492,26 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
   end
 
   create_table "subject_types", force: :cascade do |t|
-    t.bigint "study_plan_id", null: false
     t.string "name"
     t.string "code"
-    t.integer "required_credits", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["study_plan_id"], name: "index_subject_types_on_study_plan_id"
   end
 
   create_table "subjects", force: :cascade do |t|
     t.string "code", null: false
     t.string "name", null: false
     t.boolean "active", default: true
-    t.integer "unit_credits", default: 24, null: false
+    t.integer "unit_credits", default: 5, null: false
     t.integer "ordinal", default: 0, null: false
     t.integer "qualification_type"
-    t.integer "modality"
     t.bigint "area_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "force_absolute", default: false
+    t.bigint "subject_type_id", null: false
     t.index ["area_id"], name: "index_subjects_on_area_id"
+    t.index ["subject_type_id"], name: "index_subjects_on_subject_type_id"
   end
 
   create_table "teachers", primary_key: "user_id", force: :cascade do |t|
@@ -513,14 +575,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
   add_foreign_key "addresses", "students", primary_key: "user_id", on_update: :cascade, on_delete: :cascade
   add_foreign_key "admins", "users"
   add_foreign_key "admission_types", "schools"
-  add_foreign_key "areas", "schools"
   add_foreign_key "authorizables", "area_authorizables"
   add_foreign_key "authorizeds", "admins", primary_key: "user_id", on_update: :cascade, on_delete: :cascade
   add_foreign_key "authorizeds", "authorizables", on_update: :cascade, on_delete: :cascade
   add_foreign_key "bank_accounts", "banks"
-  add_foreign_key "bank_accounts", "schools"
   add_foreign_key "courses", "academic_processes"
   add_foreign_key "courses", "subjects"
+  add_foreign_key "departaments", "schools"
   add_foreign_key "enroll_academic_processes", "academic_processes"
   add_foreign_key "enroll_academic_processes", "grades"
   add_foreign_key "enrollment_days", "academic_processes"
@@ -529,10 +590,16 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
   add_foreign_key "grades", "admission_types"
   add_foreign_key "grades", "students", primary_key: "user_id", on_update: :cascade, on_delete: :cascade
   add_foreign_key "grades", "study_plans"
-  add_foreign_key "parent_areas", "schools"
+  add_foreign_key "mentions", "study_plans"
+  add_foreign_key "mentions_subjects", "mentions"
+  add_foreign_key "mentions_subjects", "subjects"
   add_foreign_key "payment_reports", "bank_accounts", column: "receiving_bank_account_id", on_update: :cascade, on_delete: :nullify
   add_foreign_key "payment_reports", "banks", column: "origin_bank_id"
   add_foreign_key "qualifications", "academic_records"
+  add_foreign_key "requirement_by_levels", "study_plans"
+  add_foreign_key "requirement_by_levels", "subject_types"
+  add_foreign_key "requirement_by_subject_types", "study_plans"
+  add_foreign_key "requirement_by_subject_types", "subject_types"
   add_foreign_key "schedules", "sections"
   add_foreign_key "schools", "academic_processes", column: "active_process_id"
   add_foreign_key "schools", "academic_processes", column: "enroll_process_id"
@@ -544,8 +611,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_31_200200) do
   add_foreign_key "study_plans", "schools"
   add_foreign_key "subject_links", "subjects", column: "depend_subject_id"
   add_foreign_key "subject_links", "subjects", column: "prelate_subject_id"
-  add_foreign_key "subject_types", "study_plans"
   add_foreign_key "subjects", "areas"
+  add_foreign_key "subjects", "subject_types"
   add_foreign_key "teachers", "areas"
   add_foreign_key "teachers", "users"
   add_foreign_key "tutorials", "group_tutorials"

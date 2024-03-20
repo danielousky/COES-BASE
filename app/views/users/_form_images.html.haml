@@ -1,5 +1,5 @@
 %h6.titulo Imágenes de Soportes:
-- correo_ayuda = @user.grades.first ? @user.grades.first.school.contact_email : 'coes.fau@gmail.com'
+- correo_ayuda = @user.grades.first ? @user.grades.first.school&.faculty&.contact_email : 'coes.fau@gmail.com'
 
 .alert.alert-warning
   %b IMPORTANTE: 

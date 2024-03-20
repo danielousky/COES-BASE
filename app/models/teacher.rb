@@ -1,7 +1,23 @@
+# == Schema Information
+#
+# Table name: teachers
+#
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  area_id    :bigint           not null
+#  user_id    :bigint           not null, primary key
+#
+# Indexes
+#
+#  index_teachers_on_area_id  (area_id)
+#  index_teachers_on_user_id  (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (area_id => areas.id)
+#  fk_rails_...  (user_id => users.id)
+#
 class Teacher < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "area_id", null: false
-
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
 

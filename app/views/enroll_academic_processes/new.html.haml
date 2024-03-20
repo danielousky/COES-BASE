@@ -1,5 +1,17 @@
-%h1 New enroll_academic_process
+- school = @grade.school
+- if academic_process = school.enroll_process
+  - enroll_in_process = @grade.enroll_academic_processes.where(academic_process_id: academic_process.id).first
 
-= render 'form'
+  - totalCreditsReserved = enroll_in_process ? enroll_in_process.total_credits : 0
+  - totalSubjectsReserved = enroll_in_process ? enroll_in_process.total_subjects : 0
 
-= link_to 'Back', enroll_academic_processes_path
+  %button.btn.btn-lg.btn-success{"data-bs-target": "#Enrollment#{@grade.id}", "data-bs-toggle": :modal, type: :button}
+    .fa.fa-graduation-cap
+    = "Preinscribirse en Período Académico #{academic_process.period.name} de la #{school.name}"
+  -# msgDanger = "Seleccione las asignaturas que desea preinscribir. Recuerde mover el scroll para ver todas las asignaturas ofertadas."
+
+  - title1 = "Preinscripción en Período Académico #{academic_process.period.name}"
+  - title2 = "#{school.name}"
+  - content = render partial: '/enroll_academic_processes/form', locals: {totalCreditsReserved: totalCreditsReserved, totalSubjectsReserved: totalSubjectsReserved, academic_process: academic_process}
+
+  = render partial: '/layouts/scaffold-modal-static', locals: {content: content, title1: title1, title2: title2, id: "Enrollment#{@grade.id}"}

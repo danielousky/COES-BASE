@@ -1,7 +1,7 @@
 .p-md-1
   %h6.alert.alert-warning.text-justify
     %b Atención:
-    = "Estimad#{grade.student.user.genero} #{grade.student.user.nick_name.titleize}, le informamos que su tiempo para inscribirse pasó, fue el"
+    = "Estimad#{@grade&.student&.user&.genero} #{@grade&.student&.user&.nick_name&.titleize}, le informamos que su tiempo para inscribirse pasó, fue el"
 
-    %b= "#{grade&.appointment_passed}."
+    %b= "#{@grade&.appointment_passed}."
     Contacte al personal administrativo para solventar su situación.

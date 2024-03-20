@@ -1,21 +1,34 @@
+# == Schema Information
+#
+# Table name: bank_accounts
+#
+#  id           :bigint           not null, primary key
+#  account_type :integer
+#  code         :string           not null
+#  holder       :string           not null
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
+#  bank_id      :bigint           not null
+#
+# Indexes
+#
+#  index_bank_accounts_on_bank_id  (bank_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (bank_id => banks.id)
+#
 class BankAccount < ApplicationRecord
-  # t.string "code", null: false
-  # t.string "holder", null: false
-  # t.bigint "bank_id", null: false
-  # t.bigint "school_id", null: false
-  # t.integer "account_type"
 
   # ENUMERIZE:
   enum account_type: [:ahorro, :corriente]
 
   # ASSOCIATIONS:
   belongs_to :bank
-  belongs_to :school
 
-  # has_one :school
-
-  validates_presence_of :code
-  validates_presence_of :holder
+  validates :code, presence: true
+  validates :holder, presence: true
+  validates :account_type, presence: true
 
   # FUNCTIONS:
   def name
@@ -23,9 +36,13 @@ class BankAccount < ApplicationRecord
   end
 
   rails_admin do
-    visible false
+    # visible false
     navigation_label 'Administrativa'
     navigation_icon 'fa-solid fa-piggy-bank'
+
+    list do
+      fields :code, :holder, :bank, :account_type
+    end
 
     edit do
       field :code do
@@ -38,7 +55,10 @@ class BankAccount < ApplicationRecord
         inline_add false
         inline_edit false
       end
-      field :account_type
+      # field :account_type
+      field :account_type do
+        partial 'bank_accounts/custom_account_type_field'
+      end
       # field :short_desc do
       #   help 'A quíen va dirigida la cuenta'
       # end

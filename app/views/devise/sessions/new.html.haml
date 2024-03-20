@@ -1,6 +1,6 @@
 / Title
 %span.mb-0.fs-1 👋
-%h1.fs-2 Inicio de Sesión
+%h3.text-center Inicio de Sesión
 / Form START
 = form_for(resource, as: resource_name, url: session_path(resource_name), data: { turbo: :false }) do |f|
   - if false
@@ -33,10 +33,11 @@
       .form-check
         %input#exampleCheck1.form-check-input.boolean.optional{type: :checkbox, name: 'user[remember_me]'}
         %label.form-check-label{for: "exampleCheck1"} Recuérdame
-    .text-primary-hover
-      = link_to "Recuperar contraseña", new_user_password_path
   / Button
   .align-items-center.mt-0
     .d-grid
       %button.btn.btn-primary.mb-0{type: :submit} Entrar
+  .mt-4.text-center.mb-4        
+    .text-primary-hover
+      = link_to "Recuperar contraseña", new_user_password_path
 

@@ -2,9 +2,10 @@
 %html{ lang: "#{I18n.locale}"}
   %head
     %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}/
-    %title Coesfau - Documento Pdf
+    %title Coes - Documento Pdf
     %meta{:content => "width=device-width, initial-scale=1, shrink-to-fit=no", :name => "viewport"}/
     = wicked_pdf_stylesheet_link_tag "pdf"
+    = wicked_pdf_asset_pack_path "pdf"
 
-  %body
+  %body#bg_main
     = yield

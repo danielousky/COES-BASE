@@ -1,8 +1,13 @@
-class Area < ApplicationRecord
-  # SCHEMA:
-  # t.string "name", null: false
-  # t.bigint "school_id", null: false
-  
+# == Schema Information
+#
+# Table name: areas
+#
+#  id         :bigint           not null, primary key
+#  name       :string           not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#
+class Area < ApplicationRecord  
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
 
@@ -10,24 +15,23 @@ class Area < ApplicationRecord
   before_destroy :paper_trail_destroy
   before_update :paper_trail_update
 
-
   # ASSOCITATIONS:
-  belongs_to :school
-  belongs_to :parent_area
-  belongs_to :other_parent, optional: true, class_name: 'Area', foreign_key: :other_parent_id
+  has_and_belongs_to_many :departaments
+  has_many :schools, through: :departaments
   has_many :admins, as: :env_authorizable 
 
   has_many :subjects, dependent: :restrict_with_error
   has_many :sections, through: :subjects
+  has_many :academic_records, through: :sections
   # accepts_nested_attributes_for :subjects
 
   # VALIDATIONS:
   validates :name, presence: true, uniqueness: {case_sensitive: false}
-  validates :school_id, presence: true
+  validates_with SameSchoolToAreaValidator, field_name: false
 
   # SCOPES:
-  # scope :main, -> {where(parent_area_id: nil)}
-  # scope :catedras, -> {where.not(parent_area_id: nil)}
+  # scope :main, -> {where(departament_id: nil)}
+  # scope :catedras, -> {where.not(departament_id: nil)}
   scope :names, -> {select(:name).map{|ar| ar.name}}
 
   # CALLBACKS:
@@ -54,19 +58,19 @@ class Area < ApplicationRecord
       bindings[:controller].current_user&.admin?
     end
     navigation_label 'Config General'
-    navigation_icon 'fa-regular fa-brain'
+    navigation_icon 'fa-regular fa-book-open'
     weight 1
 
     list do
       field :name
-      field :parent_area
+      field :departaments
       field :total_subjects do
         label 'Total Asignaturas'
       end
     end
     show do
       field :name
-      field :parent_area
+      field :departaments
       field :subjects do
         pretty_value do
           bindings[:view].render(template: '/subjects/index', locals: {subjects: bindings[:object].subjects.order(code: :asc)})
@@ -81,7 +85,7 @@ class Area < ApplicationRecord
         end         
       end
 
-      field :parent_area do
+      field :departaments do
         inline_edit false
       end
 
@@ -89,24 +93,14 @@ class Area < ApplicationRecord
 
     modal do
       field :name
-      exclude_fields :parent_area
+      exclude_fields :departaments
     end
 
 
     export do
-      fields :name
+      fields :name, :departaments
     end
 
-    import do
-      fields :name, :school_id 
-    end
-
-  end
-
-  after_initialize do
-    if new_record?
-      self.school_id ||= School.first.id
-    end
   end
 
   private

@@ -1,18 +1,50 @@
+# == Schema Information
+#
+# Table name: grades
+#
+#  id                        :bigint           not null, primary key
+#  appointment_time          :datetime
+#  current_permanence_status :integer          default("nuevo"), not null
+#  duration_slot_time        :integer
+#  efficiency                :float
+#  enrollment_status         :integer          default("preinscrito"), not null
+#  graduate_status           :integer
+#  registration_status       :integer
+#  simple_average            :float
+#  weighted_average          :float
+#  created_at                :datetime         not null
+#  updated_at                :datetime         not null
+#  admission_type_id         :bigint           not null
+#  enabled_enroll_process_id :bigint
+#  start_id                  :bigint
+#  start_process_id          :bigint
+#  student_id                :bigint           not null
+#  study_plan_id             :bigint           not null
+#
+# Indexes
+#
+#  index_grades_on_admission_type_id             (admission_type_id)
+#  index_grades_on_enabled_enroll_process_id     (enabled_enroll_process_id)
+#  index_grades_on_start_id                      (start_id)
+#  index_grades_on_start_process_id              (start_process_id)
+#  index_grades_on_student_id                    (student_id)
+#  index_grades_on_student_id_and_study_plan_id  (student_id,study_plan_id) UNIQUE
+#  index_grades_on_study_plan_id                 (study_plan_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (admission_type_id => admission_types.id)
+#  fk_rails_...  (enabled_enroll_process_id => academic_processes.id)
+#  fk_rails_...  (start_process_id => academic_processes.id) ON DELETE => nullify ON UPDATE => cascade
+#  fk_rails_...  (student_id => students.user_id) ON DELETE => cascade ON UPDATE => cascade
+#  fk_rails_...  (study_plan_id => study_plans.id)
+#
 class Grade < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "student_id", null: false
-  # t.bigint "study_plan_id", null: false
-  # t.integer "graduate_status"
-  # t.bigint "admission_type_id", null: false
-  # t.integer "registration_status"
-  # t.float "efficiency"
-  # t.float "weighted_average"
-  # t.float "simple_average"
-  # t.datetime "appointment_time"
-  # t.integer "duration_slot_time"
-  # t.integer "current_permanence_status"
-  # t.bigint "enabled_enroll_process_id"
-  # t.bigint "start_process_id"
+  has_paper_trail on: [:create, :destroy, :update], limit: nil
+
+  before_create :paper_trail_create
+  before_destroy :paper_trail_destroy
+  before_update :paper_trail_update  
 
   NORMATIVE_TITLE = "NORMAS SOBRE EL RENDIMIENTO MÍNIMO Y CONDICIONES DE PERMANENCIA DE LOS ALUMNOS EN LA U.C.V"
 
@@ -42,7 +74,7 @@ class Grade < ApplicationRecord
   # ENUMERIZE:
   enum registration_status: [:universidad, :facultad, :escuela]
   enum enrollment_status: [:preinscrito, :asignado, :confirmado]
-  enum graduate_status: [:no_graduable, :tesista, :posible_graduando, :graduando, :graduado]
+  enum graduate_status: [:cursante, :tesista, :posible_graduando, :graduando, :graduado]
   enum current_permanence_status: [:nuevo, :regular, :reincorporado, :articulo3, :articulo6, :articulo7, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar]
 
   # VALIDATIONS:
@@ -108,8 +140,8 @@ class Grade < ApplicationRecord
 
   # FUNCTIONS:
   def help_msg
-    unless self.school.contact_email.blank?
-      "Puede escribir al correo: #{self.school.contact_email} para solicitar ayuda."
+    unless self.school&.faculty&.contact_email.blank?
+      "Puede escribir al correo: #{self.school&.faculty&.contact_email} para solicitar ayuda."
     end
   end
 
@@ -188,6 +220,14 @@ class Grade < ApplicationRecord
     end
   end
 
+  def appointment_from_to_short
+    if self.appointment_time and self.appointment_slot_time
+      aux = (I18n.localize(self.appointment_time, format: "%d/%m/%y %I:%M%p")) 
+      return aux
+    end
+  end
+
+  
   def appointment_passed
     if self.appointment_slot_time
       (I18n.localize(self.appointment_slot_time, format: "%A %d de %B de %Y hasta las %I:%M%p"))
@@ -222,8 +262,31 @@ class Grade < ApplicationRecord
     end
 
     ApplicationController.helpers.label_status(label, current_permanence_status.titleize)
-
   end
+
+  def label_registration_status    
+    ApplicationController.helpers.label_status('bg-info', registration_status&.titleize)
+  end
+
+  def label_graduate_status
+    ApplicationController.helpers.label_status('bg-info', graduate_status&.titleize)
+  end
+
+  def label_admission_type
+    ApplicationController.helpers.label_status('bg-info', admission_type&.name&.titleize)
+  end
+  
+  def label_start_process
+    ApplicationController.helpers.label_status('bg-info', start_process&.period_name)
+  end
+
+  def label_study_plan
+    ApplicationController.helpers.label_status('bg-info', study_plan&.code)
+  end
+
+  def label_cita_horaria
+    ApplicationController.helpers.label_status_with_tooptip('bg-info', appointment_from_to_short, appointment_from_to)
+  end  
 
   def label_status_enroll_academic_process(academic_process_id)
     if iep = self.enroll_academic_processes.of_academic_process(academic_process_id).first
@@ -236,6 +299,78 @@ class Grade < ApplicationRecord
   def any_approved?
     academic_records.aprobado.any?
   end
+
+  def current_level
+    #OJO: DEBERÍA ESTAR ASOCIADO AL MAX ORDINAL DE LAS ASIGNATURAS DE LA ESCUELA
+    # OJO: CASO 5 AÑO, ES UNA SOLA MATERIA Y CUMPLE LA CONDICIÓN
+    begin
+      levels = study_plan.school.subjects.order(:ordinal).group(:ordinal).count.max.first
+    rescue Exception
+      levels = study_plan.levels 
+    end
+    levels_response = []
+    arrastre = 1
+    levels.times do |level|
+      level = level+1
+      apporved_level = true
+      
+      study_plan.requirement_by_levels.where(level: level).each do |requirement|
+        tipo = requirement.subject_type.name.downcase
+        total_required_subjects = requirement.required_subjects
+        total_approved_subjects = total_subjects_approved_by_type_subject_and_level level, tipo
+
+        # p " Level: #{level} de #{levels} | Tipo: #{tipo} |  Requirement: #{total_required_subjects}  Aprobados: #{total_approved_subjects}   ".center(500, "=")
+
+        if !total_required_subjects.nil? and total_required_subjects > total_approved_subjects 
+          apporved_level = false 
+          arrastre = 2 if ((total_required_subjects - total_approved_subjects).eql? 1 and !level.eql? levels) 
+        end
+      end
+      levels_response << level unless apporved_level
+    end
+    if levels_response.eql? []
+      return [1]
+    else
+      return levels_response.first(arrastre)
+    end
+  end
+
+  # def current_level
+  #   # OJO: REVISAR ALGORITMO, SIEMPRE SALE LEVEL 1 🤮
+  #   levels = study_plan.levels
+  #   levels.times do |level|
+  #     level = level+1
+  #     p "    level: #{level}    ".center(250, "#")
+  #     study_plan.requirement_by_levels.where(level: level).each do |requirement|
+  #       required_subjects = requirement.required_subjects
+  #        # ATENCIÓN: Condición especial para Odontología por el campo modality que fue sustituido por SubjectType
+  #        tipo = requirement.subject_type.name.downcase
+  #        # type = requirement.subject_type_id
+  #        # OJO: 👆🏽 Así debe ser en el Plus 
+
+  #        total_subjects_approved = total_subjects_approved_by_type_subject_and_level level, tipo
+
+
+  #        diference = (required_subjects - total_subjects_approved).abs
+  #        p " Level: #{level} de #{levels} | Tipo: #{tipo} |  Requirement: #{required_subjects}  Aprobados: #{total_subjects_approved}  Diference: #{diference}   ".center(500, "=")
+  #       if level.eql? levels or (required_subjects > 0 and required_subjects > total_subjects_approved and diference > 1) 
+  #         return [level]
+  #       elsif diference.eql? 1
+  #         return [level, level+1]
+  #       end
+  #     end
+  #   end
+    
+  #   return [levels]
+  # end
+
+  # OFERTA POR ASIGNATURAS
+  def subjects_offer_by_level_approved
+      # Buscamos los ids de las asignaturas aprobadas
+      asig_aprobadas_ids = self.subjects_approved_ids    
+    Subject.where(ordinal: current_level).where.not(id: asig_aprobadas_ids)
+  end
+
 
   def subjects_offer_by_dependent
 
@@ -438,6 +573,9 @@ class Grade < ApplicationRecord
     (aux and aux.is_a? BigDecimal) ? aux.round(4) : 0.0
   end
 
+  def get_changed_plain
+    self.versions.where("versions.event ILIKE '%Cambio de plan%'")
+  end
 
   # RAILS_ADMIN:
   rails_admin do
@@ -457,7 +595,36 @@ class Grade < ApplicationRecord
     end
 
     update do
+      # field :study_plan do
+      #   partial 'grade/custom_study_plan_id'
+      # end
+      field :school do
+
+        label 'Escuela'
+        render do
+          bindings[:view].content_tag(:p, bindings[:object].school.short_name)
+        end
+
+      end
+
+      field :study_plan do
+        render do
+          bindings[:view].render partial: '/grades/history_plans', locals: {grade: bindings[:object]}
+        end
+      end      
+      
+      field :admission_type do
+        inline_add false
+        inline_edit false
+      end
+      field :registration_status
+      field :enabled_enroll_process do
+        inline_add false
+        inline_edit false
+      end
+      field :enrollment_status
       fields :study_plan, :admission_type, :registration_status, :enabled_enroll_process, :enrollment_status
+
       field :appointment_time do
         label 'Fecha y Hora Cita Horaria'
       end
@@ -500,10 +667,35 @@ class Grade < ApplicationRecord
     end
   end
 
-  after_initialize do
-    if new_record?
-      self.study_plan_id ||= StudyPlan.first.id if StudyPlan.first
+  private
+
+  def paper_trail_update
+    changed_fields = self.changes.keys - ['created_at', 'updated_at']
+    if changed_fields.include? 'study_plan_id'
+      sp_from = StudyPlan.where(id: self.changes[:study_plan_id]&.first).first
+      sp_to = StudyPlan.where(id: self.changes[:study_plan_id]&.second).first
+      self.paper_trail_event = "Cambio de plan de #{sp_from&.code} a #{sp_to&.code}"
+    else
+      object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+      self.paper_trail_event = "¡#{object} actualizado en #{changed_fields.to_sentence}"
     end
+    
   end  
+
+  def paper_trail_create
+    object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+    self.paper_trail_event = "¡Completada inscripción en oferta académica!"
+  end  
+
+  def paper_trail_destroy
+    object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
+    self.paper_trail_event = "¡Registro Académico eliminado!"
+  end  
+
+  # after_initialize do
+  #   if new_record?
+  #     self.study_plan_id ||= StudyPlan.first.id if StudyPlan.first
+  #   end
+  # end  
 
 end

@@ -1,0 +1,12 @@
+%ul#GradesTab.nav.nav-tabs{role: "tablist"}
+	- @student.grades.each_with_index do |g,i|
+		- active = (i.eql? 0) ? 'active' : ''
+		%li.nav-item{role: "presentation"}
+			= link_to g.school.short_name, "#", class: "nav-link #{active}", id: "gradeTab#{g.id}", "aria-controls": "gradeContent#{g.id}", "aria-selected": true, "data-bs-target": "#gradeContent#{g.id}", "data-bs-toggle": :tab, role: :tab
+
+#GradesContent.tab-content
+	- @student.grades.each_with_index do |g,i|
+		- show = (i.eql? 0) ? 'active show' : ''
+		.tab-pane.fade.border.border-top-0.p-3{id: "gradeContent#{g.id}", "aria-labelledby": "#gradeTab#{g.id}", role: "tabpanel", class: "#{show}"}
+			- @grade = g
+			= render template: 'grades/show'

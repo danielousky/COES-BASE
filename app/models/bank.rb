@@ -1,8 +1,14 @@
+# == Schema Information
+#
+# Table name: banks
+#
+#  id         :bigint           not null, primary key
+#  code       :string
+#  name       :string
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#
 class Bank < ApplicationRecord
-  # SCHEMA:
-    # t.string "code"
-    # t.string "name" 
-
 
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]

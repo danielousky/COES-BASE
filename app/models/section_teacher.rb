@@ -1,3 +1,19 @@
+# == Schema Information
+#
+# Table name: sections_teachers
+#
+#  section_id :bigint           not null
+#  teacher_id :bigint           not null
+#
+# Indexes
+#
+#  index_sections_teachers_on_section_id_and_teacher_id  (section_id,teacher_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (section_id => sections.id)
+#  fk_rails_...  (teacher_id => teachers.user_id)
+#
 class SectionTeacher < ApplicationRecord
   self.table_name = 'sections_teachers'
 

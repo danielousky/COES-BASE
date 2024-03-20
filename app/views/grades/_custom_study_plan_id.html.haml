@@ -1,0 +1,9 @@
+
+- study_plans.each do |sp|
+    - checked = false
+    - klazz = 'btn-light'
+    - if (sp.id.eql? study_plan.id)
+        - checked = true
+        -# klazz = 'text-primary'
+    = radio_button "grade", "study_plan_id", sp.id, class: 'btn-check', required: true, checked: checked
+    %label.btn{for: "grade_study_plan_id_#{sp.id}", class: klazz}= sp.code_name

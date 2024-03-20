@@ -2,23 +2,23 @@
 %table.table.table-sm.border
 	%tr
 		%td.text-end Asignaturas Cursadas:
-		%td.text-start.fw-bold= grade.total_subjects_coursed
+		%td.text-start.fw-bold= @grade.total_subjects_coursed
 	%tr
 		%td.text-end Asignaturas Aprobadas:
-		%td.text-start.fw-bold= grade.total_subjects_approved
+		%td.text-start.fw-bold= @grade.total_subjects_approved
 	%tr
 		%td.text-end Créditos Inscritos:
-		%td.text-start.fw-bold= grade.total_credits
+		%td.text-start.fw-bold= @grade.total_credits
 	%tr
 		%td.text-end Créditos Cursados:
-		%td.text-start.fw-bold= grade.total_credits_coursed
+		%td.text-start.fw-bold= @grade.total_credits_coursed
 	%tr
 		%td.text-end Créditos Aprobados (Sin Equivalencias):
-		%td.text-start.fw-bold= grade.total_credits_approved
+		%td.text-start.fw-bold= @grade.total_credits_approved
 	%tr
 		%td.text-end Créditos Equivalencia:
-		%td.text-start.fw-bold= grade.total_credits_eq
+		%td.text-start.fw-bold= @grade.total_credits_eq
 	%tr
 		%td.text-end Total Créditos Aprobados con Equivalencias:
-		%td.text-start.fw-bold= grade.total_credits_approved_or_eq
+		%td.text-start.fw-bold= @grade.total_credits_approved_or_eq
 

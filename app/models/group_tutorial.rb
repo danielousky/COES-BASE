@@ -1,7 +1,13 @@
+# == Schema Information
+#
+# Table name: group_tutorials
+#
+#  id         :bigint           not null, primary key
+#  name_group :string
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#
 class GroupTutorial < ApplicationRecord
-    # Schema:
-    # t.string "name_group"
-    # has_rich_text :description
 
     ## Relations
     has_many :tutorials, dependent: :destroy

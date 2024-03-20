@@ -1,9 +1,26 @@
+# == Schema Information
+#
+# Table name: admins
+#
+#  env_authorizable_type :string           default("Faculty")
+#  role                  :integer
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  env_authorizable_id   :bigint
+#  profile_id            :bigint
+#  user_id               :bigint           not null, primary key
+#
+# Indexes
+#
+#  index_admins_on_env_authorizable  (env_authorizable_type,env_authorizable_id)
+#  index_admins_on_profile_id        (profile_id)
+#  index_admins_on_user_id           (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#
 class Admin < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "user_id", null: false
-  # t.integer "role"
-  # t.string "env_authorizable_type", default: "Faculty"
-  # t.bigint "env_authorizable_id"
 
   # ENUMERIZE:
   enum role: [:desarrollador, :jefe_control_estudio, :asistente]

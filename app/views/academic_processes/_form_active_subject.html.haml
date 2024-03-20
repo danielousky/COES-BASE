@@ -1,5 +1,5 @@
 - title = (course and has_sections) ? 'Para activar esta opción elimine las secciones' : '' 
 .form-switch{title: title}
-  = check_box_tag "enable_subject#{subject_id}", subject_id, !course.nil?, class: "form-check-input switch", title: "Activar/Desactivar asignatura para el periodo", disabled: has_sections, id: subject_id, onclick: 'updateElem(this);'
+  = check_box_tag "enable_subject#{subject_id}", subject_id, !course.nil?, class: "form-check-input switch", title: "Activar/Desactivar asignatura para el periodo", disabled: has_sections, onclick: 'enableSubject(this);'
 
 

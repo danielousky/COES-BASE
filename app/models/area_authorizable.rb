@@ -1,8 +1,15 @@
+# == Schema Information
+#
+# Table name: area_authorizables
+#
+#  id          :bigint           not null, primary key
+#  description :string
+#  icon        :string
+#  name        :string           not null
+#  created_at  :datetime         not null
+#  updated_at  :datetime         not null
+#
 class AreaAuthorizable < ApplicationRecord
-	# SCHEMA:
-	# t.string "name", null: false
-	# t.string "description"
-	# t.string "icon"
 
 	# HISTORY:
 	has_paper_trail on: [:create, :destroy, :update]

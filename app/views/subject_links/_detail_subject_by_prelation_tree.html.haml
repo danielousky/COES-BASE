@@ -1,19 +1,14 @@
-%td.mouseover{mouseover: subject.id, class: subject.id, style: 'font-size: 11px'}
-  
-  = ApplicationController.helpers.simple_toggle "/admin/subject/#{subject.id}", nil, "Ir al detalle de #{subject.description_code} (#{subject.modality.titleize})", :primary, 'fa-solid fa-magnifying-glass-plus'
-
-  %span.badge.bg-info.text-dark
-    = subject.modality_initial_letter
-  %span.badge.bg-info.text-dark
+%td.mouseover{mouseover: subject.id, class: subject.id}
+  .text-center
+    = ApplicationController.helpers.simple_toggle "/admin/subject/#{subject.id}", nil, "Ir al detalle de #{subject.description_code} (#{subject.subject_type&.name&.titleize})", nil, 'fa-solid fa-magnifying-glass-plus'  
     = subject.code
-
-  - if children and subject.depend_links.any?
-    = link_to 'javascript:void(0)', onclick: "$('#arbol#{subject.id}').toggleClass('d-none'); $(this).children(':first').toggleClass('fa-rotate-90');" do
-      %i.fa.fa-chevron-right
-    %div{id: "arbol#{subject.id}", class: 'd-none arbol'}
-      %table.table.table-striped.table-hover.table-bordered.ml-2
-        %tbody
-          - subject.depend_subjects.order(:code).each do |dep|
-            -# dep_subject = dep.depend_subject
-            %tr
-              = render partial: '/subject_links/detail_subject_by_prelation_tree', locals: {subject: dep, children: false}
+    - if children and subject.depend_links.any?
+      = link_to 'javascript:void(0)', onclick: "$('#arbol#{subject.id}').toggleClass('d-none'); $(this).children(':first').toggleClass('fa-rotate-90');" do
+        %i.fa.fa-chevron-right.text-success
+      %div{id: "arbol#{subject.id}", class: 'd-none arbol'}
+        %table.table.table-striped.table-hover.table-bordered.ml-2
+          %tbody
+            - subject.depend_subjects.order(:code).each do |dep|
+              -# dep_subject = dep.depend_subject
+              %tr
+                = render partial: '/subject_links/detail_subject_by_prelation_tree', locals: {subject: dep, children: false}

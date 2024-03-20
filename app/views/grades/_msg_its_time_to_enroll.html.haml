@@ -2,6 +2,6 @@
 %h6.alert.alert-warning
   .text-center
     %b Atención:
-    = "Estimad#{grade.student.user.genero} #{grade.student.user.nick_name.titleize}, le informamos que dispone #{I18n.localize(grade.appointment_slot_time, format: " hasta las %I:%M%p")} del día de hoy para completar su preinscripción."
+    = "Estimad#{@grade.student.user.genero} #{@grade.student.user.nick_name.titleize}, le informamos que dispone #{I18n.localize(@grade.appointment_slot_time, format: " hasta las %I:%M%p")} del día de hoy para completar su preinscripción."
     %button.btn-close{"aria-label": "Close", "data-bs-dismiss": :alert, type: :button}
     

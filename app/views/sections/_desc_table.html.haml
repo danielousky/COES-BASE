@@ -41,7 +41,9 @@
         .badge.bg-info= section.capacity
       %td
         - if section.qualified?
-          .fa.fa-check
+          .badge.bg-success{title: 'Calificada'}
+            .fa.fa-check
         - else
-          .fa.fa-remove
-
+          .badge.bg-danger{title: 'Por calificar'}
+            .fa.fa-remove
+        = badge_toggle_section_qualified section

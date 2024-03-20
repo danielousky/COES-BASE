@@ -1,13 +1,14 @@
 - admin = current_user.admin
 - logged_as_admin = (admin and session[:rol].eql? 'admin') ? true : false
-
+- study_plan = academic_records.first&.study_plan
+- level_desc = study_plan ? study_plan.modality[0..3] : "Año/Sem"
 %table.table.table-sm.table-striped.table-hover
   %thead
     %tr
       - if (current_user&.admin&.yo?)
         %th ID
       %th{style: 'width:120px;'} Código
-      %th.text-center{style: 'width:10px;'} Sem
+      %th.text-center{style: 'width:10px;'}= level_desc
       %th Asignatura
       %th.text-center{style: 'width:10px;'} Créd
       %th.text-center{style: 'width:10px;'} Tipo
@@ -24,7 +25,7 @@
         - if (current_user&.admin&.yo?)
           %td= academic_record.id
         %td{title: 'Ir al detalle de la asignatura'}= link_to_if (logged_as_admin and admin.authorized_manage? 'Subject'), subject.code, "/admin/subject/#{subject.id}"
-        %td.text-center= subject.ordinal
+        %td.text-center= "#{subject.ordinal}º"
         %td{title: subject.name}= subject.name
         %td.text-center= subject.unit_credits
         %td.text-center= subject.modality_initial_letter

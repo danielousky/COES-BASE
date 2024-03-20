@@ -13,7 +13,7 @@ class Ability
 
     user ||= User.new
 
-    if user.admin?
+    if user&.admin?
       can :access, :rails_admin
       can :manage, :dashboard
       can :read, [Faculty, Tutorial]
@@ -23,14 +23,14 @@ class Ability
 
       elsif user.admin.jefe_control_estudio?
         can :import, Authorizable::IMPORTABLES
-        can :manage, [Admin, Student, Teacher, Area, ParentArea, Subject, Course, Grade, AcademicProcess, AcademicRecord, Section, AdmissionType, PeriodType, Address, StudyPlan, Period, SubjectLink, Schedule, EnrollmentDay, Billboard, User, EnrollAcademicProcess, PaymentReport, Bank, BankAccount]
+        can :manage, [Admin, Student, Teacher, Area, Departament, Subject, Course, Grade, AcademicProcess, AcademicRecord, Section, AdmissionType, PeriodType, Address, StudyPlan, Period, SubjectLink, Schedule, EnrollmentDay, Billboard, User, EnrollAcademicProcess, PaymentReport, Bank, BankAccount, Mention]
         can :ru, [School]
         can :organization_chart, [School] 
       else
         can :manage, [User]
         user.admin.authorizeds.each do |authd|
             if authd.authorizable.klazz.eql? 'Subject' and authd.can_manage?
-                can :manage, [SubjectLink, Area, ParentArea]
+                can :manage, [SubjectLink, Area, Departament]
             end
             if authd.authorizable.klazz.eql? 'Student' and authd.can_manage?
                 can :manage, [Address, Grade]

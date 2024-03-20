@@ -1,8 +1,25 @@
+# == Schema Information
+#
+# Table name: academic_records
+#
+#  id                         :bigint           not null, primary key
+#  status                     :integer          default("sin_calificar")
+#  created_at                 :datetime         not null
+#  updated_at                 :datetime         not null
+#  enroll_academic_process_id :bigint           not null
+#  section_id                 :bigint           not null
+#
+# Indexes
+#
+#  index_academic_records_on_enroll_academic_process_id  (enroll_academic_process_id)
+#  index_academic_records_on_section_id                  (section_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (enroll_academic_process_id => enroll_academic_processes.id)
+#  fk_rails_...  (section_id => sections.id)
+#
 class AcademicRecord < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "section_id", null: false
-  # t.bigint "enroll_academic_process_id", null: false
-  # t.integer "status"
 
   # ENUMERIZE:
   enum status: [:sin_calificar, :aprobado, :aplazado, :retirado, :perdida_por_inasistencia, :equivalencia]
@@ -26,6 +43,7 @@ class AcademicRecord < ApplicationRecord
   has_one :grade, through: :enroll_academic_process
   has_one :study_plan, through: :grade
   has_one :student, through: :grade
+  has_one :school, through: :grade
   has_one :address, through: :student
   has_one :user, through: :student
   has_one :period, through: :academic_process
@@ -33,6 +51,7 @@ class AcademicRecord < ApplicationRecord
   has_one :course, through: :section
   has_one :teacher, through: :section
   has_one :subject, through: :course
+  has_one :subject_type, through: :subject
   has_one :area, through: :subject
 
   # VALIDATIONS:
@@ -84,6 +103,16 @@ class AcademicRecord < ApplicationRecord
 
   scope :qualified, -> {not_sin_calificar}
 
+  scope :by_level, -> (level) {joins(:subject).where('subjects.ordinal': level)}
+  
+  scope :total_credits_by_level, -> (level){by_level(level).sum('subjects.unit_credits')}
+
+  scope :total_subjects_approved_by_level, -> (level){aprobado.by_level(level).total_subjects}
+  scope :total_subjects_approved_by_level_and_type, -> (level, tipo){aprobado.by_level(level).by_subject_types(tipo).total_subjects}  
+
+  scope :total_credits_approved_by_level, -> (level) {aprobado.total_credits_by_level(level)}
+  scope :total_credits_approved_by_level_and_type, -> (level, tipo) {aprobado.by_level(level).by_subject_types(tipo).total_credits}
+
   scope :coursing, -> {where "academic_records.status != 1 and academic_records.status != 2 and academic_records.status != 3"} # Excluye retiradas también
 
   scope :total_credits_coursed_on_process, -> (periods_ids) {coursed.joins(:academic_process).where('academic_processes.id': periods_ids).joins(:subject).sum('subjects.unit_credits')}
@@ -114,8 +143,6 @@ class AcademicRecord < ApplicationRecord
 
   scope :student_enrolled_by_period, lambda { |period_id| joins(:academic_process).where("academic_processes.period_id": period_id).group(:student).count } 
 
-  scope :total_by_qualification_modality?, -> {joins(:subject).group("subjects.modality").count}
-
   scope :students_enrolled, -> { group(:student_id).count } 
 
   scope :student_enrolled_by_credits, -> { joins(:subject).group(:student_id).sum('subject.unit_credits')} 
@@ -126,8 +153,9 @@ class AcademicRecord < ApplicationRecord
   scope :sort_by_subject_code, -> {joins(:subject).order('subjects.code': :asc)}
   scope :sort_by_subject_name, -> {joins(:subject).order('subjects.name': :asc)}
 
-
-  scope :by_subject_types, -> (tipo){joins(:subject).where('subjects.modality': tipo.downcase)}
+  scope :total_by_qualification_modality?, -> {joins(:subject_type).group("subject_types.code").count}
+  
+  scope :by_subject_types, -> (tipo){joins(:subject_type).where('subject_types.code': tipo)}
   # scope :perdidos, -> {perdida_por_inasistencia}
 
   scope :sort_by_user_name, -> {joins(:user).order('users.last_name asc, users.first_name asc')}
@@ -440,8 +468,20 @@ class AcademicRecord < ApplicationRecord
       #   end
       # end
 
+      field :school do
+        associated_collection_cache_all false
+        associated_collection_scope do
+          Proc.new { |scope|
+            scope = scope.joins(:school)
+            scope = scope.limit(30) # 'order' does not work here
+          }
+        end
+        
+        searchable :name
+        sortable :name
+      end
+
       field :period do
-        label 'Periodo'
         column_width 120
 
         associated_collection_cache_all false

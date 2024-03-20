@@ -1,12 +1,12 @@
 /enroll_academic_processes?enroll_academic_process_id=x&grade_id=y
 = form_tag("/enroll_academic_processes", class: 'form-horizontal') do
-  = hidden_field_tag :grade_id, grade.id
+  = hidden_field_tag :grade_id, @grade.id
   .modal-body
     .control-group
       %span.control-label Periodos sin inscripciones:
       .controls
 
-        = collection_select(nil, :academic_process_id, grade.academic_processes_unenrolled, :id, :name, {prompt: "-- Seleccione Período --"}, {class: 'text-field form-control', required: true})
+        = collection_select(nil, :academic_process_id, @grade.academic_processes_unenrolled, :id, :name, {prompt: "-- Seleccione Período --"}, {class: 'text-field form-control', required: true})
 
     .modal-footer
 

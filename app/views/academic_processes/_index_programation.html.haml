@@ -1,6 +1,6 @@
 - areas = Area.all.order(name: :asc)
 - params[:area] ||= areas.first.id
-- academic_process_id = academic_process.id
+- @academic_process_id = academic_process.id
 
 .row
   %ul#area_selector.nav.nav-tabs.flex-column.col-3.p-0
@@ -8,40 +8,40 @@
 
       - active_area_tab = (area.id.eql? params[:area].to_i) ? 'active' : 'text-light'
       %li.nav-item.bg-primary
-        %a.nav-link.position-relative{:href => "/admin/academic_process/#{academic_process_id}/programation?area=#{area.id}", class: active_area_tab, style: 'font-size: small;'}
-          = ApplicationController.helpers.total_sections_stiky area.sections.where('courses.academic_process_id': academic_process_id).count
+        %a.nav-link.position-relative{:href => "/admin/academic_process/#{@academic_process_id}/programation?area=#{area.id}", class: active_area_tab, style: 'font-size: small;'}
+          = ApplicationController.helpers.total_sections_stiky area.sections.where('courses.academic_process_id': @academic_process_id).count
           = area.name.titleize
 
   .tab-content.col-9.p-0
-    - modalities = Subject.modalities
-    - params[:moda] ||= modalities.first[1]
+    -# modalities = Subject.modalities
+    - modalities = SubjectType.all
+    - params[:moda] ||= modalities.first.code
     - areas.each do |area|
       - active_area = (area.id.eql? params[:area].to_i)
       - active_area_cont = active_area ? 'active' : 'text-light'
       - show_area_cont = active_area ? 'show' : ''
 
-      - sections = area.sections.where('courses.academic_process_id': academic_process_id)
+      - sections = area.sections.where('courses.academic_process_id': @academic_process_id)
 
       .tab-pane.fade{class: "#{active_area_cont} #{show_area_cont}", role: :tabpanel} 
         %ul#moda_selector.nav.nav-tabs
           - modalities.each do |moda|
-            - active_moda = (moda[1].eql? params[:moda].to_i)
+            - active_moda = (moda.code.eql? params[:moda])
             - active_moda = active_moda ? 'active text-primary' : 'text-light'
             - show = active_moda ? 'show' : ''
             %li.nav-item.bg-primary
-              %a.nav-link.position-relative{:href => "/admin/academic_process/#{academic_process_id}/programation?area=#{area.id}&moda=#{moda[1]}", class: active_moda, style: 'font-size: small;'}
-
-                = ApplicationController.helpers.total_sections_stiky sections.where('subjects.modality': moda[1]).count
-                = moda[0]&.pluralize&.titleize
+              %a.nav-link.position-relative{:href => "/admin/academic_process/#{@academic_process_id}/programation?area=#{area.id}&moda=#{moda.code}", class: active_moda, style: 'font-size: small;'}
+                = ApplicationController.helpers.total_sections_stiky sections.joins(:subject_type).where('subject_types.code': moda.code).count
+                = moda&.name&.downcase.pluralize.titleize
 
         .tab-content.border-bottom.border-end.border-start.p-3
           - modalities.each do |moda|
-            - if active_area and (moda[1].eql? params[:moda].to_i)
+            - if active_area and (moda.code.eql? params[:moda])
               .tab-pane.fade.active.text-primary.show{role: :tabpanel} 
                 %h6.text-primary.text-center
-                  = "#{moda[0]&.pluralize&.titleize} de #{area&.name&.titleize}"
-                - subjects = academic_process.school.subjects.where(modality: params[:moda], area_id: params[:area]).sort_by_code
-                = render partial: '/academic_processes/table_subjects_programation', locals: {subjects: subjects, academic_process_id: academic_process_id}
+                  = "#{moda&.name&.downcase.pluralize.titleize} de #{area&.name&.titleize}"
+                - subjects = academic_process.school.subjects.joins(:subject_type).where('subject_types.code': params[:moda], area_id: params[:area]).sort_by_code.uniq
+                = render partial: '/academic_processes/table_subjects_programation', locals: {subjects: subjects, academic_process_id: @academic_process_id}
 
 :javascript
 
@@ -59,14 +59,42 @@
 
   });
 
-  function updateElem(ele){
+  function updateCourse(ele){
+    let  attrs = `{"course": {"academic_process_id": #{@academic_process_id}, "subject_id": ${ele.value}}, "offer_as_pci": ${ele.checked}}`;
+    $.ajax({
+      url: "/courses/1",
+      type: "PATCH",
+      data: JSON.parse(attrs),
+      dataType: 'json',
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+      },
+      success: function(json) {
+        if (json.type == `update`) {
+          toastr.success(json.data);
+        }else {
+          toastr.info(json.data);
+        }
+      },
+      error: function(json) {
+        toastr.error(json.data);
+      },
+      unprocessable_entity: function(json) {
+        toastr.error(json.data);
+      }
+    });
+  }
+
+  function enableSubject(ele){
     let url;
     let type;
-    let  attrs = `{"course":{"academic_process_id": #{academic_process_id}, "subject_id": ${ele.value}}}`;
+    let ele_value = ele.value
+    let  attrs = `{"course":{"academic_process_id": #{@academic_process_id}, "subject_id": ${ele_value}}}`;
     if (ele.checked == true) {
       url = "/courses"
       type = 'POST'
     }else{
+      // El Course_id (1) es irrelevante ya que estoy pasando es academic_process_id y subject_id
       url = "/courses/1"
       type = 'DELETE'
     }
@@ -79,12 +107,16 @@
         xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
       },
       success: function(json) {
-        let td = ele.parentElement.parentElement.nextElementSibling
+        let td_sections = ele.parentElement.parentElement.nextElementSibling.nextElementSibling
+        let switch_pci = $(`#pci_subject${ele.value}`);
+        switch_pci.prop('checked', false);
         if (json.type == `create`) {
-          td.innerHTML = json.new_section;  
+          td_sections.innerHTML = json.new_section; 
+          switch_pci.prop('disabled', false);
           toastr.success(json.data);
         }else {
-          td.textContent = "";
+          td_sections.textContent = "";
+          switch_pci.prop('disabled', true);
           toastr.info(json.data);
         }
 

@@ -1,0 +1,31 @@
+- history_plans = grade.get_changed_plain
+- if history_plans.count < 3
+    - study_plans = grade.school.study_plans
+    = render partial: '/grades/custom_study_plan_id', locals: {study_plan: grade.study_plan, study_plans: study_plans}
+- else
+    %p.alert.alert-danger El estudiante ha superado el número máximo de cambios de planes de estudio
+
+- if history_plans.any?
+    .m-2 
+        Historial de Cambio de Planes: 
+        %label.badge.bg-warning.text-dark Hasta 3 cambios permitidos
+    .table-responsive.text-center.p-3
+
+        %table.table.table-sm.table-light.table-striped.table-hover.table-bordered
+            %thead
+                %tr
+                    %th Descripción
+                    %th Fecha
+                    %th Usuario
+
+            %tbody
+                - history_plans.each do |version|
+                    %tr
+                        - id = version.whodunnit
+                        - user_name = (id.to_i > 0) ? User.where(id: id.to_i).first&.name : id
+
+                        %td= version.event.html_safe
+                        %td= I18n.l(version.created_at, format: '%d de %B de %Y')
+                        %td.col-5= user_name
+
+

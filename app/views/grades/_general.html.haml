@@ -1,30 +1,24 @@
-%br
-%br
-%br
-.table-responsive
-	%table.table.table-sm.border.text-center.table-info
-		%tr
-			%td.text-center Plan de Estudio
-			%td.text-center Periodo Ingreso
-			%td.text-center Admisión
-			- if grade.registration_status
-				%td.text-center Estado de Registro
-			- if grade.graduate_status
-				%td.text-center Estado de la Carrera
-			%td.text-center Estado Permanencia Actual
-			%td.text-center Cita horaria
 
-		%tr
-			%td.text-center.fw-bold= grade.study_plan.desc
-			%td.text-center.fw-bold= grade.start_process&.period_name
-			%td.text-center.fw-bold= grade.admission_type.name
-			- if grade.registration_status
-				%td.text-center
-					%strong.badge.bg-info= grade.registration_status.titleize
-			- if grade.graduate_status
-				%td.text-center
-					%strong.badge.bg-info= grade.graduate_status.titleize
-			%td.text-center.fw-bold= grade.label_current_permanence_status
-			%td.text-center.fw-bold
-				%div{title: grade.appointment_from_to}
-					=grade.appointment_time_desc_short
+- if (session[:rol].eql? 'admin' and current_user&.admin?)
+	.table-responsive
+		%table.table.table-sm.border.text-center.table-info
+			%tr
+				%td.text-center Plan
+				%td.text-center Ingreso
+				%td.text-center Admisión
+				%td.text-center Registro
+				%td.text-center Carrera
+				%td.text-center Cita horaria
+				- if (session[:rol].eql? 'admin' and  current_user&.admin?)
+					%td
+
+			%tr
+				%td.text-center= @grade.label_study_plan
+				%td.text-center= @grade.label_start_process
+				%td.text-center= @grade.label_admission_type
+				%td.text-center= @grade.label_registration_status
+				%td.text-center= @grade.label_graduate_status
+				%td.text-center= @grade.label_cita_horaria
+				- if (session[:rol].eql? 'admin' and (current_user&.admin&.authorized_update? 'Grade'))
+					%td.text-center= label_link_with_tooptip("/admin/grade/#{@grade.id}/edit", 'text-primary', "<i class='fa fa-pencil'></i>", 'Editar valores', placement='top')
+

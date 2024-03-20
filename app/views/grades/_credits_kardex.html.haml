@@ -1,4 +1,4 @@
-- if study_plan.subject_types.any?
+- if study_plan.requirement_by_subject_types.any?
     %table.no_border.mt-3{style: 'width: 400px;margin-left:300px'}
         %thead
             %tr
@@ -6,9 +6,9 @@
                 %th{style: 'width: 100px;'} Requeridos
                 %th{style: 'width: 100px;'} Superados
         %tbody
-            - study_plan.subject_types.each do |tipo|
+            - study_plan.requirement_by_subject_types.each do |tipo|
                 %tr
-                    %th.text-start= tipo.desc_pluralize
+                    %th.text-start= tipo.subject_type.desc_pluralize
                     %td= tipo.required_credits
-                    %td= grade.credits_completed_by_type tipo.name
+                    %td= grade.credits_completed_by_type tipo&.subject_type&.name
 

@@ -1,12 +1,26 @@
-class StudyPlan < ApplicationRecord
-  # SCHEMA:
-  # t.string "code"
-  # t.string "name"
-  # t.integer "madatory_credits"
-  # t.integer "optative_credits"
-  # t.integer "elective_credits"
-  # t.bigint "school_id", null: false 
-  
+# == Schema Information
+#
+# Table name: study_plans
+#
+#  id            :bigint           not null, primary key
+#  code          :string
+#  levels        :integer          default(10), not null
+#  modality      :integer          default("Anual"), not null
+#  name          :string
+#  total_credits :integer          default(0)
+#  created_at    :datetime         not null
+#  updated_at    :datetime         not null
+#  school_id     :bigint           not null
+#
+# Indexes
+#
+#  index_study_plans_on_school_id  (school_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (school_id => schools.id)
+#
+class StudyPlan < ApplicationRecord  
   
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
@@ -17,18 +31,27 @@ class StudyPlan < ApplicationRecord
 
   # ASSOCIATIONS:
   belongs_to :school
+  # accepts_nested_attributes_for :school
+
   has_many :grades, dependent: :destroy
-  has_many :subject_types, dependent: :destroy
-  accepts_nested_attributes_for :subject_types, allow_destroy: true  
+  has_many :requirement_by_subject_types, dependent: :destroy
+  accepts_nested_attributes_for :requirement_by_subject_types, allow_destroy: true  
+  
+  has_many :requirement_by_levels, dependent: :destroy
+  
+  has_many :mentions, dependent: :destroy
+  accepts_nested_attributes_for :mentions, allow_destroy: true  
 
   # VALIDATIONS:
-  validates :code, presence: true, uniqueness: {case_sensitive: false}
-  validates :name, presence: true, uniqueness: {case_sensitive: false}
-  validates :subject_types, presence: true
+  validates :code, presence: true
+  validates :name, presence: true
+  validates :requirement_by_subject_types, presence: true
   validates :school, presence: true
 
+  # ENUMS:
+  enum modality: [:Anual, :Semestral]
+
   # CALLBACKS:
-  after_initialize :set_unique_school
   before_save :clean_values
 
   # HOOKS:
@@ -42,8 +65,24 @@ class StudyPlan < ApplicationRecord
   end
 
   # FUNTIONS:
-  def desc
+  # def initialization
+  #   requirement_by_levels
+  # end
+
+  def modality_to_tipo
+    Anual? ? 'Año' : 'Semestral'
+  end
+
+  def desc_with_school
+    "#{school.short_name} - #{name}"
+  end
+
+  def code_name
     "(#{code}) #{name}"
+  end
+
+  def desc
+    "#{school.short_name} (#{code}) #{name}"
   end
 
   # def desc_credits
@@ -56,42 +95,45 @@ class StudyPlan < ApplicationRecord
     weight -2
 
     show do
-      fields :school, :code, :name, :subject_types
+      fields :school, :code, :name
+      fields :school, :code, :modality, :levels, :name, :mentions, :requirement_by_subject_types
     end
 
     list do
-      fields :code, :name, :subject_types do
-        sortable false
-        filterable false
-        searchable false
-        queryable false
+      field :school do
+
+        pretty_value do
+          bindings[:object].school&.short_name
+        end
       end
+      fields :code, :name, :modality, :levels, :requirement_by_subject_types, :mentions
     end
 
     export do
-      fields :code, :name, :subject_types
+      fields :code, :name, :requirement_by_subject_types
     end
 
     edit do
-      field :school
+      field :school do
+        inline_add false
+        inline_edit false 
+      end
       field :code do 
         html_attributes do
           {:length => 8, :size => 8, :onInput => "$(this).val($(this).val().toUpperCase().replace(/[^a-zA-Z0-9\u00f1\u00d1 ]/g,''))"}
         end
       end
-      field :name#, :subject_types
-      field :subject_types
+      field :name do
+        html_attributes do
+          {:onInput => "$(this).val($(this).val().toUpperCase())"}
+        end        
+      end
+      fields :modality, :levels, :requirement_by_subject_types, :mentions
     end
 
   end
 
-  def set_unique_school
-    self.school_id = School.first.id if School.count.eql? 1
-  end
-
   private
-
-
     def paper_trail_update
       # changed_fields = self.changes.keys - ['created_at', 'updated_at']
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")

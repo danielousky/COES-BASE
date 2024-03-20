@@ -1,13 +1,32 @@
+# == Schema Information
+#
+# Table name: sections
+#
+#  id         :bigint           not null, primary key
+#  capacity   :integer
+#  classroom  :string
+#  code       :string
+#  enabled    :boolean
+#  modality   :integer
+#  qualified  :boolean          default(FALSE), not null
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#  course_id  :bigint           not null
+#  teacher_id :bigint
+#
+# Indexes
+#
+#  index_sections_on_code_and_course_id  (code,course_id) UNIQUE
+#  index_sections_on_course_id           (course_id)
+#  index_sections_on_teacher_id          (teacher_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (course_id => courses.id)
+#  fk_rails_...  (teacher_id => teachers.user_id) ON DELETE => cascade ON UPDATE => cascade
+#
 class Section < ApplicationRecord
-  # SCHEMA:
-  # t.string "code"
-  # t.integer "capacity"
-  # t.bigint "course_id", null: false
-  # t.bigint "teacher_id", null: false
-  # t.boolean "qualified"
-  # t.integer "modality"
-  # t.boolean "enabled"
-
+  
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
 
@@ -23,6 +42,7 @@ class Section < ApplicationRecord
 
   # has_one
   has_one :subject, through: :course
+  has_one :subject_type, through: :subject
   has_one :area, through: :subject
   # accepts_nested_attributes_for :subject
 
@@ -302,6 +322,12 @@ class Section < ApplicationRecord
       #   end
       # end
 
+      field :school do
+        sticky true 
+        searchable :name
+        sortable :name               
+      end
+
       field :period do
         sticky true
         label 'Período'
@@ -461,15 +487,19 @@ class Section < ApplicationRecord
         column_width 20
       end
 
-      field :acta do
-        label 'Acta'
+      field :options do
+        label 'Opciones'
         pretty_value do
           current_user = bindings[:view]._current_user
+
+          display = ApplicationController.helpers.badge_toggle_section_qualified bindings[:object]
           if (current_user.admin? and bindings[:view].session[:rol] and bindings[:view].session[:rol].eql? 'admin' and current_user.admin.authorized_manage? 'Section' and bindings[:object].academic_records.any?) #and bindings[:object].qualified?
-            ApplicationController.helpers.btn_toggle_download 'btn-success', "/sections/#{bindings[:object].id}.pdf", 'Generar Acta', nil
+            display += ApplicationController.helpers.btn_toggle_download 'mx-3 btn-success', "/sections/#{bindings[:object].id}.pdf", 'Generar Acta', nil
           end
+          display
         end
-      end
+      end      
+      
     end
 
     show do

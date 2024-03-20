@@ -1,9 +1,27 @@
+# == Schema Information
+#
+# Table name: courses
+#
+#  id                  :bigint           not null, primary key
+#  name                :string
+#  offer_as_pci        :boolean
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  academic_process_id :bigint           not null
+#  subject_id          :bigint           not null
+#
+# Indexes
+#
+#  index_courses_on_academic_process_id  (academic_process_id)
+#  index_courses_on_subject_id           (subject_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (academic_process_id => academic_processes.id)
+#  fk_rails_...  (subject_id => subjects.id)
+#
 class Course < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "academic_process_id", null: false
-  # t.bigint "subject_id", null: false
-  # t.boolean "offer_as_pci"
-  # t.string "name"
+
   # Course.all.map{|ap| ap.update(name: 'x')}  
   # HISTORY:
 

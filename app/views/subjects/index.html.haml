@@ -1,8 +1,10 @@
-%h3.text-center.label.bg-info.text-dark= "Total asignaturas: #{subjects.count}"
+- if false 
+  %h3.text-center.label.bg-info.text-dark= "Total asignaturas: #{subjects.count}"
 .table-responsive
   %table.table.table-striped.table-hover#sortTable
     %thead.text-center
       %tr
+        %th
         %th
         %th.col-2= subjects.human_attribute_name(:code)
         %th.col-5= subjects.human_attribute_name(:name)
@@ -10,25 +12,24 @@
         %th.col-1= subjects.human_attribute_name(:ordinal)
         %th.col-1= subjects.human_attribute_name(:qualification_type)
         %th.col-1= subjects.human_attribute_name(:modality)
-        %th
 
     %tbody
       - subjects.each_with_index do |subject, i|
         %tr
           %td= i+1
+          %td
+            = link_to "/admin/subject/#{subject.id}", class: 'btn btn-sm' do
+              %i.fas.fa-info-circle.text-primary
           %td= subject.code
           %td= subject.name
           %td.text-center= subject.label_credits
           %td.text-center= subject.ordinal
           %td= subject.label_qualification_type
           %td= subject.label_modality
-          %td
-            = link_to "/admin/subject/#{subject.id}", class: 'btn btn-sm' do
-              %i.fas.fa-info-circle.text-primary
 
 :javascript
-
-  document.addEventListener("rails_admin.dom_ready", function() {
-    $('#sortTable').DataTable();
-  });
+  - if false 
+    document.addEventListener("rails_admin.dom_ready", function() {
+      $('#sortTable').DataTable();
+    });
 

@@ -10,7 +10,7 @@
     - subjects = @object.subjects.order(:ordinal)
     = render(partial: "/schools/subjects_organization", locals: {subjects: subjects, orders: subjects.group(:ordinal).count})
   - else
-    %h3.alert.alert-warning Sin prelaciones
+    %h3.alert.alert-warning Sin asignaturas
 - else
   .text-center.alert.alert-warning Acceso Restringido
 

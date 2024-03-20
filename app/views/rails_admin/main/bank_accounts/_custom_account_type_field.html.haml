@@ -1,0 +1,4 @@
+- BankAccount.account_types.each do |at|
+
+    = radio_button "bank_account", "account_type", at[1], class: 'btn-check', required: true
+    %label.btn.btn-secondary{for: "bank_account_account_type_#{at[1]}"}= at[0]&.titleize

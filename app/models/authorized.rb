@@ -1,13 +1,31 @@
+# == Schema Information
+#
+# Table name: authorizeds
+#
+#  id              :bigint           not null, primary key
+#  can_create      :boolean          default(FALSE)
+#  can_delete      :boolean          default(FALSE)
+#  can_export      :boolean          default(FALSE)
+#  can_import      :boolean          default(FALSE)
+#  can_read        :boolean          default(FALSE)
+#  can_update      :boolean          default(FALSE)
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  admin_id        :bigint           not null
+#  authorizable_id :bigint           not null
+#
+# Indexes
+#
+#  index_authorizeds_on_admin_id                      (admin_id)
+#  index_authorizeds_on_admin_id_and_authorizable_id  (admin_id,authorizable_id) UNIQUE
+#  index_authorizeds_on_authorizable_id               (authorizable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (admin_id => admins.user_id) ON DELETE => cascade ON UPDATE => cascade
+#  fk_rails_...  (authorizable_id => authorizables.id) ON DELETE => cascade ON UPDATE => cascade
+#
 class Authorized < ApplicationRecord
-  # SCHEMA
-  # t.bigint "admin_id", null: false
-  # t.bigint "authorizable", null: false
-  # t.boolean "can_create", default: false
-  # t.boolean "can_read", default: false
-  # t.boolean "can_update", default: false
-  # t.boolean "can_delete", default: false
-  # t.boolean "can_import", default: false
-  # t.boolean "can_export", default: false
 
   belongs_to :admin
   belongs_to :authorizable

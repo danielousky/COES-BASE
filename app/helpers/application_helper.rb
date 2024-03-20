@@ -7,6 +7,38 @@ module ApplicationHelper
 		ActionController::Base.helpers.number_to_currency(value, unit: 'Bs.', separator: ",", delimiter: ".")
 	end
 
+	def badge_toggle_section_qualified section
+
+		if section.qualified?
+			title = 'Habilitar para Calificar de Nuevo (Abrir)'
+			value = false
+			icon = 'fas fa-rotate-right'
+			type = 'bg-warning'
+		else
+			title = 'Marcar como Calificada (Cerrar)'
+			value = true
+			icon = 'fas fa-check'
+			type = 'bg-success'
+		end
+
+		url = "/sections/#{section.id}/change_qualification_status?section[qualified]=#{value}"
+		badge_toggle type, icon, url, title, ''
+	end
+
+	def badge_toggle type, icon, href, title_tooltip, value, onclick_action=nil
+
+		target = ''
+		rel = ''
+
+		if (icon.include? 'fa-download')
+			target = '_blank'
+			rel = 'noopener noreferrer'
+		end
+		link_to href, class: "badge #{type}", title: title_tooltip, onclick: onclick_action, target: target, rel: rel do
+			capture_haml{"<i class= '#{icon}'></i> #{value}".html_safe}
+		end
+	end
+
 	def btn_toggle type, icon, href, title_tooltip, value, onclick_action=nil
 
 		target = ''
@@ -24,16 +56,25 @@ module ApplicationHelper
 	def btn_toggle_download classes, href, title_tooltip, value, onclick_action=nil
 		btn_toggle classes, 'fa fa-download', href, title_tooltip, value, onclick_action
 	end
-
+	
 	def label_status(klazz, content)
-		text_color = (klazz.eql? 'bg-info') ? 'text-dark' : ''
-		capture_haml{"<span class='text-center badge #{klazz} #{text_color}'>#{content}</span>".html_safe }
+		if content.blank?
+			content = 'Sin Información'
+			klazz = 'bg-secondary' 
+		end
+		klazz += ' text-dark' if (klazz.eql? 'bg-info')
+		capture_haml{"<span class='text-center badge #{klazz}'>#{content}</span>".html_safe }
 	end
 
+	def label_status_with_tooptip(klazz, content, title, placement='top')
+		content_tag :b, rel: :tooltip, 'data-bs-toggle': 'tooltip', 'data-bs-placement': placement, 'data-bs-original-title': title do
+			label_status(klazz, content)
+		end	
+	end
+	
 
 	def button_add_section course_id
-
-		content_tag :button, rel: :tooltip, 'data-bs-target': "#NewSectionModal", 'data-bs-placement': :top, 'data-bs-original-title': 'Agregar Nueva Sección', class: "btn btn-sm btn-success mx-1 addSection", "data-bs-toggle": :modal, course_id: course_id, onclick: "$('#_sectioncourse_id').val(this.attributes['course_id'].value);" do
+		content_tag :button, 'data-bs-target': "#NewSectionModal", class: "btn btn-sm btn-success mx-1 addSection", "data-bs-toggle": :modal, course_id: course_id, onclick: "$('#_sectioncourse_id').val(this.attributes['course_id'].value);" do
 			capture_haml{"<i class='fas fa-plus'></i>".html_safe }
 		end
 		
@@ -63,13 +104,6 @@ module ApplicationHelper
 		end	
 	end	
 
-	def label_status_with_tooptip(klazz, content, title, placement='top')
-
-		content_tag :b, rel: :tooltip, 'data-bs-toggle': 'tooltip', 'data-bs-placement': placement, 'data-bs-original-title': title do
-			capture_haml{"<span class='text-center badge #{klazz}'>#{content}</span>".html_safe }
-		end	
-	end
-
 	def translate_model model
 		I18n.t("activerecord.models.#{model}.other")
 	end
@@ -83,7 +117,7 @@ module ApplicationHelper
 
 	def simple_toggle href, value, title_tooltip, color_type, icon, onclick_action = nil
 		target = (href.include? 'descargar') ? '_blank' : ''
-		link_to href, class: "tooltip-btn text-#{color_type}", onclick: onclick_action, target: target, 'data_toggle': :tooltip, title: title_tooltip do
+		link_to href, class: "tooltip-btn text-#{color_type} btn btn-sm", onclick: onclick_action, target: target, 'data_toggle': :tooltip, title: title_tooltip do
 			capture_haml{"<i class= '#{icon}'></i> #{value}".html_safe}
 		end
 

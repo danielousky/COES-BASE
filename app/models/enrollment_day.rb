@@ -1,10 +1,25 @@
+# == Schema Information
+#
+# Table name: enrollment_days
+#
+#  id                    :bigint           not null, primary key
+#  max_grades            :integer
+#  slot_duration_minutes :integer
+#  start                 :datetime
+#  total_duration_hours  :integer
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  academic_process_id   :bigint           not null
+#
+# Indexes
+#
+#  index_enrollment_days_on_academic_process_id  (academic_process_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (academic_process_id => academic_processes.id)
+#
 class EnrollmentDay < ApplicationRecord
-  # SCHEMA:
-  # t.bigint "academic_process_id", null: false
-  # t.datetime "start"
-  # t.integer "total_duration_hours", limit: 2
-  # t.integer "max_grades", limit: 2
-  # t.integer "slot_duration_minutes", limit: 2
 
   #RELATIONSHIPS:
   belongs_to :academic_process

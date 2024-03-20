@@ -1,14 +1,3 @@
-
-%ul.nav.nav-tabs
-	- student.grades.each_with_index do |g,i|
-		- active = (i.eql? 0) ? 'active' : ''
-		%li.nav-item
-			%a.nav-link{class: active, href: "#grade#{g.id}", 'aria-controls': "grade#{g.id}", "aria-selected": true, id: "grade-#{g.id}-tab"}= g.school.name
-
-.tab-content
-	- student.grades.each_with_index do |g,i|
-		- active = (i.eql? 0) ? 'active' : ''
-		- show = (i.eql? 0) ? 'show' : ''
-		.tab-pane.fade{class: "#{active} #{show}", id: "grade#{g.id}", role: :tabpanel, 'aria-labelledby': "grade-#{g.id}-tab"}
-
-			= render template: 'grades/show_admin', locals: {grade: g}
+- # OJO ESTA VISTA YA NO SERÁ MÁS, ES LA MISMA DE SHOW DE STUDENT
+- @student = student
+= render template: 'students/show'

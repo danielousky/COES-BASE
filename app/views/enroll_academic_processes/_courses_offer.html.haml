@@ -1,70 +1,68 @@
+- idTable = pcis ? "courseOfferToGrade#{@grade.id}" : "pciOfferToGrade#{@grade.id}"
+.table-responsive
+  %table.table.table-striped.table-sm.table-hover.table-bordered.responsive-table{id: idTable}
+    %thead{style: "position: sticky;top: 0"}        
+      %tr.table-primary
+        %th.headers{style: 'width: 4%', scope: :col} #
+        %th.headers{style: 'width: 56%', scope: :col}
+          .input-group.input-group-sm{style: 'width: 100%;'}
+            %span.badge.bg-dark.align-middle{title: 'Total asignaturas disponibles'}= courses.count
+            %span#inputGroup-sizing-sm.input-group-text 
+              = "Asignaturas:"
+            %input.form-control{"aria-describedby": "inputGroup-sizing-sm", "aria-label": "", type: "text", onkeyup: "filterSections(this, '#{idTable}');", placeholder: 'Buscar', autofocus: true, id: "filter#{idTable}", name: "filter#{idTable}"}
 
-%table#courses_offer.table.table-striped.table-sm.table-hover.table-bordered.responsive-table
-  %thead{style: "position: sticky;top: 0"}
-    %tr
-      %th.text-center.table-primary{colspan: 5} Asignaturas Ofertadas
-      
-    %tr.table-primary
-      %th.headers{style: 'width: 4%', scope: :col} #
-      %th.headers{style: 'width: 56%', scope: :col}
-        .input-group.input-group-sm{style: 'width: 100%;'}
-          %span.badge.bg-dark.align-middle{title: 'Total asignaturas disponibles'}= courses.count
-          %span#inputGroup-sizing-sm.input-group-text 
-            = "Asignaturas:"
-          %input.form-control{"aria-describedby" => "inputGroup-sizing-sm", "aria-label" => "", type: "text", onkeyup: 'filterSections(this);', placeholder: 'Buscar', autofocus: true, id: 'filterOffer', name: 'filterOffer'}
-
-      %th.headers{style: 'width: 5%', scope: :col} Sem
-      %th.headers{style: 'width: 5%', scope: :col} Créd
-      %th.text-center.headers{style: 'width: 30%;', scope: :col} Sección
-  %tbody
-    - courses.each_with_index do |course, i|
-      - ac = grade.academic_records.joins(:course).where('courses.id': course.id).first
-      - section_id = ac&.section_id # ? ac.section_id : nil
-      - approved = false
-      - desc_qualification = nil
-      
-      - if ac&.retirado?
-        - trStatus = 'text-muted border table-danger'      
-      - elsif ac&.aprobado?
-        - approved = true
-        - desc_qualification = ac.q_value_to_02i
-        - trStatus = 'text-muted border table-success'
-      - elsif (!section_id.nil?)
-        - trStatus = 'table-success'
-      - else
-        - trStatus = ''
-
-      - if grade.school.code&.eql? 'EACRV'
-        - # OJO: CONDICIÓN PARTICULAR DE ARQUITACTURA!!!!
-        - if grade.student.Caracas?
-          - sections = course.sections.where.not("sections.code ILIKE '%E%'")#.con_cupos
+        %th.headers{style: 'width: 5%', scope: :col}= "(Sem/Año)"
+        %th.headers{style: 'width: 5%', scope: :col} Créd
+        %th.text-center.headers{style: 'width: 30%;', scope: :col} Sección
+    %tbody
+      - courses.each_with_index do |course, i|
+        - ac = @grade.academic_records.joins(:course).where('courses.id': course.id).first
+        - section_id = ac&.section_id # ? ac.section_id : nil
+        - approved = false
+        - desc_qualification = nil
+        
+        - if ac&.retirado?
+          - trStatus = 'text-muted border table-danger'      
+        - elsif ac&.aprobado?
+          - approved = true
+          - desc_qualification = ac.q_value_to_02i
+          - trStatus = 'text-muted border table-success'
+        - elsif (!section_id.nil?)
+          - trStatus = 'table-success'
         - else
-          - sections = course.sections.where("sections.code ILIKE '%E%'")#.con_cupos
-      - else
-        - sections = course.sections#.con_cupos
-      - # ATENCIÓN: El scope "con_cupos" no va, ya que es importante seleccionar secciones que haya inscrito o con cupos juntas. Esto con el objetivo de que luego pueda cambiar secciones
+          - trStatus = ''
 
-      - if sections.any?
-        - subject = course.subject
-        %tr{class: "#{trStatus}"}
-          %td.align-middle.text-right= i+1
-          %td.align-middle
-            = course.subject_desc_with_pci
-            = ac.badge_approved.html_safe if ac&.badge_approved
-            = ac.badge_status.html_safe if ac&.retirado?
+        - if @grade.school.code&.eql? 'EACRV'
+          - # OJO: CONDICIÓN PARTICULAR DE ARQUITACTURA!!!!
+          - if @grade.student.Caracas?
+            - sections = course.sections.where.not("sections.code ILIKE '%E%'")#.con_cupos
+          - else
+            - sections = course.sections.where("sections.code ILIKE '%E%'")#.con_cupos
+        - else
+          - sections = course.sections#.con_cupos
+        - # ATENCIÓN: El scope "con_cupos" no va, ya que es importante seleccionar secciones que haya inscrito o con cupos juntas. Esto con el objetivo de que luego pueda cambiar secciones
 
-          %td.align-middle.text-center= subject.ordinal
-          %td.align-middle.text-center= subject.unit_credits
-          %td.align-middle.pl-3
-            - unless approved
-              - if ac&.retirado?
-                .text-center.text-muted= 'RETIRADO'
-              - else
-                - sections = sections.select{|s| s.has_capacity? or s.has_academic_record? grade.student_id or s.id.eql? section_id}
-                - disable_promt = ''
-                - if sections.any?
-                  = collection_select("sections", nil, sections, :id, :description_with_quotes, {selected: section_id, include_blank: 'Seleccione sección o libere cupo'}, {class: "form-control selectInscripcion", style: 'width: 100%', titulo: subject.desc_to_select, credits: subject.unit_credits, gradeId: grade.id, courseId: course.id, pci: pcis, onchange: "selected(this);", name: "sections_course_id_#{course.id}", id: "sections_course_id_#{course.id}"})
+        - if sections.any?
+          - subject = course.subject
+          %tr{class: "#{trStatus}"}
+            %td.align-middle.text-right= i+1
+            %td.align-middle
+              = course.subject_desc_with_pci
+              = ac.badge_approved.html_safe if ac&.badge_approved
+              = ac.badge_status.html_safe if ac&.retirado?
+
+            %td.align-middle.text-center= "#{subject.ordinal}º"
+            %td.align-middle.text-center= subject.unit_credits
+            %td.align-middle.pl-3
+              - unless approved
+                - if ac&.retirado?
+                  .text-center.text-muted= 'RETIRADO'
                 - else
-                  - disable_promt = 'Sin cupos'
-                  %b.pl-3.text-muted
-                    = collection_select(nil, nil, sections, nil, nil, { prompt: disable_promt}, {class: "form-control", style: 'width: 100%', disabled: true, readonly: true, name: "sections_void#{course.id}", id: "sections_void#{course.id}"})
+                  - sections = sections.select{|s| s.has_capacity? or s.has_academic_record? @grade.student_id or s.id.eql? section_id}
+                  - disable_promt = ''
+                  - if sections.any?
+                    = collection_select("sections", nil, sections, :id, :description_with_quotes, {selected: section_id, include_blank: 'Seleccione sección o libere cupo'}, {class: "form-control selectInscripcion", style: 'width: 100%', titulo: subject.desc_to_select, credits: subject.unit_credits, gradeId: @grade.id, courseId: course.id, pci: pcis, onchange: "selected(this);", name: "sections_course_id_#{course.id}", id: "sections_course_id_#{course.id}"})
+                  - else
+                    - disable_promt = 'Sin cupos'
+                    %b.pl-3.text-muted
+                      = collection_select(nil, nil, sections, nil, nil, { prompt: disable_promt}, {class: "form-control", style: 'width: 100%', disabled: true, readonly: true, name: "sections_void#{course.id}", id: "sections_void#{course.id}"})
