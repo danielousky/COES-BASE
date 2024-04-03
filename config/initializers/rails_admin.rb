@@ -15,11 +15,12 @@ RailsAdmin.config do |config|
     begin
       warden.authenticate! scope: :user
     rescue Exception => e
-      # flash[:danger] = 'Error!!!'
-      # No manda el error o resetea la session (flash)
-      redirect_to '/', notice: 'Error'
+      reset_session
+      flash[:danger] = "Por favor inicie sesión antes de continuar" 
+      redirect_to '/users/sign_in'
     end
   end
+  
   config.current_user_method(&:current_user)
 
   ## == CancanCan ==
