@@ -98,13 +98,16 @@ class AcademicProcess < ApplicationRecord
     subjects.ids.include?(subject_id)
   end
 
-
   def period_name
     period.name if period
   end
 
+  def conv_type
+    "#{I18n.t("activerecord.scopes.academic_process."+self.modality)}#{self.period.period_type.code.upcase}"
+  end
+
   def exame_type
-    "#{period.period_type.name.upcase} #{modality.upcase}" if (period and period.period_type and modality)
+    "#{period.period_type.name.upcase} #{modality.upcase}" if (period&.period_type and modality)
   end
 
   def default_value_by_import

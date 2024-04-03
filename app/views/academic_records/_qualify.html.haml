@@ -17,16 +17,17 @@
       %th{style: 'width: 100px'} Estado Insc
       %th Estudiante
       
-      - if section.subject.numerica?
-        - if (admin_authorized_to_qualify or teacher_authorized_to_qualify)
-          %th.text-center PI
-        %th.text-center Cal. Final
-        - if GeneralSetup.enabled_post_qualification?
-          %th CD
-          %th CR
-          %th Cal. Repar
-      - else
-        %th.text-center Cal. Final
+      - unless section.any_equivalencia?
+        - if section.subject.numerica?
+          - if (admin_authorized_to_qualify or teacher_authorized_to_qualify)
+            %th.text-center PI
+          %th.text-center Cal. Final
+          - if GeneralSetup.enabled_post_qualification?
+            %th CD
+            %th CR
+            %th Cal. Repar
+        - else
+          %th.text-center Cal. Final
       %th{style: 'width: 150px'} Descripción
       %th{style: 'width: 120px'} Estado
 
@@ -53,14 +54,15 @@
             %a{href: "/admin/student/#{acre.student.id}"}= user.reverse_name 
           - else
             = user.reverse_name
-        - if retirado
-          %td{colspan: 2}
-        - else
-          - if (admin_authorized_to_qualify or teacher_authorized_to_qualify)
-            - @academic_record = acre
-            = render partial: '/academic_records/form_qualify', locals: {academic_record: acre, disable_row: disable_row, status: status, id: id, preinscrito: preinscrito}
+        - unless section.any_equivalencia?
+          - if retirado
+            %td{colspan: 2}
           - else
-            %td= text_field_tag nil, {}, {value: acre.final_q_to_02i_to_from, class: 'form-control form-control-sm', disabled: true}          
+            - if (admin_authorized_to_qualify or teacher_authorized_to_qualify)
+              - @academic_record = acre
+              = render partial: '/academic_records/form_qualify', locals: {academic_record: acre, disable_row: disable_row, status: status, id: id, preinscrito: preinscrito}
+            - else
+              %td= text_field_tag nil, {}, {value: acre.final_q_to_02i_to_from, class: 'form-control form-control-sm', disabled: true}
         = render partial: '/academic_records/qualification_to_s', locals: {academic_record: acre, id: id}
         %td.text-center
           .badge.bg-info{id: "labelStatus#{acre.id}"}= status.titleize

@@ -1,0 +1,14 @@
+%tr.h-30.font-sm
+    %td.text-center= i+1
+    %td.text-center= o.user.ci
+    %td.padding-x= o.user.reverse_name
+    %td.text-center= o.study_plan.code
+    - if o.is_a? AcademicRecord
+        %td.text-center= o.desc_conv
+        %td.text-center= o.q_value_to_02i
+        - unless s_as_abs
+            %td
+    - else
+        %td.text-center= o.desc_conv
+        %td.text-center= o.value_to_02i
+    %td.padding-x= o.num_to_s

@@ -4,6 +4,7 @@
     %tr.text-center
       %td.col-1 Período
       %td.col-1 Sec
+      %td.col-1 Modalidad 
       %td Asignatura
       %td Profesor
       %td Horario
@@ -14,6 +15,7 @@
     %tr.text-center
       %td= section.period.name if section.period
       %td= section.code
+      %td= section.conv_type
       %td{title: section.subject.desc}
         - if section.subject
           - if current_user.admin? and session[:rol].eql? 'admin'
@@ -46,4 +48,5 @@
         - else
           .badge.bg-danger{title: 'Por calificar'}
             .fa.fa-remove
-        = badge_toggle_section_qualified section
+        - if (current_user.admin? and session[:rol] and session[:rol].eql? 'admin')    
+          = badge_toggle_section_qualified section

@@ -445,7 +445,7 @@ class Grade < ApplicationRecord
   # TOTALS CREDITS:
 
   def credits_completed_by_type tipo
-    academic_records.aprobado.or(academic_records.equivalencia).by_subject_types(tipo).total_credits
+    academic_records.aprobado.by_subject_types(tipo).total_credits
   end
 
   def total_credits
@@ -468,12 +468,24 @@ class Grade < ApplicationRecord
     end
   end
 
-  def total_credits_eq
-    self.academic_records.total_credits_equivalence
+  def total_credits_approved_equivalence
+    self.academic_records.total_credits_approved_equivalence
   end
 
-  def total_credits_approved_or_eq
-    academic_records.aprobado.or(academic_records.equivalencia).total_credits
+  def total_credits_approved_not_equivalence
+    self.academic_records.total_credits_approved_not_equivalence
+  end
+
+  def total_subjects_approved_equivalence
+    self.academic_records.total_subjects_approved_equivalence
+  end
+
+  def total_subjects_approved_not_equivalence
+    self.academic_records.total_subjects_approved_not_equivalence
+  end 
+
+  def total_credits_eq
+    self.academic_records.total_credits_equivalence
   end
 
   def total_credits_by_type_subject tipo
@@ -527,8 +539,8 @@ class Grade < ApplicationRecord
   end
 
   def calculate_efficiency periods_ids = nil 
-    cursados = self.total_credits_coursed periods_ids
-    aprobados = self.total_credits_approved periods_ids
+    cursados = self.total_subjects_coursed
+    aprobados = self.total_subjects_approved
     if cursados < 0 or aprobados < 0
       0.0
     elsif cursados == 0 or (cursados > 0 and aprobados >= cursados)
