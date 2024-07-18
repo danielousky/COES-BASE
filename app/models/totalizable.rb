@@ -1,7 +1,7 @@
 module Totalizable
 
   def total_academic_records
-    academic_records.count
+    academic_records_count
   end
 
   def total_sc
