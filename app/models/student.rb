@@ -190,6 +190,15 @@ class Student < ApplicationRecord
     navigation_icon 'fa-regular fa-user-graduate'
     weight 4
 
+    modal do
+      field :user do
+        label 'Usuario'
+        inline_add true
+        help 'Seleccione un usuario existente o agregue uno nuevo'
+
+      end
+
+    end
     edit do
       field :user
 

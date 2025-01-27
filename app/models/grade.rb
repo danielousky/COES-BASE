@@ -765,13 +765,33 @@ class Grade < ApplicationRecord
 
   # RAILS_ADMIN:
   rails_admin do
-    visible false
-    navigation_label 'Inscripciones'
+    visible true
+    navigation_label 'Gestión de Usuarios'
+    label 'Expediente'
+    weight 5
     navigation_icon 'fa-solid fa-graduation-cap'
 
     list do
       search_by :custom_search
-      fields :student, :study_plan, :admission_type, :registration_status, :efficiency, :weighted_average, :simple_average
+      fields :student, :admission_type, :registration_status, :efficiency, :weighted_average, :simple_average
+      field :study_plan do
+
+        searchable :code
+        sortable :code
+        filterable :code
+        sort_reverse true 
+
+        associated_collection_cache_all false
+        associated_collection_scope do
+          # bindings[:object] & bindings[:controller] are available, but not in scope's block!
+          Proc.new { |scope|
+            # scoping all Players currently, let's limit them to the team's league
+            # Be sure to limit if there are a lot of Players and order them by position
+            scope = scope.joins(:study_plan)
+            scope = scope.limit(30) # 'order' does not work here
+          }
+        end        
+      end
     end
 
     show do
@@ -787,6 +807,12 @@ class Grade < ApplicationRecord
       # field :study_plan do
       #   partial 'grade/custom_study_plan_id'
       # end
+      field :student do
+        inline_add false
+        inline_edit false
+        read_only true
+      end
+
       field :school do
         label 'Escuela'
         render do
@@ -841,11 +867,8 @@ class Grade < ApplicationRecord
     # Edit is new's form
     edit do
 
-      field :student do
-        render do
-          student = Student.where(user_id: bindings[:view].params[:student_id]).first 
-          bindings[:view].render(partial: '/grades/custom_student_id', locals: {student: student})
-        end
+      field :student do   
+        inline_edit false     
       end
 
       field :study_plan do
@@ -879,6 +902,9 @@ class Grade < ApplicationRecord
     end
 
     export do
+      field :user do
+        label 'Usuario'
+      end
       fields :student, :study_plan, :admission_type, :registration_status, :efficiency, :weighted_average, :simple_average, :region
       field :total_subjects_coursed do
         label 'Total Créditos Cursados'

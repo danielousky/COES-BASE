@@ -2,7 +2,7 @@
     = link_to student.name, "/admin/student/#{student.id}"
     = hidden_field :grade, :student_id, value: student.id
 
-- if false
+- else
     - # Atención: Este formulario se está mostrando incorrectamente y afecta el resto de los formularios. 
     - # En todo caso es necesario agregar primero el estudiante para luego agregarle el grado. De modo que no debería pedirse solo el expediente
     .col-sm-10.controls
