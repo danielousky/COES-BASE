@@ -57,10 +57,11 @@ RailsAdmin.config do |config|
     config.rollback_on_error = false
   end
 
-  # config.navigation_static_links = {
-  #   'Cambiar Período' => 'http://www.google.com'
-  # }
-  # config.navigation_static_label = "Opciones"
+  config.navigation_static_links = {
+    'Dashboard de Bitácoras' => '/audit_trails/dashboard',
+    'Ver Todas las Bitácoras' => '/audit_trails'
+  }
+  config.navigation_static_label = "Bitácoras"
 
   config.actions do
     dashboard do                     # mandatory

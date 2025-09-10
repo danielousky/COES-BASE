@@ -1,6 +1,17 @@
 Rails.application.routes.draw do
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
 
+  # Rutas para bitácoras personalizadas
+  resources :audit_trails, only: [:index, :show] do
+    collection do
+      get :dashboard
+      get :export
+    end
+    member do
+      get :student_activities
+    end
+  end
+
   # match "/admin/:model_name/import" => "custom_admin#import" , :as => "import", :via => [:get, :post]
   
   match "/importer/entities" => "importer#entities" , :as => "importer_entities", :via => [:get, :post]

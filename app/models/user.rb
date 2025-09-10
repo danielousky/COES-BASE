@@ -30,6 +30,7 @@
 #  index_users_on_reset_password_token  (reset_password_token) UNIQUE
 #
 class User < ApplicationRecord
+  include AuditTrailEnhancement
 
   devise :database_authenticatable,
          :recoverable, :rememberable, :validatable, :trackable, :timeoutable
@@ -468,6 +469,34 @@ class User < ApplicationRecord
     def paper_trail_create
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
       self.paper_trail_event = "¡#{object} registrado!"
+    end
+
+    # Método para registrar eventos de autenticación
+    def track_login_event(ip_address = nil, user_agent = nil)
+      audit_authentication_event(:login, ip_address, user_agent)
+    end
+
+    def track_logout_event(ip_address = nil, user_agent = nil)
+      audit_authentication_event(:logout, ip_address, user_agent)
+    end
+
+    # Método para registrar cuando se registra como estudiante
+    def track_student_registration
+      if student.present?
+        audit_academic_event(:student_registration, { 
+          student_id: student.user_id,
+          sede: student.sede 
+        })
+      end
+    end
+
+    # Método para registrar cuando se registra como administrador
+    def track_admin_registration
+      if admin.present?
+        audit_academic_event(:admin_registration, { 
+          admin_id: admin.user_id 
+        })
+      end
     end  
 
     def paper_trail_destroy

@@ -1,0 +1,27 @@
+!!!
+%html{ lang: "#{I18n.locale}"}
+  %head
+    %meta{:content => "text/html; charset=UTF-8", "http-equiv" => "Content-Type"}/
+    %title Coes - Bienvenido
+    %meta{:content => "width=device-width, initial-scale=1, shrink-to-fit=no", :name => "viewport"}/
+    = csrf_meta_tags
+    = csp_meta_tag
+    = stylesheet_link_tag "application", "data-turbo-track": "reload"
+    = stylesheet_link_tag "fontawesome", "data-turbo-track": "reload"
+    =# stylesheet_link_tag "style", "data-turbo-track": "reload", id: 'style-switch'
+    =# stylesheet_link_tag "style-dark", "data-turbo-track": "reload", id: 'style-switch'
+    = javascript_include_tag "application", "data-turbo-track": "reload", defer: true
+    = javascript_include_tag "audit_trails", "data-turbo-track": "reload", defer: true
+    = favicon_link_tag 'logo_coes_simple.png'
+
+  %body
+    %main
+      %nav.navbar.navbar-expand-lg.navbar-dark.bg-dark.sticky-top.navbar-text.justify-content-end
+
+      = yield
+      %br
+      %br
+      %br
+    = render '/layouts/footer'
+
+

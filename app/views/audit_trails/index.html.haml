@@ -1,0 +1,133 @@
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-header.d-flex.justify-content-between.align-items-center
+          %h4.mb-0
+            %i.fa.fa-history.me-2
+            Bitácoras del Sistema
+          .btn-group
+            = link_to audit_trails_path(format: :csv, params: request.query_parameters), class: 'btn btn-outline-success btn-sm' do
+              %i.fa.fa-file-csv.me-1
+              Exportar CSV
+            = link_to audit_trails_path(format: :xlsx, params: request.query_parameters), class: 'btn btn-outline-primary btn-sm' do
+              %i.fa.fa-file-excel.me-1
+              Exportar Excel
+
+        .card-body
+          / Filtros
+          = form_with url: audit_trails_path, method: :get, local: true, class: 'row g-3 mb-4' do |f|
+            .col-md-2
+              = f.select :event_type, options_for_select([['Todos los eventos', ''],['Creación', 'create'],['Actualización', 'update'],['Eliminación', 'destroy']], params[:event_type]), {}, { class: 'form-select' }
+            .col-md-2
+              = f.select :item_type, options_for_select([['Todos los tipos', ''],['Usuario', 'User'],['Estudiante', 'Student'],['Administrador', 'Admin'],['Docente', 'Teacher'],['Expediente', 'Grade'],['Proceso Académico', 'EnrollAcademicProcess'],['Registro Académico', 'AcademicRecord'],['Sección', 'Section'],['Asignatura', 'Subject']], params[:item_type]), {}, { class: 'form-select' }
+            .col-md-2
+              = f.date_field :date_from, value: params[:date_from], class: 'form-control', placeholder: 'Fecha desde'
+            .col-md-2
+              = f.date_field :date_to, value: params[:date_to], class: 'form-control', placeholder: 'Fecha hasta'
+            .col-md-2
+              = f.submit 'Filtrar', class: 'btn btn-primary'
+            .col-md-2
+              = link_to 'Limpiar', audit_trails_path, class: 'btn btn-outline-secondary'
+
+          / Lista de bitácoras
+          .table-responsive
+            %table.table.table-hover
+              %thead.table-dark
+                %tr
+                  %th Fecha/Hora
+                  %th Acción
+                  %th Tipo
+                  %th Usuario
+                  %th Detalles
+                  %th Acciones
+              %tbody
+                - @audit_trails.each do |trail|
+                  %tr
+                    %td
+                      .fw-bold= trail.created_at.strftime('%d/%m/%Y')
+                      .text-muted.small= trail.created_at.strftime('%H:%M:%S')
+                    %td
+                      - case trail.event
+                      - when 'create'
+                        %span.badge.bg-success Registro
+                      - when 'update'
+                        %span.badge.bg-warning Actualización
+                      - when 'destroy'
+                        %span.badge.bg-danger Eliminación
+                      - else
+                        %span.badge.bg-info= trail.event.humanize
+                    %td
+                      - case trail.item_type
+                      - when 'User'
+                        %i.fa.fa-user.text-primary.me-1
+                        Usuario
+                      - when 'Student'
+                        %i.fa.fa-graduation-cap.text-success.me-1
+                        Estudiante
+                      - when 'Admin'
+                        %i.fa.fa-user-shield.text-warning.me-1
+                        Administrador
+                      - when 'Teacher'
+                        %i.fa.fa-chalkboard-teacher.text-info.me-1
+                        Docente
+                      - when 'Grade'
+                        %i.fa.fa-id-card.text-secondary.me-1
+                        Expediente
+                      - when 'EnrollAcademicProcess'
+                        %i.fa.fa-clipboard-list.text-primary.me-1
+                        Proceso Académico
+                      - when 'AcademicRecord'
+                        %i.fa.fa-book.text-success.me-1
+                        Registro Académico
+                      - when 'Section'
+                        %i.fa.fa-users.text-warning.me-1
+                        Sección
+                      - when 'Subject'
+                        %i.fa.fa-book-open.text-info.me-1
+                        Asignatura
+                      - else
+                        %i.fa.fa-file.text-muted.me-1
+                        = trail.item_type.humanize
+                    %td
+                      - if trail.whodunnit.present?
+                        - user = User.find_by(id: trail.whodunnit)
+                        - if user
+                          .fw-bold= "#{user.first_name} #{user.last_name}"
+                          .text-muted.small= user.ci
+                        - else
+                          .text-muted= "Usuario ID: #{trail.whodunnit}"
+                      - else
+                        .text-muted Sistema
+                    %td
+                      - if trail.object_changes.present?
+                        - begin
+                          - changes = JSON.parse(trail.object_changes)
+                          - if changes.is_a?(Hash) && changes.any?
+                            - changes.first(2).each do |key, change|
+                              - if change.is_a?(Array) && change.length == 2
+                                .small
+                                  %strong= "#{key.humanize}:"
+                                  %span.text-danger= change[0].to_s.truncate(20)
+                                  %i.fa.fa-arrow-right.mx-1
+                                  %span.text-success= change[1].to_s.truncate(20)
+                              - else
+                                .small
+                                  %strong= "#{key.humanize}:"
+                                  = change.to_s.truncate(30)
+                            - if changes.count > 2
+                              .text-muted.small= "... y #{changes.count - 2} cambios más"
+                          - else
+                            .text-muted.small= trail.object_changes.truncate(50)
+                        - rescue JSON::ParserError
+                          .text-muted.small= trail.object_changes.truncate(50)
+                      - else
+                        .text-muted.small Sin cambios detallados
+                    %td
+                      = link_to audit_trail_path(trail), class: 'btn btn-sm btn-outline-primary' do
+                        %i.fa.fa-eye
+
+          / Paginación
+          .d-flex.justify-content-center.mt-4
+            = paginate @audit_trails if respond_to?(:paginate)
+

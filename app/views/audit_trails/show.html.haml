@@ -1,0 +1,169 @@
+.container-fluid
+  .row
+    .col-12
+      .card
+        .card-header.d-flex.justify-content-between.align-items-center
+          %h4.mb-0
+            %i.fa.fa-eye.me-2
+            Detalle de Bitácora
+          = link_to audit_trails_path, class: 'btn btn-outline-secondary' do
+            %i.fa.fa-arrow-left.me-1
+            Volver
+
+        .card-body
+          .row
+            .col-md-6
+              .card.border-0.bg-light
+                .card-body
+                  %h5.card-title
+                    %i.fa.fa-info-circle.me-2
+                    Información General
+                  %table.table.table-borderless
+                    %tr
+                      %td.fw-bold Fecha y Hora:
+                      %td= @audit_trail.created_at.strftime('%d/%m/%Y %H:%M:%S')
+                    %tr
+                      %td.fw-bold Tipo de Acción:
+                      %td
+                        - case @audit_trail.event
+                        - when 'create'
+                          %span.badge.bg-success.badge-lg Registro Creado
+                        - when 'update'
+                          %span.badge.bg-warning.badge-lg Registro Actualizado
+                        - when 'destroy'
+                          %span.badge.bg-danger.badge-lg Registro Eliminado
+                        - else
+                          %span.badge.bg-info.badge-lg= @audit_trail.event.humanize
+                    %tr
+                      %td.fw-bold Tipo de Registro:
+                      %td
+                        - case @audit_trail.item_type
+                        - when 'User'
+                          %i.fa.fa-user.text-primary.me-1
+                          Usuario
+                        - when 'Student'
+                          %i.fa.fa-graduation-cap.text-success.me-1
+                          Estudiante
+                        - when 'Admin'
+                          %i.fa.fa-user-shield.text-warning.me-1
+                          Administrador
+                        - when 'Teacher'
+                          %i.fa.fa-chalkboard-teacher.text-info.me-1
+                          Docente
+                        - when 'Grade'
+                          %i.fa.fa-id-card.text-secondary.me-1
+                          Expediente
+                        - when 'EnrollAcademicProcess'
+                          %i.fa.fa-clipboard-list.text-primary.me-1
+                          Proceso Académico
+                        - when 'AcademicRecord'
+                          %i.fa.fa-book.text-success.me-1
+                          Registro Académico
+                        - when 'Section'
+                          %i.fa.fa-users.text-warning.me-1
+                          Sección
+                        - when 'Subject'
+                          %i.fa.fa-book-open.text-info.me-1
+                          Asignatura
+                        - else
+                          %i.fa.fa-file.text-muted.me-1
+                          = @audit_trail.item_type.humanize
+                    %tr
+                      %td.fw-bold ID del Registro:
+                      %td= @audit_trail.item_id
+
+            .col-md-6
+              .card.border-0.bg-light
+                .card-body
+                  %h5.card-title
+                    %i.fa.fa-user.me-2
+                    Usuario Responsable
+                  - if @audit_trail.whodunnit.present?
+                    - user = User.find_by(id: @audit_trail.whodunnit)
+                    - if user
+                      .d-flex.align-items-center
+                        - if user.profile_picture.attached?
+                          = image_tag user.profile_picture_as_thumb, class: 'rounded-circle me-3', size: '50x50'
+                        - else
+                          .bg-primary.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: 'width: 50px; height: 50px;'}
+                            %i.fa.fa-user.text-white
+                        .flex-grow-1
+                          .fw-bold= "#{user.first_name} #{user.last_name}"
+                          .text-muted.small CI: #{user.ci}
+                          .text-muted.small= user.email
+                    - else
+                      .text-muted
+                        %i.fa.fa-exclamation-triangle.me-1
+                        Usuario ID: #{@audit_trail.whodunnit} (no encontrado)
+                  - else
+                    .text-muted
+                      %i.fa.fa-robot.me-1
+                      Sistema Automático
+
+          .row.mt-4
+            .col-12
+              .card
+                .card-header
+                  %h5.mb-0
+                    %i.fa.fa-history.me-2
+                    Cambios Realizados
+                .card-body
+                  - if @audit_trail.object_changes.present?
+                    - begin
+                      - changes = JSON.parse(@audit_trail.object_changes)
+                      - if changes.is_a?(Hash) && changes.any?
+                        .row
+                          - changes.each do |key, change|
+                            .col-md-6.mb-3
+                              .card.border
+                                .card-body
+                                  %h6.card-title.text-primary= key.humanize
+                                  - if change.is_a?(Array) && change.length == 2
+                                    .row
+                                      .col-6
+                                        .small.text-muted Antes:
+                                        .p-2.bg-light.rounded
+                                          - if change[0].nil?
+                                            %em.text-muted vacío
+                                          - else
+                                            = change[0].to_s
+                                      .col-6
+                                        .small.text-muted Después:
+                                        .p-2.bg-light.rounded
+                                          - if change[1].nil?
+                                            %em.text-muted vacío
+                                          - else
+                                            = change[1].to_s
+                                  - else
+                                    .p-2.bg-light.rounded
+                                      = change.to_s
+                      - else
+                        .alert.alert-info
+                          %i.fa.fa-info-circle.me-1
+                          No hay cambios detallados disponibles
+                    - rescue JSON::ParserError
+                      .alert.alert-warning
+                        %i.fa.fa-exclamation-triangle.me-1
+                        Error al procesar los cambios
+                      %pre.bg-light.p-3.rounded= @audit_trail.object_changes
+                  - else
+                    .alert.alert-info
+                      %i.fa.fa-info-circle.me-1
+                      No se registraron cambios en esta acción
+
+          - if @audit_trail.object.present?
+            .row.mt-4
+              .col-12
+                .card
+                  .card-header
+                    %h5.mb-0
+                      %i.fa.fa-archive.me-2
+                      Estado Anterior del Registro
+                  .card-body
+                    - begin
+                      - obj = JSON.parse(@audit_trail.object)
+                      %pre.bg-light.p-3.rounded{style: 'max-height: 300px; overflow-y: auto;'}
+                        = JSON.pretty_generate(obj)
+                    - rescue JSON::ParserError
+                      %pre.bg-light.p-3.rounded= @audit_trail.object
+

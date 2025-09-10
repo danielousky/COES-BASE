@@ -27,6 +27,7 @@
 #
 class Student < ApplicationRecord
   include Userable
+  include AuditTrailEnhancement
 
   # GLOBALS VARIABLES:
   ESTADOS_CIVILES = {'Soltero/a.': 0, 'Casado/a.': 1, 'Concubinato': 2, 'Divorciado/a.': 3, 'Viudo/a.': 4}
@@ -598,6 +599,73 @@ class Student < ApplicationRecord
     def paper_trail_destroy
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
       self.paper_trail_event = "¡Estudiante eliminado!"
+    end
+
+    # Métodos específicos para eventos de estudiantes
+    def track_grade_registration(grade)
+      audit_academic_event(:grade_registration, {
+        grade_id: grade.id,
+        study_plan: grade.study_plan&.name,
+        school: grade.study_plan&.school&.name
+      })
+    end
+
+    def track_preenrollment(academic_process)
+      audit_academic_event(:preenrollment, {
+        academic_process_id: academic_process.id,
+        period: academic_process.period&.name,
+        school: academic_process.school&.name
+      })
+    end
+
+    def track_subject_enrollment(academic_record)
+      audit_academic_event(:subject_enrollment, {
+        academic_record_id: academic_record.id,
+        subject_name: academic_record.section&.subject&.name,
+        section_name: academic_record.section&.name,
+        period: academic_record.section&.academic_process&.period&.name
+      })
+    end
+
+    def track_enrollment_confirmation(enroll_academic_process)
+      audit_academic_event(:enrollment_confirmation, {
+        enroll_academic_process_id: enroll_academic_process.id,
+        period: enroll_academic_process.academic_process&.period&.name,
+        school: enroll_academic_process.academic_process&.school&.name
+      })
+    end
+
+    def track_subject_withdrawal(academic_record, reason = nil)
+      details = {
+        academic_record_id: academic_record.id,
+        subject_name: academic_record.section&.subject&.name,
+        section_name: academic_record.section&.name
+      }
+      details[:reason] = reason if reason.present?
+      
+      audit_academic_event(:subject_withdrawal, details)
+    end
+
+    def track_section_change(old_section, new_section)
+      audit_academic_event(:section_change, {
+        old_section_name: old_section&.name,
+        new_section_name: new_section&.name,
+        subject_name: new_section&.subject&.name
+      })
+    end
+
+    def track_document_download(document_type, document_name = nil)
+      audit_document_event(:document_download, document_type, document_name)
+    end
+
+    def track_document_generation(document_type, document_name = nil)
+      audit_document_event(:document_generation, document_type, document_name)
+    end
+
+    def track_personal_data_update(changed_fields = [])
+      audit_academic_event(:personal_data_update, {
+        changed_fields: changed_fields.join(', ')
+      })
     end
 
 end

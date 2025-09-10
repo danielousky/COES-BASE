@@ -6,7 +6,8 @@ module.exports = {
   devtool: "source-map",
   entry: {
     application: "./app/javascript/application.js",
-    rails_admin: "./app/javascript/rails_admin.js"
+    rails_admin: "./app/javascript/rails_admin.js",
+    audit_trails: "./app/javascript/audit_trails.js"
   },
   output: {
     filename: "[name].js",

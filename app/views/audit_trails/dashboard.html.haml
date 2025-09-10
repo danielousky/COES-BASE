@@ -1,0 +1,183 @@
+.container-fluid
+  .row
+    .col-12
+      .d-flex.justify-content-between.align-items-center.mb-4
+        %h2
+          %i.fa.fa-chart-line.me-2
+          Dashboard de Bitácoras
+        = link_to audit_trails_path, class: 'btn btn-primary' do
+          %i.fa.fa-list.me-1
+          Ver Todas las Bitácoras
+
+  / Estadísticas principales
+  .row.mb-4
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body.text-center
+          .display-6.text-primary= @statistics[:total_events]
+          .text-muted Eventos (30 días)
+          %i.fa.fa-history.fa-2x.text-primary.mt-2
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body.text-center
+          .display-6.text-success= @statistics[:user_registrations]
+          .text-muted Registros de Usuario
+          %i.fa.fa-user-plus.fa-2x.text-success.mt-2
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body.text-center
+          .display-6.text-info= @statistics[:academic_events]
+          .text-muted Eventos Académicos
+          %i.fa.fa-graduation-cap.fa-2x.text-info.mt-2
+    .col-md-3
+      .card.border-0.shadow-sm
+        .card-body.text-center
+          .display-6.text-warning= @statistics[:events_today]
+          .text-muted Eventos Hoy
+          %i.fa.fa-calendar-day.fa-2x.text-warning.mt-2
+
+  .row
+    / Actividades recientes
+    .col-md-8
+      .card.border-0.shadow-sm
+        .card-header.bg-white
+          %h5.mb-0
+            %i.fa.fa-clock.me-2
+            Actividades Recientes
+        .card-body
+          .list-group.list-group-flush
+            - @recent_activities.each do |activity|
+              .list-group-item.border-0.px-0
+                .d-flex.justify-content-between.align-items-start
+                  .flex-grow-1
+                    .d-flex.align-items-center.mb-1
+                      - case activity.event
+                      - when 'create'
+                        %span.badge.bg-success.me-2 Registro
+                      - when 'update'
+                        %span.badge.bg-warning.me-2 Actualización
+                      - when 'destroy'
+                        %span.badge.bg-danger.me-2 Eliminación
+                      - else
+                        %span.badge.bg-info.me-2= activity.event.humanize
+                      
+                      - case activity.item_type
+                      - when 'User'
+                        %i.fa.fa-user.text-primary.me-1
+                      - when 'Student'
+                        %i.fa.fa-graduation-cap.text-success.me-1
+                      - when 'Admin'
+                        %i.fa.fa-user-shield.text-warning.me-1
+                      - when 'Teacher'
+                        %i.fa.fa-chalkboard-teacher.text-info.me-1
+                      - when 'Grade'
+                        %i.fa.fa-id-card.text-secondary.me-1
+                      - when 'EnrollAcademicProcess'
+                        %i.fa.fa-clipboard-list.text-primary.me-1
+                      - when 'AcademicRecord'
+                        %i.fa.fa-book.text-success.me-1
+                      - when 'Section'
+                        %i.fa.fa-users.text-warning.me-1
+                      - when 'Subject'
+                        %i.fa.fa-book-open.text-info.me-1
+                      - else
+                        %i.fa.fa-file.text-muted.me-1
+                      
+                      %span.fw-bold= activity.item_type.humanize
+                    
+                    .text-muted.small
+                      - if activity.whodunnit.present?
+                        - user = User.find_by(id: activity.whodunnit)
+                        - if user
+                          = "#{user.first_name} #{user.last_name} (#{user.ci})"
+                        - else
+                          = "Usuario ID: #{activity.whodunnit}"
+                      - else
+                        Sistema
+                  
+                  .text-muted.small
+                    = activity.created_at.strftime('%d/%m %H:%M')
+
+    / Usuarios más activos
+    .col-md-4
+      .card.border-0.shadow-sm
+        .card-header.bg-white
+          %h5.mb-0
+            %i.fa.fa-users.me-2
+            Usuarios Más Activos
+        .card-body
+          - @top_users.each do |user_data|
+            .d-flex.justify-content-between.align-items-center.mb-3
+              .d-flex.align-items-center
+                - if user_data[:user]&.profile_picture&.attached?
+                  =# image_tag user_data[:user].profile_picture_as_thumb, class: 'rounded-circle me-2', size: '30x30'
+                - else
+                  .bg-primary.rounded-circle.d-flex.align-items-center.justify-content-center.me-2{style: 'width: 30px; height: 30px;'}
+                    %i.fa.fa-user.text-white{style: 'font-size: 12px;'}
+                .flex-grow-1
+                  .fw-bold.small= user_data[:name]
+                  .text-muted{style: 'font-size: 11px;'}= user_data[:user]&.ci
+              .badge.bg-primary= user_data[:count]
+
+  .row.mt-4
+    / Actividad por tipo
+    .col-md-6
+      .card.border-0.shadow-sm
+        .card-header.bg-white
+          %h5.mb-0
+            %i.fa.fa-chart-pie.me-2
+            Actividad por Tipo de Registro
+        .card-body
+          - @activity_by_type.each do |type, count|
+            .d-flex.justify-content-between.align-items-center.mb-2
+              .d-flex.align-items-center
+                - case type
+                - when 'User'
+                  %i.fa.fa-user.text-primary.me-2
+                - when 'Student'
+                  %i.fa.fa-graduation-cap.text-success.me-2
+                - when 'Admin'
+                  %i.fa.fa-user-shield.text-warning.me-2
+                - when 'Teacher'
+                  %i.fa.fa-chalkboard-teacher.text-info.me-2
+                - when 'Grade'
+                  %i.fa.fa-id-card.text-secondary.me-2
+                - when 'EnrollAcademicProcess'
+                  %i.fa.fa-clipboard-list.text-primary.me-2
+                - when 'AcademicRecord'
+                  %i.fa.fa-book.text-success.me-2
+                - when 'Section'
+                  %i.fa.fa-users.text-warning.me-2
+                - when 'Subject'
+                  %i.fa.fa-book-open.text-info.me-2
+                - else
+                  %i.fa.fa-file.text-muted.me-2
+                %span= type.humanize
+              .badge.bg-secondary= count
+
+    / Estadísticas adicionales
+    .col-md-6
+      .card.border-0.shadow-sm
+        .card-header.bg-white
+          %h5.mb-0
+            %i.fa.fa-chart-bar.me-2
+            Estadísticas Adicionales
+        .card-body
+          .row.text-center
+            .col-6.mb-3
+              .border.rounded.p-3
+                .h4.text-success= @statistics[:student_registrations]
+                .small.text-muted Registros de Estudiante
+            .col-6.mb-3
+              .border.rounded.p-3
+                .h4.text-info= @statistics[:logins]
+                .small.text-muted Inicios de Sesión
+            .col-6.mb-3
+              .border.rounded.p-3
+                .h4.text-warning= @statistics[:document_events]
+                .small.text-muted Eventos de Documentos
+            .col-6.mb-3
+              .border.rounded.p-3
+                .h4.text-primary= @statistics[:events_this_week]
+                .small.text-muted Esta Semana
+
