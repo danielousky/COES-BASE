@@ -131,8 +131,8 @@ class Grade < ApplicationRecord
 
   scope :current_permanence_valid_to_enroll, -> {where('grades.current_permanence_status': [:regular, :reincorporado, :articulo3])}
 
-  scope :others_permanence_invalid_to_enroll, -> {where(current_permanence_status: [:nuevo, :articulo6, :articulo7, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_total, :por_calificar])}
-  # {nuevo: 0, regular: 1, reincorporado: 2, articulo3: 3, articulo6: 4, articulo7: 5, intercambio: 6, desertor: 7, egresado: 8, egresado_doble_titulo: 8, permiso_para_no_cursar: 9, retiro_total: 10, por_calificar: 11}
+  scope :others_permanence_invalid_to_enroll, -> {where(current_permanence_status: [:nuevo, :articulo6, :articulo7, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_semestre, :por_calificar])}
+  # {nuevo: 0, regular: 1, reincorporado: 2, articulo3: 3, articulo6: 4, articulo7: 5, intercambio: 6, desertor: 7, egresado: 8, egresado_doble_titulo: 8, permiso_para_no_cursar: 9, retiro_semestre: 10, por_calificar: 11}
 
   scope :special_authorized, -> (academic_process_id) {where(enabled_enroll_process_id:academic_process_id )}
 
