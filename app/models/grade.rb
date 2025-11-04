@@ -881,7 +881,7 @@ class Grade < ApplicationRecord
       field :current_permanence_status do
         label 'Edo. Permanencia'
         pretty_value do
-          ApplicationController.helpers.label_status('bg-info', value&.titleize)
+          bindings[:object].label_permanence_status
         end
       end
 

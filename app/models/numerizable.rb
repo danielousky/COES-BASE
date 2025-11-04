@@ -1,7 +1,7 @@
 module Numerizable
 
-    PERMANENCE_STATUSES = [:nuevo, :regular, :reincorporado, :articulo3, :articulo6, :articulo7, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_semestre, :reincorporado_por_intercambio]
-    PERMANENCE_STATUSES_SETTLED = [:reincorporado, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_semestre, :reincorporado_por_intercambio]
+    PERMANENCE_STATUSES = [:nuevo, :regular, :reincorporado, :articulo3, :articulo6, :articulo7, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_semestre, :reincorporado_por_intercambio, :retiro_total]
+    PERMANENCE_STATUSES_SETTLED = [:reincorporado, :intercambio, :desertor, :egresado, :egresado_doble_titulo, :permiso_para_no_cursar, :retiro_semestre, :reincorporado_por_intercambio, :retiro_total]
 
     def aux_permanence_status
         if self.is_a? Grade
@@ -17,7 +17,7 @@ module Numerizable
             label = 'bg-success'
         elsif self.articulo3?
             label = 'bg-warning'
-        elsif self.articulo6? or self.retiro_semestre? or self.articulo7? or self.desertor?
+        elsif self.articulo6? or self.retiro_semestre? or self.articulo7? or self.desertor? or self.retiro_total? 
             label = 'bg-danger'
         else
             label = 'bg-info'
