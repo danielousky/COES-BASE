@@ -22,24 +22,24 @@
 class SubjectLink < ApplicationRecord
 
   belongs_to :prelate_subject, class_name: 'Subject', foreign_key: :prelate_subject_id
-  belongs_to :depend_subject, class_name: 'Subject', foreign_key: :depend_subject_id
+  belongs_to :subject
 
-  has_one :school, through: :prelate_subject
-  validates_uniqueness_of :prelate_subject_id, scope: [:depend_subject_id], message: 'la relación ya existe', field_name: false
+  has_one :school, through: :subject
+  validates_uniqueness_of :prelate_subject_id, scope: [:subject_id], message: 'la relación ya existe', field_name: false
   validates :prelate_subject_id, presence: true
-  validates :depend_subject_id, presence: true
+  validates :subject_id, presence: true
 
   validates_with NestedDependencyValidator, field_name: false
 
   validate :check_prelate_and_depend
 
   def check_prelate_and_depend
-    errors.add(:prelate_subject_id, "asignatura no no puede depender de sí misma") if prelate_subject_id == depend_subject_id
+    errors.add(:prelate_subject_id, "asignatura no no puede depender de sí misma") if prelate_subject_id == subject_id
   end
 
 
-  scope :in_prelation, -> (aprobadas_ids) {where(prelate_subject_id: aprobadas_ids) }
-  scope :not_in_dependency, -> (aprobadas_ids) {where.not(depend_subject_id: aprobadas_ids) }
+  scope :in_prelation, -> (ids) {where(prelate_subject_id: ids) }
+  scope :not_in_dependency, -> (ids) {where.not(subject_id: ids) }
 
   def self.subject_tree ids
     auxs = SubjectLink.where(id: ids).joins(:subject).select('subjects.*')

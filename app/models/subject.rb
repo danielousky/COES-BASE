@@ -58,14 +58,14 @@ class Subject < ApplicationRecord
     # ATENCIÓN, MUCHA ATENCIÓN: Pareciera que las foraign_keys están al revés pero no es asi.
     # Si quiero ver las prelaciones de una materia, no debo ver las prelate_subject_id porque serían las asignaturas cuyas prelate_subject_id sean iguales a esta, es decir, las decendientes y eso sí estaría mal.
     # PRELATE:
-      has_many :prelate_links, foreign_key: :depend_subject_id, class_name: 'SubjectLink', dependent: :destroy
+      has_many :prelate_links, foreign_key: :subject_id, class_name: 'SubjectLink', dependent: :destroy
       has_many :prelate_subjects, through: :prelate_links
       # accepts_nested_attributes_for :prelate_links, allow_destroy: true
       # accepts_nested_attributes_for :prelate_subjects, allow_destroy: true
 
     # DEPEND:
-      has_many :depend_links, foreign_key: :prelate_subject_id, class_name: 'SubjectLink', dependent: :destroy
-      has_many :depend_subjects, through: :depend_links
+      has_many :links, foreign_key: :prelate_subject_id, class_name: 'SubjectLink', dependent: :destroy
+      has_many :subjects, through: :links
       # accepts_nested_attributes_for :dependent_links, allow_destroy: true
 
 
