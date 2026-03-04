@@ -43,51 +43,60 @@ class ExportarPdfPrawn
 
 		if absolute
 			data = [["<b>N°</b>", "<b>CÉDULA DE IDENTIDAD</b>", "<b>APELLIDOS Y NOMBRES</b>", "<b>COD. PLAN</b>", "<b>CALIF. DESCR.</b>", "<b>TIPO</b>", "<b>CALIF. EN LETRAS</b>"]]
-			num_columnas = 7
+			column_widths = {1 => 60, 2 => 240, 4 => 55, 5 => 30, 6 => 123}
+			filler_row = ["****", "**********", "*****************************************************", "******", "****", "****", "************"]
 		else
 			data = [["<b>N°</b>", "<b>CÉDULA DE IDENTIDAD</b>", "<b>APELLIDOS Y NOMBRES</b>", "<b>COD. PLAN</b>", "<b>CALIF. DESCR.</b>", "<b>TIPO</b>","<b>CALIF. NUM.</b>", "<b>CALIF. EN LETRAS</b>"]]
-			num_columnas = 8
+			column_widths = {1 => 60, 2 => 220, 5 => 30, 7 => 118}
+			filler_row = ["****", "**********", "*****************************************************", "******", "****", "****", "****", "************"]
 		end
 
 		inscripciones.each_with_index do |ar, i|			
 			if !ar.qualifications.any? or absolute
-				data << [i, ar.user.ci, ar.user&.reverse_name, ar.study_plan&.code, ar.desc_conv, ar.cal_alfa, ar.q_value_to_acta, ar.num_to_s]
+				if absolute
+					data << [i + 1, ar.user.ci, ar.user&.reverse_name, ar.study_plan&.code, ar.desc_conv, ar.cal_alfa, ar.num_to_s]
+				else
+					data << [i + 1, ar.user.ci, ar.user&.reverse_name, ar.study_plan&.code, ar.desc_conv, ar.cal_alfa, ar.q_value_to_acta, ar.num_to_s]
+				end
 			else
 				ar.qualifications.each do |q|
-					data << [i, ar.user.ci, ar.user&.reverse_name, ar.study_plan&.code, q.desc_conv, q.cal_alfa, q.value_to_acta, q.num_to_s]
+					data << [i + 1, ar.user.ci, ar.user&.reverse_name, ar.study_plan&.code, q.desc_conv, q.cal_alfa, q.value_to_acta, q.num_to_s]
 					i += 1
 				end
 			end
 		end
 
+		cell_style = {
+			:inline_format => true,
+			:size => 8,
+			align: :center,
+			valign: :center,
+			padding: 3,
+			overflow: :shrink_to_fit,
+			min_font_size: 6,
+			border_color: '818284'
+		}
+
 		# Rellenar filas faltantes con asteriscos para completar la última página
-		filas_por_pagina = 28
-		resto = data.length % filas_por_pagina
-		if resto != 0
-			filas_faltantes = filas_por_pagina - resto
-			filas_faltantes.times do
-				if absolute
-					data << ["****", "**********", "*****************************************************", "******", "****", "****", "************"]
-				else
-					data << ["****", "**********", "*****************************************************", "******", "****", "****", "****", "************"]
-				end
-				
-			end
-		end
+		measurement = pdf.make_table([data.first, filler_row], width: 540, position: :center, column_widths: column_widths, cell_style: cell_style)
+		header_height = measurement.row(0).height
+		body_height = measurement.row(1).height
+		filas_por_pagina = [((pdf.bounds.height - header_height) / body_height).floor, 1].max
+		filas_datos = data.length - 1
+		resto = filas_datos % filas_por_pagina
+		filas_faltantes = (filas_por_pagina - resto) % filas_por_pagina
+
+		filas_faltantes.times { data << filler_row.dup }
 
 		pdf.table data do |t|
 			t.width = 540
 			t.position = :center
 			t.header = true
 			t.row_colors = ["F0F0F0", "FFFFFF"]
-			t.column_widths = if absolute
-				{1 => 60, 2 => 240, 4 => 55, 5 => 30, 6 => 123}
-			else
-				{1 => 60, 2 => 220, 5 => 30, 7 => 118}
-			end
-			t.cell_style = {:inline_format => true, :size => 8, align: :center, padding: 3, border_color: '818284' }
+			t.column_widths = column_widths
+			t.cell_style = cell_style
 			
-			t.column(2).style(:align => :justify)
+			t.column(2).style(:align => :left)
 			t.row(0).style(:align => :center)
 			# t.column(1).style(:font_style => :bold)
 		end
