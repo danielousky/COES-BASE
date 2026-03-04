@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run COES app (dev)",
+			"type": "shell",
+			"command": "bin/dev",
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}

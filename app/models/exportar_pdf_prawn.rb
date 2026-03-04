@@ -71,17 +71,17 @@ class ExportarPdfPrawn
 			:size => 8,
 			align: :center,
 			valign: :center,
-			padding: 3,
+			padding: 2,
 			overflow: :shrink_to_fit,
 			min_font_size: 6,
 			border_color: '818284'
 		}
 
 		# Rellenar filas faltantes con asteriscos para completar la última página
-		measurement = pdf.make_table([data.first, filler_row], width: 540, position: :center, column_widths: column_widths, cell_style: cell_style)
-		header_height = measurement.row(0).height
-		body_height = measurement.row(1).height
-		filas_por_pagina = [((pdf.bounds.height - header_height) / body_height).floor, 1].max
+		# Se calcula dinámicamente según el alto útil para evitar desajustes de paginación.
+		header_row_height = 18
+		data_row_height = 14
+		filas_por_pagina = [((pdf.bounds.height - header_row_height) / data_row_height).floor, 1].max
 		filas_datos = data.length - 1
 		resto = filas_datos % filas_por_pagina
 		filas_faltantes = (filas_por_pagina - resto) % filas_por_pagina
@@ -97,7 +97,8 @@ class ExportarPdfPrawn
 			t.cell_style = cell_style
 			
 			t.column(2).style(:align => :left)
-			t.row(0).style(:align => :center)
+			t.row(0).style(:align => :center, :height => 18)
+			t.rows(1..-1).style(:height => 14)
 			# t.column(1).style(:font_style => :bold)
 		end
 
@@ -110,7 +111,7 @@ class ExportarPdfPrawn
 		academic_process = section.academic_process
 		data = [["FECHA DE LA EMISIÓN: <b>#{Time.now.strftime('%d/%m/%Y %I:%M %p')}</b>", "ACTA No.: <b>#{section.number_acta}</b>"]]
 		data << ["EJERCICIO: <b>#{academic_process.process_name}</b>", "PERIODO ACADÉMICO: <b>#{academic_process.process_name}</b>" ]
-		data << ["FACULTAD: <b>#{section.school&.faculty&.name}</b>", "<a style='text-align: right;'>TIPO DE CONVOCATORIA: <b>#{section.conv_type}</b></a>" ]
+		data << ["FACULTAD: <b>#{section.school&.faculty&.name}</b>", "TIPO DE CONVOCATORIA: <b>#{section.conv_type}</b>" ]
 		if section.school.postgrado?
 
 			code_plan = section.subject.code[0..3] if section.subject.code.present?
@@ -126,13 +127,22 @@ class ExportarPdfPrawn
 			data << ["ESCUELA: <b>#{section.school.name.upcase}</b>", "" ]
 		end
 
-		t = pdf.make_table(data, header: false, width: 540, position: :center, cell_style: { inline_format: true, size: 9, padding: 1, border_color: 'FFFFFF'})
+		t = pdf.make_table(
+			data,
+			header: false,
+			width: 540,
+			position: :center,
+			column_widths: {0 => 270, 1 => 270},
+			cell_style: { inline_format: true, size: 9, padding: 1, border_color: 'FFFFFF'}
+		)
+		t.column(0).style(align: :left)
+		t.column(1).style(align: :right)
 		t.draw
 	end
 	
 	def self.tabla_descripcion_section pdf, section
 
-		pdf.move_down 10
+		pdf.move_down 3
 		asig = section.subject
 
 		data = [["<b>Código</b>", "<b>Asignatura</b>", "<b>Sección</b>", "<b>Tipo</b>", "<b>Créditos</b>", "<b>Duración</b>", "<b>T. Insc</b>"]]
@@ -148,17 +158,20 @@ class ExportarPdfPrawn
 			column_widths: {0 => 55, 1 => 255, 2 => 40, 3 => 35, 4 => 45, 5 => 55, 6 => 55},
 			cell_style: {
 				inline_format: true,
-				size: 10,
+				size: 9,
 				align: :center,
 				valign: :center,
-				padding: 3,
+				padding: 2,
+				single_line: true,
 				overflow: :shrink_to_fit,
-				min_font_size: 8,
+				min_font_size: 6,
 				border_color: '818284'
 			}
 		)
+		t.row(0).style(height: 15)
+		t.row(1).style(height: 15)
 		t.draw
-		pdf.move_down 10		
+		pdf.move_down 4		
 	end
 
 	def self.acta_firmas pdf, section
