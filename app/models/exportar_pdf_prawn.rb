@@ -64,7 +64,7 @@ class ExportarPdfPrawn
 		filas_por_pagina = 28
 		resto = data.length % filas_por_pagina
 		if resto != 0
-			filas_faltantes = filas_por_pagina - resto + 1
+			filas_faltantes = filas_por_pagina - resto
 			filas_faltantes.times do
 				if absolute
 					data << ["****", "**********", "*****************************************************", "******", "****", "****", "************"]
@@ -80,7 +80,11 @@ class ExportarPdfPrawn
 			t.position = :center
 			t.header = true
 			t.row_colors = ["F0F0F0", "FFFFFF"]
-			t.column_widths = {1 => 60, 2 => 220,5 => 30, 7 => 118}
+			t.column_widths = if absolute
+				{1 => 60, 2 => 240, 4 => 55, 5 => 30, 6 => 123}
+			else
+				{1 => 60, 2 => 220, 5 => 30, 7 => 118}
+			end
 			t.cell_style = {:inline_format => true, :size => 8, align: :center, padding: 3, border_color: '818284' }
 			
 			t.column(2).style(:align => :justify)
@@ -126,7 +130,24 @@ class ExportarPdfPrawn
 
 		data << [ "#{asig.code}", "#{asig.name}", "#{section.code&.upcase}", "#{asig.modality_initial_letter}", "#{asig.unit_credits}", "#{section.conv_long}", "#{section.academic_records.confirmed.count}"]
 
-		t = pdf.make_table(data, header: true, row_colors: ["F0F0F0", "FFFFFF"], width: 540, position: :center, cell_style: { inline_format: true, size: 10, align: :center, padding: 3, border_color: '818284'})
+		t = pdf.make_table(
+			data,
+			header: true,
+			row_colors: ["F0F0F0", "FFFFFF"],
+			width: 540,
+			position: :center,
+			column_widths: {0 => 55, 1 => 255, 2 => 40, 3 => 35, 4 => 45, 5 => 55, 6 => 55},
+			cell_style: {
+				inline_format: true,
+				size: 10,
+				align: :center,
+				valign: :center,
+				padding: 3,
+				overflow: :shrink_to_fit,
+				min_font_size: 8,
+				border_color: '818284'
+			}
+		)
 		t.draw
 		pdf.move_down 10		
 	end
