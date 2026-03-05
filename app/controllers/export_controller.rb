@@ -32,7 +32,7 @@ class ExportController < ApplicationController
       
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
-      aux = "Reporte Coes - Registros - #{model_titulo} #{DateTime.now.strftime('%d-%m-%Y_%I:%M%P')}.csv"
+      aux = "Reporte Coes - Registros - #{model_titulo} #{Time.current.strftime('%d-%m-%Y_%I:%M%P')}.csv"
       response.headers.delete('Content-Length')
       response.headers['Cache-Control'] = 'no-cache'
       response.headers['Content-Type'] = "text/event-stream;charset='utf-8';header=present"

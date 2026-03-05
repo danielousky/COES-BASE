@@ -109,7 +109,7 @@ class ExportarPdfPrawn
 		# pdf.number_pages "<page> in a total of <total>", [bounds.right - 50, 0]
     	# pdf.start_page_numbering(, 9, nil, , 1)
 		academic_process = section.academic_process
-		data = [["FECHA DE LA EMISIÓN: <b>#{Time.now.strftime('%d/%m/%Y %I:%M %p')}</b>", "ACTA No.: <b>#{section.number_acta}</b>"]]
+		data = [["FECHA DE LA EMISIÓN: <b>#{Time.current.strftime('%d/%m/%Y %I:%M %p')}</b>", "ACTA No.: <b>#{section.number_acta}</b>"]]
 		data << ["EJERCICIO: <b>#{academic_process.process_name}</b>", "PERIODO ACADÉMICO: <b>#{academic_process.process_name}</b>" ]
 		data << ["FACULTAD: <b>#{section.school&.faculty&.name}</b>", "TIPO DE CONVOCATORIA: <b>#{section.conv_type}</b>" ]
 		if section.school.postgrado?
