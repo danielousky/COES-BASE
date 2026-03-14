@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   # before_action :set_current_process
   before_action :set_paper_trail_whodunnit
+  before_action :force_password_change!
 
 
   # around_action :set_session_data
@@ -158,6 +159,16 @@ class ApplicationController < ActionController::Base
 		end
 	end
 
+  def force_password_change!
+    return unless current_user
+    return if current_user.updated_password?
+    return if controller_name == 'users' && action_name.in?(%w[edit_password update])
+    return if devise_controller?
+
+    flash[:warning] = "Debe cambiar su contraseña antes de continuar."
+    redirect_to edit_password_user_path(current_user)
+  end
+
   def authorized_filter
 		accion = (!(controller_name.eql? 'secciones') and (action_name.eql? 'show')) ? 'index' : action_name
 		funcion = Restringida.where(controlador: controller_name, accion: accion).first
@@ -165,7 +176,7 @@ class ApplicationController < ActionController::Base
 		if funcion and current_usuario and (current_admin and !current_admin.maestros?) and not(current_usuario.autorizado?(controller_name, accion))
 			msg = 'No posee los privilegios para ejecutar la acción solicitada'
 			respond_to do |format|
-				format.html do 
+				format.html do
 					flash[:danger] = msg
 					redirect_back fallback_location: index2_secciones_path
 				end
