@@ -104,6 +104,10 @@ class AcademicRecordsController < ApplicationController
 
   # DELETE /academic_records/1 or /academic_records/1.json
   def destroy
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
 
     student_id = @academic_record.student.id
     @academic_record.destroy
