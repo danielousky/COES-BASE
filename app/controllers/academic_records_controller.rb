@@ -1,5 +1,6 @@
 class AcademicRecordsController < ApplicationController
   before_action :set_academic_record, only: %i[ show edit update destroy ]
+  before_action :require_admin, only: %i[ destroy ]
 
   # GET /academic_records or /academic_records.json
   def index
@@ -104,11 +105,6 @@ class AcademicRecordsController < ApplicationController
 
   # DELETE /academic_records/1 or /academic_records/1.json
   def destroy
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     student_id = @academic_record.student.id
     @academic_record.destroy
     flash[:info] = '¡Registro Eliminado!'

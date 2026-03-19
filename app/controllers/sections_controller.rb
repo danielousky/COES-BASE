@@ -1,5 +1,6 @@
 class SectionsController < ApplicationController
   before_action :set_section, only: %i[ show update export change_qualification_status]
+  before_action :require_admin, only: %i[ bulk_delete ]
 
   layout 'logged'
 
@@ -15,11 +16,6 @@ class SectionsController < ApplicationController
   end
 
   def bulk_delete
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     if Section.where(id: params[:bulk_ids]).destroy_all
       flash[:info] = 'Secciones Eliminadas'
     else

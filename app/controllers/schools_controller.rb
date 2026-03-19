@@ -1,4 +1,6 @@
 class SchoolsController < ApplicationController
+  include ActionController::Live
+  include Streamable
   before_action :logged_as_admin?
   before_action :set_school, only: %i[ show edit update destroy export_grades export_grades_stream]
 
@@ -13,13 +15,7 @@ class SchoolsController < ApplicationController
     respond_to do |format|
       format.xls do
         begin          
-          response.headers.delete('Content-Length')
-          response.headers['Cache-Control'] = 'no-cache'
-          response.headers['X-Accel-Buffering'] = 'no'
-          response.headers['Content-Type'] = 'text/event-stream'
-          response.headers['ETag'] = '0'
-          response.headers['Last-Modified'] = '0'
-          response.headers['Content-Disposition'] = "attachment; filename=#{@school.short_name}_todos_stream.xls"
+          set_streaming_headers("#{@school.short_name}_todos_stream.xls", content_type: 'text/event-stream')
 
           response.stream.write @school.all_grades_to_csv
         ensure

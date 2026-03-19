@@ -1,7 +1,5 @@
 class BillboardsController < ApplicationController
-  before_action :log_filter
-  before_action :administrator_filter
-  before_action :authorized_filter#, except: [:new, :edit]
+  before_action :require_admin
   before_action :set_billboard, only: [:show, :edit, :update, :destroy, :set_active, :set_content]
 
 

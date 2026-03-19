@@ -2,6 +2,7 @@ class ExportCsvController < ApplicationController
   before_action :authenticate_user!
   before_action :validate_model_name, only: [:academic_records, :enroll_academic_processes]
   include ActionController::Live
+  include Streamable
 
   ALLOWED_MODELS = %w[School AcademicProcess Period Subject Area Departament Section Course StudyPlan].freeze
 
@@ -24,15 +25,7 @@ class ExportCsvController < ApplicationController
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
       aux = "Reporte Coes - Registros - #{model_titulo} #{Time.current.strftime('%d-%m-%Y_%I:%M%P')}.csv"
-      response.headers.delete('Content-Length')
-      response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
-      response.headers['Pragma'] = 'no-cache'
-      response.headers['Expires'] = '0'
-      response.headers['Content-Type'] = "text/event-stream;charset='utf-8';header=present"
-      response.headers['X-Accel-Buffering'] = 'no'
-      response.headers['ETag'] = '0'
-      response.headers['Last-Modified'] = '0'
-      response.headers['Content-Disposition'] = "attachment; filename=#{aux}"    
+      set_streaming_headers(aux)
 
       a = AcademicRecord.header_for_report #['#', 'CI', 'NOMBRES', 'APELLIDOS', 'ESCUELA', 'CATEDRA','CÓDIGO ASIG', 'NOMBRE ASIG','PERIODO','SECCIÓN','ESTADO']
       
@@ -70,15 +63,7 @@ class ExportCsvController < ApplicationController
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
       aux = "Reporte Coes - Inscritos - #{model_titulo} #{cod} #{Time.current.strftime('%d-%m-%Y_%I:%M%P')}.csv"
-      response.headers.delete('Content-Length')
-      response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
-      response.headers['Pragma'] = 'no-cache'
-      response.headers['Expires'] = '0'
-      response.headers['Content-Type'] = "text/event-stream;charset='utf-8';header=present"
-      response.headers['X-Accel-Buffering'] = 'no'
-      response.headers['ETag'] = '0'
-      response.headers['Last-Modified'] = '0'
-      response.headers['Content-Disposition'] = "attachment; filename=#{aux}"    
+      set_streaming_headers(aux)
 
       a = EnrollAcademicProcess.header_for_report #['#', 'CI', 'NOMBRES', 'APELLIDOS','ESCUELA','PERIODO','ESTADO INSCRIP','ESTADO PERMANENCIA','REPORTE PAGO']
       

@@ -1,5 +1,6 @@
 class ExportController < ApplicationController
   before_action :logged_as_admin?
+  include Streamable
 
   def history_grade
     @grade = Grade.find params[:id]
@@ -33,13 +34,7 @@ class ExportController < ApplicationController
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
       aux = "Reporte Coes - Registros - #{model_titulo} #{Time.current.strftime('%d-%m-%Y_%I:%M%P')}.csv"
-      response.headers.delete('Content-Length')
-      response.headers['Cache-Control'] = 'no-cache'
-      response.headers['Content-Type'] = "text/event-stream;charset='utf-8';header=present"
-      response.headers['X-Accel-Buffering'] = 'no'
-      response.headers['ETag'] = '0'
-      response.headers['Last-Modified'] = '0'
-      response.headers['Content-Disposition'] = "attachment; filename=#{aux}"    
+      set_streaming_headers(aux)    
 
 
       # io = StringIO.new

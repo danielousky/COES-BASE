@@ -1,13 +1,10 @@
 class AcademicProcessesController < ApplicationController
   include ActionController::Live
+  include Streamable
   before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
+  before_action :require_admin, only: %i[ massive_confirmation clean_courses run_regulation ]
 
   def massive_confirmation
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     total = @academic_process.enroll_academic_processes.not_confirmado.with_payment_report
     total_count = total.count
     begin
@@ -23,15 +20,7 @@ class AcademicProcessesController < ApplicationController
     sections = @academic_process.sections.qualified
     
     aux = "Total Actas Periodo #{@academic_process.name}.pdf"
-    response.headers.delete('Content-Length')
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    response.headers['Content-Type'] = "application/pdf"
-    response.headers['X-Accel-Buffering'] = 'no'
-    response.headers['ETag'] = '0'
-    response.headers['Last-Modified'] = '0'
-    response.headers['Content-Disposition'] = "attachment; filename=#{aux}"
+    set_streaming_headers(aux, content_type: "application/pdf")
     
     begin
       # Crear un PDF combinado
@@ -128,15 +117,10 @@ class AcademicProcessesController < ApplicationController
 
 
   def run_regulation
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     total_actualizados = 0
     total_error = 0
     @academic_process.school.enrollment_days.each{|ed| ed.destroy}
-    @academic_process.enroll_academic_processes.each do |iep|
+    @academic_process.enroll_academic_processes.includes(:grade).each do |iep|
 
       grade = iep.grade
       
@@ -189,11 +173,6 @@ class AcademicProcessesController < ApplicationController
   # end
 
   def clean_courses
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     total = @academic_process.courses.count
     if @academic_process.courses.destroy_all
       flash[:info] = "Eliminados #{total} cursos con sus respectivas secciones."

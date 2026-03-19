@@ -1,5 +1,6 @@
 class EnrollAcademicProcessesController < ApplicationController
   before_action :set_enroll_academic_process, only: %i[ show edit update destroy study_constance total_retire update_permanece_status preinscribir_admin]
+  before_action :require_admin, only: %i[ total_retire update_permanece_status preinscribir_admin ]
 
   # GET /enroll_academic_processes or /enroll_academic_processes.json
   def index
@@ -235,29 +236,15 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   def total_retire
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
-    aux = true
-    @enroll_academic_process.academic_records.each do |ar|
-      aux = ar.update!(status: :retirado)
-    end
-    if aux.blank? or aux.eql? true
-      flash[:info] = '¡Actualización Exitosa!'
-    else
-      flash[:danger] = aux
-    end
+    @enroll_academic_process.academic_records.find_each { |ar| ar.update!(status: :retirado) }
+    flash[:info] = '¡Actualización Exitosa!'
+  rescue StandardError => e
+    flash[:danger] = "Error al retirar: #{e.message}"
+  ensure
     redirect_back fallback_location: "/admin/student/#{@enroll_academic_process.student.id}"
   end
 
   def update_permanece_status
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     if @enroll_academic_process.update(enroll_academic_process_params)
       flash[:success] = 'Actualizado el estado de permanecia del Estudiante'
     else
@@ -268,11 +255,6 @@ class EnrollAcademicProcessesController < ApplicationController
 
   # PATCH/PUT /enroll_academic_processes/1 or /enroll_academic_processes/1.json
   def preinscribir_admin
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     if @enroll_academic_process.update(enroll_status: params[:enroll_status])
       flash[:success] = "¡#{@enroll_academic_process.enroll_status&.titleize} con éxito!"
       if params[:send_confirmation]

@@ -1,5 +1,6 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [:edit, :update, :edit_images, :reset_password]
+  before_action :require_admin, only: %i[ reset_password ]
   # before_action :authenticate_student_or_teacher!
 
   layout 'logged'
@@ -8,11 +9,6 @@ class UsersController < ApplicationController
 
   # Función para resetear contraseña a un usuario desde Rails Admin
   def reset_password
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     @user.password = @user.ci
     @user.password_confirmation = @user.ci
 

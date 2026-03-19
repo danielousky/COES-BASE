@@ -1,5 +1,6 @@
 class PaymentReportsController < ApplicationController
   before_action :set_payment_report, only: %i[ show edit update destroy quick_validation]
+  before_action :require_admin, only: %i[ quick_validation destroy ]
 
   # GET /payment_reports or /payment_reports.json
   def index
@@ -52,11 +53,6 @@ class PaymentReportsController < ApplicationController
   # end
 
   def quick_validation
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     if @payment_report.update(payment_report_params)
       flash[:success] = "¡Reporte de pago actualizado!"
 
@@ -74,11 +70,6 @@ class PaymentReportsController < ApplicationController
 
   # DELETE /payment_reports/1 or /payment_reports/1.json
   def destroy
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      return redirect_back fallback_location: root_path
-    end
-
     @payment_report.destroy
 
     respond_to do |format|
