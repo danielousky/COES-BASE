@@ -1,0 +1,5 @@
+one:
+  active: true
+
+two:
+  active: false

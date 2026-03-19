@@ -1,0 +1,7 @@
+admin_user:
+  ci: "12345678"
+  email: "admin@test.com"
+  first_name: "Admin"
+  last_name: "Test"
+  encrypted_password: <%= Devise::Encryptor.digest(User, 'password123') %>
+  updated_password: true
