@@ -213,7 +213,7 @@ class AcademicProcess < ApplicationRecord
   end
 
   def link_to_massive_confirmation
-    "<a href='/academic_processes/#{id}/massive_confirmation' data-bs-toggle='tooltip' title='Confirmar preinscritos y reservados con reporte de pago' data-confirm='Está acción confirmará #{self.enroll_academic_processes.not_confirmado.total_with_payment_report} estudiantes (preinscritos o reservados) con reporte de pago. ¿Está completamente seguro?' class='label bg-info'><i class= 'fa-regular fa-list-check'></i></a>".html_safe
+    "<a href='/academic_processes/#{id}/massive_confirmation' data-bs-toggle='tooltip' title='Confirmar preinscritos y reservados con reporte de pago' data-confirm='Está acción confirmará #{self.enroll_academic_processes.not_confirmado.total_with_payment_report} estudiantes (preinscritos o reservados) con reporte de pago. ¿Está completamente seguro?' data-method='post' rel='nofollow' class='label bg-info'><i class= 'fa-regular fa-list-check'></i></a>".html_safe
   end
 
   def link_to_massive_actas_generation

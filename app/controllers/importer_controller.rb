@@ -1,4 +1,6 @@
 class ImporterController < ApplicationController
+	before_action :require_admin
+
 	def entities
 		case params[:entity]
 		when 'subjects'	
@@ -49,6 +51,15 @@ class ImporterController < ApplicationController
 			end
 		else
 			flash[:danger] = 'Tipo de entidad no encontrada. Por favor inténtelo nuevamente.'
+			redirect_back fallback_location: root_path
+		end
+	end
+
+	private
+
+	def require_admin
+		unless logged_as_admin?
+			flash[:danger] = 'No autorizado'
 			redirect_back fallback_location: root_path
 		end
 	end

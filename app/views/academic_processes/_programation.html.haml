@@ -20,7 +20,7 @@
 - if academic_process.sections.any? and !has_enrolled and (current_user&.admin&.authorized_delete? 'Course')
   - total = academic_process.sections.count
 
-  = link_to "/academic_processes/#{academic_process_id}/clean_courses", class: 'float-end btn btn-sm btn-danger mx-1', 'data-confirm': "Esta acción es irreversible y eliminará un total de #{total} secciones asociadas al proceso y limpiará las asignaturas activadas. ¿ Está completamente seguro?", 'data-bs-toggle': :tooltip, title: 'Eliminar todas las secciones y desactivar las asignaturas' do
+  = link_to "/academic_processes/#{academic_process_id}/clean_courses", method: :delete, class: 'float-end btn btn-sm btn-danger mx-1', 'data-confirm': "Esta acción es irreversible y eliminará un total de #{total} secciones asociadas al proceso y limpiará las asignaturas activadas. ¿ Está completamente seguro?", 'data-bs-toggle': :tooltip, title: 'Eliminar todas las secciones y desactivar las asignaturas' do
     .fa.fa-remove
     = "Eliminar Programación"
 

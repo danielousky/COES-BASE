@@ -91,7 +91,7 @@ class AcademicRecord < ApplicationRecord
   # default_scope { joins(:user, :course, :section, :period, :subject) }
 
   scope :of_academic_process, -> (academic_process_id) {joins(:academic_process).where "academic_processes.id IN (?)", academic_process_id}
-  scope :custom_search, -> (keyword) {joins(:user, :course, :section, :period, :subject).where("users.ci ILIKE '%#{keyword}%' OR users.first_name ILIKE '%#{keyword}%' OR users.last_name ILIKE '%#{keyword}%' OR subjects.name ILIKE '%#{keyword}%' OR subjects.code ILIKE '%#{keyword}%' OR sections.code ILIKE '%#{keyword}%' OR periods.name ILIKE '%#{keyword}%'") }
+  scope :custom_search, -> (keyword) {joins(:user, :course, :section, :period, :subject).where("users.ci ILIKE :kw OR users.first_name ILIKE :kw OR users.last_name ILIKE :kw OR subjects.name ILIKE :kw OR subjects.code ILIKE :kw OR sections.code ILIKE :kw OR periods.name ILIKE :kw", kw: "%#{keyword}%") }
 
 
   scope :prenroll, -> {joins(:enroll_academic_process).where('enroll_academic_processes.enroll_status = ?', EnrollAcademicProcess.enroll_statuses[:preinscrito])} # 

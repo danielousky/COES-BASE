@@ -687,7 +687,7 @@ end
     # p "     #{row[4].strip.downcase.to_sym}      ".center(500, "!")
     if row[4] and !row[4].blank?
       row[4].upcase!
-      row[4] = SubjectType.where("code = '#{row[4]}' OR name = '#{row[4]}'").first&.id
+      row[4] = SubjectType.where("code = :val OR name = :val", val: row[4]).first&.id
       
       row[4] ||= SubjectType.first.id
       

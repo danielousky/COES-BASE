@@ -104,6 +104,7 @@ class AcademicRecordsController < ApplicationController
 
   # DELETE /academic_records/1 or /academic_records/1.json
   def destroy
+
     student_id = @academic_record.student.id
     @academic_record.destroy
     flash[:info] = '¡Registro Eliminado!'

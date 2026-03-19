@@ -63,7 +63,7 @@ class Course < ApplicationRecord
 
   scope :offers, -> {where(offer: true)}
   
-  scope :custom_search, -> (keyword) {joins(:period, :subject).where("subjects.name ILIKE '%#{keyword}%' OR subjects.code ILIKE '%#{keyword}%' OR periods.name ILIKE '%#{keyword}%'") }
+  scope :custom_search, -> (keyword) {joins(:period, :subject).where("subjects.name ILIKE :kw OR subjects.code ILIKE :kw OR periods.name ILIKE :kw", kw: "%#{keyword}%") }
   # default_scope {of_academic_process(@academic_process.id)}
 
   # ORIGINAL CON LEFT JOIN

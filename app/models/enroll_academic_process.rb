@@ -100,7 +100,7 @@ include AcademicProcessable
   
   scope :total_with_i_academic_records, -> (i){(joins(:academic_records).group(:"enroll_academic_processes.id").having('COUNT(*) = ?', i).count).count}
 
-  scope :custom_search, -> (keyword) { joins(:user, :period).where("users.ci ILIKE '%#{keyword}%' OR periods.name ILIKE '%#{keyword}%'") }
+  scope :custom_search, -> (keyword) { joins(:user, :period).where("users.ci ILIKE :kw OR periods.name ILIKE :kw", kw: "%#{keyword}%") }
 
   scope :with_0_academic_records, -> { left_joins(:academic_records).where(academic_records: { id: nil }) }
   scope :sin_inscripciones, -> { with_0_academic_records}  

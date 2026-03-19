@@ -80,7 +80,7 @@ class Asignatura < ApplicationRecord
 	scope :no_pcis, lambda { |periodo_id| joins(:programaciones).where('programaciones.periodo_id = ? and programaciones.pci IS FALSE', periodo_id) }
 
 	scope :de_escuela, lambda {|escuela_id| joins(:escuela).where('escuelas.id': escuela_id)}
-	scope :sin_la_escuela, -> (escuela_id){joins(:escuela).where("escuelas.id != '#{escuela_id}'")}
+	scope :sin_la_escuela, -> (escuela_id){joins(:escuela).where.not('escuelas.id': escuela_id)}
 
 	# scope :pcis, -> {where('pci IS TRUE')}
 	# scope :no_pcis, -> {where('pci IS FALSE')}

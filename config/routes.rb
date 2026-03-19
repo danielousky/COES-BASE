@@ -67,18 +67,18 @@ Rails.application.routes.draw do
 
   resources :enrollment_days, only: [:create, :destroy] do
     member do
-      get 'destroy_all'
+      delete 'destroy_all'
       get 'export'
     end 
   end
 
   resources :academic_processes do
     member do
-      get 'massive_confirmation'
+      post 'massive_confirmation'
       get 'massive_actas_generation'
       get 'massive_actas_generation_async'
-      get 'clean_courses'
-      get 'run_regulation'
+      delete 'clean_courses'
+      post 'run_regulation'
     end
     collection do
       post :change_process_session

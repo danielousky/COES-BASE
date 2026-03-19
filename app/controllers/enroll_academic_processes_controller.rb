@@ -235,6 +235,11 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   def total_retire
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     aux = true
     @enroll_academic_process.academic_records.each do |ar|
       aux = ar.update!(status: :retirado)
@@ -248,6 +253,11 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   def update_permanece_status
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     if @enroll_academic_process.update(enroll_academic_process_params)
       flash[:success] = 'Actualizado el estado de permanecia del Estudiante'
     else
@@ -258,6 +268,11 @@ class EnrollAcademicProcessesController < ApplicationController
 
   # PATCH/PUT /enroll_academic_processes/1 or /enroll_academic_processes/1.json
   def preinscribir_admin
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     if @enroll_academic_process.update(enroll_status: params[:enroll_status])
       flash[:success] = "¡#{@enroll_academic_process.enroll_status&.titleize} con éxito!"
       if params[:send_confirmation]

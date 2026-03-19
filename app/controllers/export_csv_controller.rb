@@ -1,4 +1,5 @@
-class ExportCsvController < ActionController::Base
+class ExportCsvController < ApplicationController
+  before_action :authenticate_user!
   include ActionController::Live
 
   def stream

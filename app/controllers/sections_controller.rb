@@ -15,6 +15,10 @@ class SectionsController < ApplicationController
   end
 
   def bulk_delete
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
 
     if Section.where(id: params[:bulk_ids]).destroy_all
       flash[:info] = 'Secciones Eliminadas'

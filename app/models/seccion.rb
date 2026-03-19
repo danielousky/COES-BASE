@@ -197,14 +197,14 @@ class Seccion < ApplicationRecord
 
 	def seccion_hermana
 		if numero.include? '(R)'
-			aux = Seccion.where("asignatura_id = '#{asignatura_id}' and periodo_id = '#{periodo_id}' and numero = '#{numero_limpio_y_sin_r}'").first
-			if aux 
+			aux = Seccion.where(asignatura_id: asignatura_id, periodo_id: periodo_id, numero: numero_limpio_y_sin_r).first
+			if aux
 				return aux
 			else
-				return Seccion.where("asignatura_id = '#{asignatura_id}' and periodo_id = '#{periodo_id}'").first
+				return Seccion.where(asignatura_id: asignatura_id, periodo_id: periodo_id).first
 			end
 		else
-			return Seccion.where("asignatura_id = '#{asignatura_id}' and periodo_id = '#{periodo_id}'").first
+			return Seccion.where(asignatura_id: asignatura_id, periodo_id: periodo_id).first
 		end
 	end
 	def es_de_reparacion?
@@ -255,7 +255,7 @@ class Seccion < ApplicationRecord
 	end
 
 	def habilitada_para_calificadar_recientemente?
-		fecha_ultima_calificacion = Bitacora.where("tipo_objeto = 'Seccion' and id_objeto = #{self.id} and descripcion LIKE '%para calificar trimestral%'").last
+		fecha_ultima_calificacion = Bitacora.where("tipo_objeto = 'Seccion' and id_objeto = :id and descripcion LIKE :desc", id: self.id, desc: '%para calificar trimestral%').last
 
 		if fecha_ultima_calificacion.nil?
 			return false
@@ -276,7 +276,7 @@ class Seccion < ApplicationRecord
 	end
 
 	def recientemente_calificada?
-		fecha_ultima_calificacion = Bitacora.where("tipo_objeto = 'Seccion' and id_objeto = #{self.id} and descripcion LIKE '%Seccion Calificada%'").last
+		fecha_ultima_calificacion = Bitacora.where("tipo_objeto = 'Seccion' and id_objeto = :id and descripcion LIKE :desc", id: self.id, desc: '%Seccion Calificada%').last
 
 		if fecha_ultima_calificacion.nil?
 			return false
@@ -339,7 +339,7 @@ class Seccion < ApplicationRecord
 	end
 
 	def cuantos_tiene? del_estado
-		self.inscripcionsecciones.group("estado").having("estado = #{del_estado}").count
+		self.inscripcionsecciones.group("estado").having("estado = ?", del_estado).count
 	end
 
 	def pci?

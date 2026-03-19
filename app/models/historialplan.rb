@@ -36,7 +36,7 @@ class Historialplan < ApplicationRecord
 
 	validates :grado_id, presence: true
 
-	scope :por_escuela, lambda { |escuela_id| joins(:plan).where("planes.escuela_id = '#{escuela_id}'")}
+	scope :por_escuela, lambda { |escuela_id| joins(:plan).where('planes.escuela_id': escuela_id)}
 
 	def descripcion
 		"#{plan.descripcion_completa} - Desde #{periodo_id}"

@@ -9,7 +9,7 @@ class AsignaturaPeriodoInscripcionUnicaValidator < ActiveModel::Validator
     def unica_inscripcion_asignatura_periodo(record)
       periodo_id = record.periodo.id
       asignatura_id = record.asignatura.id
-      record.grado.inscripciones.joins(:asignatura).del_periodo(periodo_id).where("asignaturas.id = '#{asignatura_id}'").any?
+      record.grado.inscripciones.joins(:asignatura).del_periodo(periodo_id).where('asignaturas.id': asignatura_id).any?
       
     end
 end

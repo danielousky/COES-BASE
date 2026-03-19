@@ -101,7 +101,7 @@ class Grade < ApplicationRecord
   #SCOPES:
   scope :with_day_enroll_eql_to, -> (day){ where(appointment_time: day.all_day)}
   scope :with_appointment_time, -> { where("appointment_time IS NOT NULL")}
-  scope :with_appointment_time_eql_to, -> (dia){ where("date(appointment_time) = '#{dia}'")}
+  scope :with_appointment_time_eql_to, -> (dia){ where("date(appointment_time) = :dia", dia: dia)}
   scope :without_appointment_time, -> { where('grades.appointment_time': nil)}
 
   # scope :with_enrollments_in_period, -> (period_id) { joins(academic_records: {section: {course: :academic_process}}).where('(SELECT COUNT(*) FROM academic_records WHERE academic_records.estudiante_id = grades.student_id) > 0 and secciones.periodo_id = ?', periodo_id) }
@@ -151,7 +151,7 @@ class Grade < ApplicationRecord
   # AVANCES EN PIGGLY-SCOPE
   # scope :without_enroll_in_academic_processes, -> (academic_process_id) {left_joins(:enroll_academic_processes).where('enroll_academic_processes.grade_id': nil, 'enroll_academic_processes.academic_process_id': academic_process_id)}
 
-  scope :custom_search, -> (keyword) { joins(:user, :school).where("users.ci ILIKE '%#{keyword}%' OR schools.name ILIKE '%#{keyword}%'") }
+  scope :custom_search, -> (keyword) { joins(:user, :school).where("users.ci ILIKE :kw OR schools.name ILIKE :kw", kw: "%#{keyword}%") }
 
   # FUNCTIONS:
 
@@ -605,7 +605,7 @@ class Grade < ApplicationRecord
 
 
   def subjects_offer_by_study_plan
-      Subject.where("id LIKE '%#{study_plan_id}%'")
+      Subject.where("CAST(id AS TEXT) LIKE :kw", kw: "%#{study_plan_id}%")
   end
 
   def asignaturas_ofertables_segun_dependencia

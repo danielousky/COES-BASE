@@ -3,6 +3,11 @@ class AcademicProcessesController < ApplicationController
   before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
 
   def massive_confirmation
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     total = @academic_process.enroll_academic_processes.not_confirmado.with_payment_report
     total_count = total.count
     begin
@@ -80,13 +85,18 @@ class AcademicProcessesController < ApplicationController
   end
 
   def download_actas
-    filename = params[:filename]
+    filename = File.basename(params[:filename].to_s)
     file_path = Rails.root.join('tmp', filename)
-    
+
+    unless file_path.to_s.start_with?(Rails.root.join('tmp').to_s)
+      flash[:danger] = "Acceso no permitido."
+      return redirect_back fallback_location: '/admin/academic_process'
+    end
+
     if File.exist?(file_path)
-      send_file file_path, 
-                filename: filename, 
-                type: 'application/pdf', 
+      send_file file_path,
+                filename: filename,
+                type: 'application/pdf',
                 disposition: 'attachment'
     else
       flash[:danger] = "El archivo solicitado no existe o ha expirado."
@@ -118,6 +128,11 @@ class AcademicProcessesController < ApplicationController
 
 
   def run_regulation
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     total_actualizados = 0
     total_error = 0
     @academic_process.school.enrollment_days.each{|ed| ed.destroy}
@@ -174,6 +189,11 @@ class AcademicProcessesController < ApplicationController
   # end
 
   def clean_courses
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      return redirect_back fallback_location: root_path
+    end
+
     total = @academic_process.courses.count
     if @academic_process.courses.destroy_all
       flash[:info] = "Eliminados #{total} cursos con sus respectivas secciones."

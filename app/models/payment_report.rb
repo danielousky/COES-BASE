@@ -63,7 +63,7 @@ class PaymentReport < ApplicationRecord
   scope :pagos_inscripcion, -> {where(payable_type: 'EnrollAcademicProcess')}  
 
   #scope :custom_search, -> (keyword) {joins_enroll_academic_process.joins("INNER JOIN academic_processes ON enroll_academic_processes.academic_process_id = academic_processes.id").where("academic_processes.name ILIKE '%#{keyword}%'") }  
-  scope :custom_search, -> (keyword) {joins(:user, :school).where("payment_reports.owner_account_name ILIKE '%#{keyword}%' OR payment_reports.owner_account_ci ILIKE '%#{keyword}%' OR payment_reports.transaction_id ILIKE '%#{keyword}%' OR payment_reports.amount = #{keyword} OR users.ci ILIKE '%#{keyword}%' OR users.first_name ILIKE '%#{keyword}%' OR users.last_name ILIKE '%#{keyword}%' OR users.email ILIKE '%#{keyword}%' OR schools.name ILIKE '%#{keyword}%'") }  
+  scope :custom_search, -> (keyword) {joins(:user, :school).where("payment_reports.owner_account_name ILIKE :kw OR payment_reports.owner_account_ci ILIKE :kw OR payment_reports.transaction_id ILIKE :kw OR CAST(payment_reports.amount AS TEXT) ILIKE :kw OR users.ci ILIKE :kw OR users.first_name ILIKE :kw OR users.last_name ILIKE :kw OR users.email ILIKE :kw OR schools.name ILIKE :kw", kw: "%#{keyword}%") }
 
 
   # scope :payment_process, -> (payable){joins("INNER JOIN #{payable} on payable_type = '#{payable.singularize.camelize}' and payable_id = #{payable}.id").where("#{payable}.pa") }
