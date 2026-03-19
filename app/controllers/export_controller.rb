@@ -58,8 +58,8 @@ class ExportController < ApplicationController
         response.stream.write "#{academic_record.values_for_report.join(';')}\n"
       end
 
-    rescue Exception => e
-      flash[:success] = "No se pudo generar el archivo: #{e}" 
+    rescue StandardError => e
+      flash[:danger] = "No se pudo generar el archivo: #{e}" 
       redirect_back fallback_location: '/admin'
     ensure
       response.stream.close

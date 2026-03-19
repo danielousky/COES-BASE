@@ -22,7 +22,7 @@ class PartialQualificationsController < ApplicationController
             format.js { render json: {data: "Error: #{qua.errors.full_messages.to_sentence}", type: 'danger'}, status: 500, error:  "Error: #{qua.errors.full_messages.to_sentence}"}
           end
         end
-      rescue Exception => e
+      rescue StandardError => e
         format.js { render json: {data: "Error: #{e}", type: 'danger'}, status: 500, error:  "Error: #{e}"}
       end
     end

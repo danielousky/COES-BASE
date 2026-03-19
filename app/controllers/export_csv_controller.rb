@@ -1,6 +1,9 @@
 class ExportCsvController < ApplicationController
   before_action :authenticate_user!
+  before_action :validate_model_name, only: [:academic_records, :enroll_academic_processes]
   include ActionController::Live
+
+  ALLOWED_MODELS = %w[School AcademicProcess Period Subject Area Departament Section Course StudyPlan].freeze
 
   def stream
     response.headers['Content-Type'] = 'text/event-stream'
@@ -16,7 +19,7 @@ class ExportCsvController < ApplicationController
   def academic_records
     # require 'xlsxtream'
     begin
-      @object = params[:model_name].camelize.constantize.find (params[:id])
+      @object = params[:model_name].camelize.constantize.find(params[:id])
 
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
@@ -50,8 +53,8 @@ class ExportCsvController < ApplicationController
       #   end
       # end
 
-    rescue Exception => e
-      flash[:success] = "No se pudo generar el archivo: #{e}" 
+    rescue StandardError => e
+      flash[:danger] = "No se pudo generar el archivo: #{e}" 
       redirect_back fallback_location: '/admin'
     ensure
       response.stream.close
@@ -60,7 +63,7 @@ class ExportCsvController < ApplicationController
 
   def enroll_academic_processes
     begin
-      @object = params[:model_name].camelize.constantize.find (params[:id])
+      @object = params[:model_name].camelize.constantize.find(params[:id])
       cod = @object.name
       cod ||= @object.code
       cod ||= @object.id
@@ -84,8 +87,8 @@ class ExportCsvController < ApplicationController
         response.stream.write "#{i+1}; #{enroll_academic_process.values_for_report.join(';')}\n"
       end
 
-    rescue Exception => e
-      flash[:success] = "No se pudo generar el archivo: #{e}" 
+    rescue StandardError => e
+      flash[:danger] = "No se pudo generar el archivo: #{e}" 
       redirect_back fallback_location: '/admin'
     ensure
       response.stream.close
@@ -93,4 +96,13 @@ class ExportCsvController < ApplicationController
   end
 
 
+  private
+
+  def validate_model_name
+    model_name = params[:model_name].to_s.camelize
+    unless ALLOWED_MODELS.include?(model_name)
+      flash[:danger] = 'Modelo no permitido para exportación'
+      redirect_back fallback_location: '/admin'
+    end
+  end
 end

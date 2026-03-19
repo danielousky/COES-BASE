@@ -105,7 +105,7 @@ class Section < ApplicationRecord
 
   
   # SCOPE:
-  default_scope {includes(:course, :subject, :period, :area)} # No hace falta
+  scope :with_associations, -> { includes(:course, :subject, :period, :area) }
   scope :sort_by_period, -> {joins(:period).order('periods.name')}
   scope :sort_by_period_reverse, -> {joins(:period).order('periods.name DESC')}
 

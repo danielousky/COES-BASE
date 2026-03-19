@@ -32,7 +32,7 @@ class UsersController < ApplicationController
         flash[:danger] = "#{@user.errors.full_messages.to_sentence}"
       end
       
-    rescue Exception => e
+    rescue StandardError => e
       e = 'Sin cambios realizados' if e.to_s.include? 'param is missing or the value is empty: user'
       flash[:info] = e
     end

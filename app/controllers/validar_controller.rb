@@ -35,7 +35,7 @@ class ValidarController < ApplicationController
 
         @version = @enroll_academic_process.versions.find(params[:id])
         
-      rescue Exception => e
+      rescue StandardError => e
         flash[:danger] = "Recurso no accesible. Puede que el documento no sea válido o halla sido alterado. Contacte a las autoridades para la validación del documento: #{e}"
         redirect_to root_path
       end

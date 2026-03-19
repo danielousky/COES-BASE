@@ -13,7 +13,7 @@ class AcademicProcessesController < ApplicationController
     begin
       total.each {|ins| ins.confirm_with_email}
       flash[:success] = "Se actualizaron #{total_count} inscripciones"
-    rescue Exception => e
+    rescue StandardError => e
       flash[:danger] = "No fue posible completar la operación: #{e}"
     end
     redirect_back fallback_location: '/admin/enroll_academic_process'
@@ -67,7 +67,7 @@ class AcademicProcessesController < ApplicationController
       # Enviar el PDF combinado completo
       response.stream.write combined_pdf.to_pdf
       
-    rescue Exception => e
+    rescue StandardError => e
       Rails.logger.error "Error en generación masiva de actas: #{e.message}"
       flash[:danger] = "No se pudo generar el archivo: #{e.message}"
       redirect_back fallback_location: '/admin/academic_process'
@@ -247,7 +247,7 @@ class AcademicProcessesController < ApplicationController
             errors += 1
           end
         end
-      rescue Exception => e
+      rescue StandardError => e
         flash[:danger] = e
       end  
       flash[:danger] = "#{errors} Cargas con errores. Vuelva a intentarlo." if errors > 0

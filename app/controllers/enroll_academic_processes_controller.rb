@@ -138,7 +138,7 @@ class EnrollAcademicProcessesController < ApplicationController
         end
       end
 
-    rescue Exception => e
+    rescue StandardError => e
       estado = 'error'
       msg = "Error: #{e}"       
     end
@@ -177,7 +177,7 @@ class EnrollAcademicProcessesController < ApplicationController
             else
               flash[:info] = '¡Correo de Confirmación Enviado!' if UserMailer.enroll_confirmation(enroll_academic_process.id).deliver_now
             end
-          rescue Exception => e
+          rescue StandardError => e
             flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
           end
         end
@@ -191,7 +191,7 @@ class EnrollAcademicProcessesController < ApplicationController
 
         StudentMailer.preinscrito(enroll_academic_process).deliver
         
-      rescue Exception => e
+      rescue StandardError => e
         flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
       end
       flash[:success] = "Proceso de preinscripción completado con éxito. Un correo con el resumen del proceso le ha sido enviado."
@@ -283,7 +283,7 @@ class EnrollAcademicProcessesController < ApplicationController
           else
             flash[:info] = '¡Correo de Confirmación Enviado!' if UserMailer.enroll_confirmation(@enroll_academic_process.id).deliver_now
           end
-        rescue Exception => e
+        rescue StandardError => e
           flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
         end
       end
@@ -302,7 +302,7 @@ class EnrollAcademicProcessesController < ApplicationController
         begin
           flash[:info] = 'Se envió un correo al estudiante con la información.' if send_confirmation and UserMailer.enroll_confirmation(@enroll_academic_process.id).deliver_now
           
-        rescue Exception => e
+        rescue StandardError => e
           flash[:warning] = "No se pudo enviar el correo: #{e}"
         end
 
