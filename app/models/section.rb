@@ -119,6 +119,7 @@ class Section < ApplicationRecord
   # scope :codes, -> () {select(:code).all.distinct.order(code: :asc).map{|s| s.code}}
   scope :codes, -> () {all.order(code: :asc).map{|s| s.code}.uniq}
 
+  scope :todos, -> { where('0 = 0') }
   scope :without_teacher_assigned, -> () {where(teacher_id: nil)}
   scope :with_teacher_assigned, -> () {where('teacher_id IN NOT NULL')}
 
@@ -364,6 +365,7 @@ class Section < ApplicationRecord
     weight -1
 
     list do
+      scopes [:todos, :without_teacher_assigned]
       sort_by ['periods.name', 'areas.name', 'courses.name', 'subjects.code']
       checkboxes false
       search_by :custom_search

@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   match "/export_csv/enroll_academic_processes/:id" => "export_csv#enroll_academic_processes", via: :get
   
   match "/session_admin/change_period_session" => "session_admin#change_period_session", via: :post
+  get "/admin_dashboard/enrollment_counts", to: "admin_dashboard#enrollment_counts", as: :admin_dashboard_enrollment_counts
 
   match "/admin/course/:id/move_academic_records_progress" => "rails_admin/main#move_academic_records", via: :get, as: :move_academic_records_progress
 

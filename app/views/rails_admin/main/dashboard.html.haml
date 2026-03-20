@@ -1,45 +1,292 @@
-- logged_as_admin = (current_user and current_user.admin? and session[:rol].eql? 'admin') ? true : false
-.mb-0= render partial: 'layouts/main_banner', locals: {bg_color: 'bg-info bg-opacity-20 '}
-.row
-	- schools_auh = current_user&.admin&.schools_auh
-	- if schools_auh&.any?
-		- period = Period.find_by(name: session[:period_name])
-		- school_auth = current_user&.admin&.authorized_read? 'School'
-		- schools_auh.includes(:academic_processes).order(:name).each do |school|
-			- ap = school.academic_processes.find { |a| a.period_id == period&.id }
-			- @process_name = ap&.process_name
-			- ap ||= school.academic_processes.find(&:enroll)
-			- ap ||= school.academic_processes.first
-			- @process_enroll_name = ap&.process_name
+- if @dashboard.present?
+  - et = @dashboard.enrollment_totals
+  - st = @dashboard.section_totals
+  - grading = @dashboard.grading
+  - qs = grading ? @dashboard.qualification_stats : {}
+  - rate = grading ? @dashboard.approval_rate : 0
+  - alerts = @dashboard.alerts
+  - school_types = @dashboard.school_type_entities
+  - trend = @dashboard.trend_data
 
-			.col.mx-3.mb-3				
-				.row
-					%h4.bg-info.mb-0.py-2.text-center
-						= link_to_if school_auth, school.short_name, "/admin/school/#{school.id}", class: 'undecored'
-					
-					- if logged_as_admin and current_user.admin.authorized_read? 'AcademicProcess' and @process_enroll_name
-						- url = "/admin/academic_process?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
-						= link_to url, class: 'btn btn-primary' do
-							%h4.fa.fa-calendar
-							%h6.text-center Períodos
-					- if logged_as_admin and current_user.admin.authorized_read? 'AcademicRecord'
-						- object = I18n.t("activerecord.models.academic_record.other")
-						- url = "/admin/academic_record?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
+  .d-flex.justify-content-between.align-items-center.mb-3
+    %h5.mb-0
+      %i.fa-solid.fa-chart-line.me-2
+      Panel de Control
+    .d-flex.align-items-center.gap-3
+      - if @dashboard.enrolling
+        %span.d-flex.align-items-center.gap-1#live-indicator
+          %span.live-pulse
+          %small.text-success.fw-semibold En vivo
+          %small.text-muted#last-updated Actualizado ahora
+      = form_tag "/session_admin/change_period_session", method: :post, class: 'd-inline', data: { turbo: false } do
+        %select.form-select.form-select-sm{name: 'nuevo', onchange: 'this.form.submit()', style: 'width: 160px'}
+          - @periods&.each do |p|
+            %option{value: p.name, selected: p.name == session[:period_name]}= p.name
 
-						= link_to url, class: 'btn btn-primary' do
-							%h4.fa.fa-signature
-							%h6.text-center= "#{object.upcase} #{@process_name}"
-				- if logged_as_admin and current_user.admin.authorized_read? 'Section'
-					.row
-						- object = I18n.t("activerecord.models.section.other")
-						- url = "/admin/section?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
-						= link_to url, class: 'btn btn-primary' do
-							%h4.fa.fa-list
-							%h6.text-center= "#{object.upcase} #{@process_name}"
-				- if logged_as_admin and current_user.admin.authorized_manage? 'EnrollAcademicProcess'
-					.row
-						- object = I18n.t("activerecord.models.enroll_academic_process.other")
-						- url = "/admin/enroll_academic_process?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
-						= link_to url, class: 'btn btn-primary' do
-							%h4.fa.fa-calendar-check
-							%h6.text-center= "#{object.upcase} #{@process_enroll_name}"
+  /-- FILA 1: KPI Cards --/
+  .row.g-3.mb-4
+    .col-md-6.col-lg-3
+      .card.border-start.border-4.border-primary.h-100.shadow-sm
+        .card-body.pb-2
+          .d-flex.justify-content-between.align-items-start.mb-2
+            %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+              %i.fa-solid.fa-user-graduate.me-1
+              Inscritos
+            - if @dashboard.enrolling
+              %span.badge.rounded-pill.bg-success.bg-opacity-25.text-success En inscripción
+          %h2.fw-bold.mb-1
+            %span.countup{'data-target': et[:total]}= et[:total]
+          .d-flex.gap-2.mb-2{style: 'font-size: 0.8rem'}
+            %span.text-success
+              %i.fa-solid.fa-circle-check.me-1
+              %span.countup{'data-target': et[:confirmado]}= et[:confirmado]
+              confirmados
+            %span.text-primary
+              %span.countup{'data-target': et[:preinscrito]}= et[:preinscrito]
+              pre
+            %span.text-warning
+              %span.countup{'data-target': et[:reservado]}= et[:reservado]
+              res
+          - if et[:total] > 0
+            .progress{style: 'height: 6px'}
+              - pct_conf = (et[:confirmado].to_f / et[:total] * 100).round(0)
+              - pct_pre = (et[:preinscrito].to_f / et[:total] * 100).round(0)
+              .progress-bar.bg-success{style: "width: #{pct_conf}%", 'data-bs-toggle': 'tooltip', title: "#{pct_conf}% confirmados"}
+              .progress-bar.bg-primary{style: "width: #{pct_pre}%", 'data-bs-toggle': 'tooltip', title: "#{pct_pre}% preinscritos"}
+              .progress-bar.bg-warning{style: "width: #{100 - pct_conf - pct_pre}%"}
+          - if trend[:enrollment].present?
+            #spark-enrollment.mt-2{'data-values': trend[:enrollment].to_json}
+
+    .col-md-6.col-lg-3
+      .card.border-start.border-4.border-info.h-100.shadow-sm
+        .card-body.pb-2
+          %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+            %i.fa-solid.fa-chalkboard.me-1
+            Secciones
+          %h2.fw-bold.mb-1
+            %span.countup{'data-target': st[:total]}= st[:total]
+          - if @dashboard.enrolling
+            - occupancy = st[:total_capacity] > 0 ? (st[:total_enrolled].to_f / st[:total_capacity] * 100).round(0) : 0
+            .d-flex.justify-content-between.mb-2{style: 'font-size: 0.8rem'}
+              %span.text-primary
+                %i.fa-solid.fa-users.me-1
+                %span.countup{'data-target': st[:total_enrolled]}= st[:total_enrolled]
+                inscritos
+              %span.text-muted
+                de
+                %span.countup{'data-target': st[:total_capacity]}= st[:total_capacity]
+                cupos
+            .progress.mb-2{style: 'height: 6px'}
+              - bar_class = occupancy >= 90 ? 'bg-danger' : occupancy >= 70 ? 'bg-warning' : 'bg-info'
+              .progress-bar{class: bar_class, style: "width: #{occupancy}%", 'data-bs-toggle': 'tooltip', title: "#{occupancy}% ocupación"}
+          - elsif grading
+            .d-flex.justify-content-between.mb-2{style: 'font-size: 0.8rem'}
+              %span.text-success
+                %i.fa-solid.fa-check.me-1
+                %span.countup{'data-target': st[:qualified]}= st[:qualified]
+                calificadas
+              %span.text-muted
+                #{st[:percentage]}%
+            .progress.mb-2{style: 'height: 6px'}
+              .progress-bar.bg-success{style: "width: #{st[:percentage]}%"}
+          - if st[:no_teacher] > 0
+            %a.badge.bg-warning.text-dark.text-decoration-none{href: '/admin/section?scope=without_teacher_assigned'}
+              %i.fa-solid.fa-exclamation-triangle.me-1
+              #{st[:no_teacher]} sin profesor
+
+    - if grading && !@dashboard.enrolling
+      .col-md-6.col-lg-3
+        .card.border-start.border-4.h-100.shadow-sm{class: rate >= 70 ? 'border-success' : rate >= 50 ? 'border-warning' : 'border-danger'}
+          .card-body.pb-2.text-center
+            %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+              %i.fa-solid.fa-chart-pie.me-1
+              Aprobación
+            #chart-approval.mx-auto{'data-rate': rate, style: 'max-width: 160px'}
+            .d-flex.justify-content-center.gap-2{style: 'font-size: 0.8rem'}
+              %span.text-success
+                %span.countup{'data-target': qs['aprobado'].to_i}= qs['aprobado'].to_i
+                apr
+              %span.text-danger
+                %span.countup{'data-target': qs['aplazado'].to_i}= qs['aplazado'].to_i
+                apl
+              %span.text-secondary
+                %span.countup{'data-target': qs['perdida_por_inasistencia'].to_i}= qs['perdida_por_inasistencia'].to_i
+                PI
+
+    .col-md-6.col-lg-3
+      .card.border-start.border-4.h-100.shadow-sm{class: alerts.any? ? 'border-danger' : 'border-success'}
+        .card-body.pb-2
+          %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+            %i.fa-solid.fa-bell.me-1
+            Alertas
+          - if alerts.any?
+            %h2.fw-bold.mb-2.text-danger
+              %span.countup{'data-target': alerts.size}= alerts.size
+            .list-group.list-group-flush
+              - alerts.each do |alert|
+                %a.list-group-item.list-group-item-action.p-2.border-0{href: alert[:url], style: 'font-size: 0.8rem'}
+                  %i.fa-solid{class: alert[:icon]}
+                  = alert[:text]
+                  %i.fa-solid.fa-arrow-right.float-end.mt-1
+          - else
+            .text-center.py-3
+              %i.fa-solid.fa-circle-check.fa-2x.text-success.mb-2
+              %p.text-muted.mb-0 Todo en orden
+
+  /-- FILA 2: Charts --/
+  .row.g-3.mb-4
+    %div{class: (grading && !@dashboard.enrolling) ? 'col-lg-7' : 'col-lg-12'}
+      .card.shadow-sm.h-100
+        .card-header.bg-white.border-bottom.py-3
+          %h6.card-title.mb-0
+            %i.fa-solid.fa-chart-bar.me-1.text-primary
+            Inscripciones por Escuela
+        .card-body
+          - enrollment_data = {labels: [], confirmado: [], preinscrito: [], reservado: []}
+          - @dashboard.schools.each do |school|
+            - data = @dashboard.enrollment_by_school[school.id] || {confirmado: 0, preinscrito: 0, reservado: 0}
+            - enrollment_data[:labels] << school.short_name
+            - enrollment_data[:confirmado] << data[:confirmado]
+            - enrollment_data[:preinscrito] << data[:preinscrito]
+            - enrollment_data[:reservado] << data[:reservado]
+          #chart-enrollment{'data-chart': enrollment_data.to_json, style: 'min-height: 280px'}
+
+    - if grading && !@dashboard.enrolling
+      .col-lg-5
+        .card.shadow-sm.h-100
+          .card-header.bg-white.border-bottom.py-3
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-chart-pie.me-1.text-info
+              Estado de Calificaciones
+          .card-body
+            - q_data = {labels: ['Aprobados', 'Aplazados', 'Sin Calificar', 'Retirados', 'PI'], values: [qs['aprobado'].to_i, qs['aplazado'].to_i, qs['sin_calificar'].to_i, qs['retirado'].to_i, qs['perdida_por_inasistencia'].to_i]}
+            #chart-qualifications{'data-chart': q_data.to_json, style: 'min-height: 280px'}
+
+  /-- FILA 3: Detalle por escuela + Top 10 --/
+  .row.g-3
+    .col-lg-8
+      .card.shadow-sm
+        .card-header.bg-white.border-bottom.py-3
+          %h6.card-title.mb-0
+            %i.fa-solid.fa-school.me-1.text-primary
+            Detalle por Escuela
+        .card-body.p-0
+          .accordion.accordion-flush#accordionSchools
+            - @dashboard.schools.each_with_index do |school, idx|
+              - detail = @dashboard.school_detail(school)
+              - enr = detail[:enrollment]
+              - sec = detail[:sections]
+              .accordion-item
+                %h2.accordion-header{id: "heading-#{school.id}"}
+                  %button.accordion-button{class: idx > 0 && @multiple_schools ? 'collapsed' : '', 'data-bs-toggle': 'collapse', 'data-bs-target': "#collapse-#{school.id}", 'aria-expanded': (idx == 0 || !@multiple_schools).to_s}
+                    .d-flex.justify-content-between.w-100.me-3
+                      %span.fw-semibold= school.short_name
+                      .d-flex.gap-2
+                        %span.badge.bg-primary.rounded-pill= "#{enr[:total]} inscritos"
+                        %span.badge.bg-info.rounded-pill= "#{sec[:total]} secciones"
+                        - if grading && !@dashboard.enrolling
+                          %span.badge{class: sec[:percentage] >= 70 ? 'bg-success' : sec[:percentage] >= 40 ? 'bg-warning text-dark' : 'bg-secondary'}= "#{sec[:percentage]}% calif."
+                .accordion-collapse.collapse{id: "collapse-#{school.id}", class: idx == 0 || !@multiple_schools ? 'show' : '', 'data-bs-parent': @multiple_schools ? '#accordionSchools' : nil}
+                  .accordion-body
+                    .row.g-3
+                      .col-md-6
+                        %table.table.table-sm.mb-0
+                          %tbody
+                            %tr
+                              %td.text-muted Confirmados
+                              %td.fw-semibold.text-success= enr[:confirmado]
+                              - if enr[:total] > 0
+                                %td.text-muted= "#{(enr[:confirmado].to_f / enr[:total] * 100).round(0)}%"
+                            %tr
+                              %td.text-muted Preinscritos
+                              %td.fw-semibold.text-primary= enr[:preinscrito]
+                              - if enr[:total] > 0
+                                %td.text-muted= "#{(enr[:preinscrito].to_f / enr[:total] * 100).round(0)}%"
+                            %tr
+                              %td.text-muted Reservados
+                              %td.fw-semibold.text-warning= enr[:reservado]
+                              - if enr[:total] > 0
+                                %td.text-muted= "#{(enr[:reservado].to_f / enr[:total] * 100).round(0)}%"
+                      .col-md-6
+                        %table.table.table-sm.mb-0
+                          %tbody
+                            - if grading && !@dashboard.enrolling
+                              %tr
+                                %td.text-muted Secciones calificadas
+                                %td.fw-semibold= "#{sec[:qualified]} / #{sec[:total]}"
+                            %tr
+                              %td.text-muted Sin profesor
+                              %td
+                                - if sec[:no_teacher] > 0
+                                  %span.badge.bg-warning.text-dark= sec[:no_teacher]
+                                - else
+                                  %span.text-success ✓
+                            %tr
+                              %td.text-muted Período
+                              %td.fw-semibold= detail[:process_name]
+                    .mt-2
+                      - if detail[:process]
+                        %a.btn.btn-sm.btn-outline-primary.me-2{href: "/admin/section?f[school][1][o]=like&f[school][1][v]=#{school.short_name}"}
+                          %i.fa-solid.fa-list.me-1
+                          Secciones
+                        %a.btn.btn-sm.btn-outline-primary.me-2{href: "/admin/enroll_academic_process?f[school][1][o]=like&f[school][1][v]=#{school.short_name}"}
+                          %i.fa-solid.fa-users.me-1
+                          Inscripciones
+                        %a.btn.btn-sm.btn-outline-primary{href: "/admin/academic_process?f[school][1][o]=like&f[school][1][v]=#{school.short_name}"}
+                          %i.fa-solid.fa-calendar.me-1
+                          Períodos
+
+    .col-lg-4
+      - type_labels = { 'pregrado' => 'Pregrado', 'postgrado' => 'Postgrado', 'extension' => 'Extensión', 'investigacion' => 'Investigación' }
+      - display_types = school_types.select { |t| %w[pregrado postgrado].include?(t) }
+      - display_types = ['pregrado'] if display_types.empty?
+      - display_types.each do |type_entity|
+        .card.shadow-sm.mb-3
+          .card-header.bg-white.border-bottom.py-3
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-trophy.me-1.text-warning
+              = "Top 10 #{type_labels[type_entity]}"
+          .card-body.p-0
+            - top = @dashboard.top_students(10, type_entity: type_entity)
+            - if top.any?
+              %table.table.table-sm.mb-0{style: 'font-size: 0.82rem'}
+                %thead
+                  %tr
+                    %th.border-0{style: 'width: 1.5rem'}
+                    %th.border-0
+                    %th.border-0.text-center{'data-bs-toggle': 'tooltip', title: 'Materias inscritas', style: 'width: 2.5rem'} Asig.
+                    %th.border-0.text-center{'data-bs-toggle': 'tooltip', title: 'Créditos inscritos', style: 'width: 2.5rem'} Cred.
+                    %th.border-0.text-center{'data-bs-toggle': 'tooltip', title: 'Eficiencia', style: 'width: 2.5rem'} Ef
+                    %th.border-0.text-center{'data-bs-toggle': 'tooltip', title: 'Promedio Ponderado', style: 'width: 2.5rem'} PP
+                %tbody
+                  - top.each_with_index do |eap, idx|
+                    %tr
+                      %td.text-muted.text-end.align-middle
+                        - if idx < 3
+                          = ['🥇','🥈','🥉'][idx]
+                        - else
+                          = "#{idx + 1}."
+                      %td.align-middle{style: 'font-size: 0.75rem; max-width: 120px'}
+                        %a.fw-semibold.text-decoration-none{href: "/admin/student/#{eap.grade&.student_id}", title: eap.grade&.student&.user&.reverse_name}
+                          = eap.grade&.student&.user&.reverse_name
+                        %br
+                        %small.text-muted= eap.grade&.study_plan&.school&.short_name
+                      %td.text-center.align-middle.fw-bold.text-primary= eap.try(:subjects_count) || 0
+                      %td.text-center.align-middle.text-info= eap.try(:total_credits) || 0
+                      %td.text-center.align-middle= eap.efficiency.to_f.round(2)
+                      %td.text-center.align-middle.fw-bold= eap.weighted_average&.round(2)
+              - perfect = @dashboard.perfect_score_count(type_entity: type_entity)
+              - if perfect > 10
+                .text-center.py-2.border-top{style: 'font-size: 0.75rem'}
+                  %span.text-muted
+                    %i.fa-solid.fa-star.me-1.text-warning
+                    = "#{perfect} estudiantes con promedio perfecto en este período"
+            - else
+              .text-center.py-4
+                %i.fa-solid.fa-graduation-cap.fa-2x.text-muted.mb-2
+                %p.text-muted.mb-0 Sin datos para este período
+
+- else
+  .alert.alert-info
+    %i.fa-solid.fa-info-circle.me-2
+    Panel de control disponible solo para administradores.
