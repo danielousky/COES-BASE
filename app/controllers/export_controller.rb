@@ -28,8 +28,7 @@ class ExportController < ApplicationController
   def general
     # require 'xlsxtream'
     begin
-      # @object = params[:model_name].camelize.constantize.find (params[:id])
-      @object = AcademicProcess.find 44 
+      @object = AcademicProcess.find(params[:id])
       
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
@@ -49,7 +48,7 @@ class ExportController < ApplicationController
       # end
 
       response.stream.write %w{CI NOMBRES APELLIDOS ESCUELA CATEDRA ASIGNATURA PERIODO SECCIÓN ESTADO}.join(";")+"\n"
-      @object.academic_records.includes(:section, :user, :period, :subject, :area).find_each(batch_size: 500) do |academic_record|
+      @object.academic_records.includes(:section, :user, :subject, :area, :study_plan, :school, period: :period_type).find_each(batch_size: 500) do |academic_record|
         response.stream.write "#{academic_record.values_for_report.join(';')}\n"
       end
 
