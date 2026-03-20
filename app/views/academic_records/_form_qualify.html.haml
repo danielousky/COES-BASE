@@ -8,7 +8,7 @@
   %td.col-3
     - options = {"aprobado"=>1, "aplazado"=>2}
     - options.map do |v,k|
-      = radio_button_tag "[academic_record]status", v, status.eql?(v), disabled: disable_row, required: !disable_row, class: 'absoluta', id_obj: id, type_q: :final, 'data-bs-toggle': :tooltip, title: v.titleize, onclick: 'sendAbsolute(this);'
+      = radio_button_tag "academic_records[#{academic_record.id}][status]", v, status.eql?(v), disabled: disable_row, required: !disable_row, class: 'absoluta', id_obj: id, type_q: :final, 'data-bs-toggle': :tooltip, title: v.titleize, onclick: 'sendAbsolute(this);'
       .badge.bg-secondary= v.upcase
 
 - else
@@ -18,17 +18,17 @@
   - no_post_q = !(diferido or reparacion)
   - disabled_final_q = (disable_row or !no_post_q)
 
-  %td= check_box_tag nil, 'pi', academic_record.pi?, {name: "[#{academic_record.id}][qualification]pi", id: "_#{academic_record.id}_qualification_pi", class: 'pi', id_obj: id, disabled: preinscrito, onclick: 'pi(this);'}
+  %td= check_box_tag "academic_records[#{academic_record.id}][qualification][pi]", 'pi', academic_record.pi?, {id: "_#{academic_record.id}_qualification_pi", class: 'pi', id_obj: id, disabled: preinscrito, onclick: 'pi(this);'}
   %td.text-center
     - if have_partial_qualification
       = text_field_tag "qualification_final_#{academic_record.id}", nil, {value: final_q_to_02i, placeholder: 'Final', class: 'form-control form-control-sm qualifiable final onlyQualify', disabled: true, step: 1, in: 0...21, id_obj: id, type_q: :final, onchange: 'sendQualification(this);final(this);'}
     - else
-      = text_field_tag "qualification", "final", {id: "[#{academic_record.id}][qualification]final", value: final_q_to_02i, placeholder: 'Final', class: 'form-control form-control-sm qualifiable final onlyQualify', disabled: disabled_final_q, required:!disabled_final_q, step: 1, in: 0...21, id_obj: id, type_q: :final, onchange: 'sendQualification(this);final(this);', oninput: 'onlyValidQ(this);'}
+      = text_field_tag "academic_records[#{academic_record.id}][qualification][final]", "final", {id: "[#{academic_record.id}][qualification]final", value: final_q_to_02i, placeholder: 'Final', class: 'form-control form-control-sm qualifiable final onlyQualify', disabled: disabled_final_q, required:!disabled_final_q, step: 1, in: 0...21, id_obj: id, type_q: :final, onchange: 'sendQualification(this);final(this);', oninput: 'onlyValidQ(this);'}
   - if GeneralSetup.enabled_post_qualification? and @academic_process.post_qualification?
     - checkbox_disabled = (disable_row or aprobado or final_q_to_02i.nil?)
-    %td.text-center= check_box_tag nil, :diferido, diferido, {id: "[#{academic_record.id}][qualification]diferido", disabled: (checkbox_disabled or reparacion), class: 'checkPost post', id_obj: id, onclick: 'checkPost(this);'}
+    %td.text-center= check_box_tag "academic_records[#{academic_record.id}][qualification][diferido]", :diferido, diferido, {id: "[#{academic_record.id}][qualification]diferido", disabled: (checkbox_disabled or reparacion), class: 'checkPost post', id_obj: id, onclick: 'checkPost(this);'}
 
-    %td.text-center= check_box_tag nil, :reparacion, reparacion, {id: "[#{academic_record.id}][qualification]reparacion", disabled: (checkbox_disabled or diferido), class: 'checkPost post', id_obj: id, onclick: 'checkPost(this);'}
+    %td.text-center= check_box_tag "academic_records[#{academic_record.id}][qualification][reparacion]", :reparacion, reparacion, {id: "[#{academic_record.id}][qualification]reparacion", disabled: (checkbox_disabled or diferido), class: 'checkPost post', id_obj: id, onclick: 'checkPost(this);'}
 
-    %td.text-center= text_field_tag "[qualification]post", {}, {id: "[#{academic_record.id}][qualification]post", value: academic_record.post_q_value, placeholder: 'Post', class: 'form-control form-control-sm qualifiable post value_post', disabled: no_post_q, required: !no_post_q,  step: 1, in: 0...21, id_obj: id, type_q: academic_record.post_type_q, onchange: 'sendQualification(this);', oninput: 'onlyValidQ(this);'}
+    %td.text-center= text_field_tag "academic_records[#{academic_record.id}][qualification][post]", {}, {id: "[#{academic_record.id}][qualification]post", value: academic_record.post_q_value, placeholder: 'Post', class: 'form-control form-control-sm qualifiable post value_post', disabled: no_post_q, required: !no_post_q,  step: 1, in: 0...21, id_obj: id, type_q: academic_record.post_type_q, onchange: 'sendQualification(this);', oninput: 'onlyValidQ(this);'}
 

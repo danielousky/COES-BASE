@@ -30,6 +30,12 @@ class MassiveActasGenerationJob < ApplicationJob
       rescue => e
         # p "<     Error: #{e}        >".center(500, 'X')
         Rails.logger.error "Error procesando sección #{section.id}: #{e.message}"
+
+        # Enviar correo con el error
+        if user_id
+          user = User.find(user_id)
+          UserMailer.general(user, "Hubo un error al generar el acta para la sección #{section.name} (ID: #{section.id}): #{e.message}").deliver_now
+        end
       end
     end
     
@@ -50,6 +56,11 @@ class MassiveActasGenerationJob < ApplicationJob
     rescue => e
       Rails.logger.error "Error guardando archivo en S3: #{e.message}"
       raise e
+      # Enviar correo con el error
+      if user_id
+        user = User.find(user_id)
+        UserMailer.general(user, "Hubo un error al guardar el archivo de actas en S3: #{e.message}").deliver_now
+      end
     end
     
     # Notificar al usuario si se proporcionó

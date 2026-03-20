@@ -21,8 +21,8 @@
 		- teacher_authorized_to_qualify = (logged_as_teacher? and current_user&.teacher&.id.eql? @section.teacher&.id)
 
 		- if @section.is_in_process_active? and not @section.is_inrolling? and teacher_authorized_to_qualify and !@section.qualified?
-			= form_for(@section) do |f|
-				= render partial: 'academic_records/qualify', locals: {section: @section}
+			= render partial: 'academic_records/qualify', locals: {section: @section}
+			= form_for(@section, url: section_path(@section), method: :patch) do |f|
 				= f.hidden_field :qualified, {value: true}
 				= f.button :submit, class: 'float-end btn btn-success mb-3' do
 					%i.fa.fa-check

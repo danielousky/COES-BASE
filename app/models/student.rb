@@ -517,6 +517,8 @@ class Student < ApplicationRecord
       grado = estudiante.grades.find_or_initialize_by(study_plan_id: fields[:study_plan_id])
       grado.admission_type_id = fields[:admission_type_id]
 
+      grado.region = fields[:region].to_sym if fields[:region]
+
       if estudiante.save!
         # grado = Grade.find_or_initialize_by(student_id: estudiante.id, study_plan_id: fields[:study_plan_id])
         if row[6]

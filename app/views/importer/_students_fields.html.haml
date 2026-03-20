@@ -9,9 +9,17 @@
   #study_plan_field.control-group.row.mb-3.enum_type
     %label.col-sm-2.col-form-label.text-md-end{for: "study_plan_field"} Plan de Estudio
     .col-sm-10.controls
-      = grouped_collection_select nil, :study_plan_id, schools, :study_plans, :name, :id, :desc, {:prompt => "Seleccione plan de estudio por defecto..."}, { class: 'form-control', required: true}
+      = grouped_collection_select nil, :study_plan_id, schools, :study_plans, :name, :id, :desc, {:prompt => "Seleccione plan de estudio por defecto..."}, { class: 'form-control', required: true, disabled: true}
       .form-text
         %span.label.label-danger Requerido
+
+  #start_process_field.control-group.row.mb-3.enum_type
+    %label.col-sm-2.col-form-label.text-md-end{for: "start_process_field"} Periodo de Inicio
+    .col-sm-10.controls
+      = grouped_collection_select nil, :start_process_id, schools, :academic_processes, :name, :id, :name, {:prompt => "Seleccione el Periodo de Inicio por defecto..."}, { class: 'form-control', disabled: true}
+      .form-text
+        %span.label.label-default Opcional
+        Atención: Sí no coloca ningún valor en el archivo, se tomará el valor indicado en este campo para la migración.
 
   #admission_type_field.control-group.row.mb-3.enum_type
     %label.col-sm-2.col-form-label.text-md-end{for: "admission_type_field"} Tipo de Admisión
@@ -20,14 +28,6 @@
       = select_tag 'admission_type_id', options_for_select(AdmissionType.all.pluck(:name, :id)), class: "form-control required", required: true, include_blank: 'Seleccione Tipo de Adminsión...'
       .form-text
         %span.label.label-danger Requerido
-
-  #start_process_field.control-group.row.mb-3.enum_type
-    %label.col-sm-2.col-form-label.text-md-end{for: "start_process_field"} Periodo de Inicio
-    .col-sm-10.controls
-      = grouped_collection_select nil, :start_process_id, schools, :academic_processes, :name, :id, :name, {:prompt => "Seleccione el Periodo de Inicio por defecto..."}, { class: 'form-control'}
-      .form-text
-        %span.label.label-default Opcional
-        Atención: Sí no coloca ningún valor en el archivo, se tomará el valor indicado en este campo para la migración.
 
   #admission_year_field.control-group.row.mb-3.enum_type
     %label.col-sm-2.col-form-label.text-md-end{for: "admission_year_field"} Año de Admisión
@@ -39,6 +39,15 @@
         %span.label.label-default Opcional
         Atención: Sí no coloca ningún valor en el archivo, se tomará el valor indicado en este campo para la migración.
 
+  #region_field.control-group.row.mb-3.enum_type
+    %label.col-sm-2.col-form-label.text-md-end{for: "region_field"} Región
+    .col-sm-10.controls
+      - Grade.regions.map do |k,v|
+        %label.btn.btn-secondary.btn-sm.tooltip-btn{'data_toggle': :tooltip, title: k.titleize}
+          = radio_button_tag 'region', k, false, class: ''
+          = "#{k.upcase}"
+      .form-text
+        Elija el lugar (Estado) de procedencia del estudiante, si lo hubiera
 
         
 
@@ -61,36 +70,48 @@
     var onchanged = function(){
       var this_ = this;
       var value = this_[this_.value].text;
-      console.log(value);
+      // console.log(value);
       var study_plans = document.querySelector("#study_plan_id");
       var academic_process = document.querySelector("#start_process_id");
       // var admission_types = document.querySelector("#admission_type_id");
 
-      var alloptionSP = study_plans.querySelectorAll('optgroup');
-      var alloptionAP = academic_process.querySelectorAll('optgroup');
-      // var alloptionAT = admission_types.querySelectorAll('optgroup');
+      // ocultar todos los optgroup de StudyPlans y options
+      var alloptgroupSP = study_plans.querySelectorAll('optgroup');
+      var alloptionSP = study_plans.querySelectorAll('option');
 
-      alloptionSP.forEach(function(element){
-       element.style.display = "none";
-      });
+      // ocultar todos los optgroup de AcademicProcess y options
+      var alloptgroupAP = academic_process.querySelectorAll('optgroup');
+      var alloptionAP = academic_process.querySelectorAll('option');
 
-      alloptionAP.forEach(function(element){
-       element.style.display = "none";
-      });
+      alloptgroupSP.forEach(function(element){element.style.display = "none";});
+      alloptionSP.forEach(function(element){element.style.display = "none";});
 
-      /*alloptionAT.forEach(function(element){
-       element.style.display = "none";
-      });*/
+      alloptgroupAP.forEach(function(element){element.style.display = "none";});
+      alloptionAP.forEach(function(element){element.style.display = "none";});
 
       var getByLabelSP = study_plans.querySelector('[label="'+value+'"]');
       var getByLabelAP = academic_process.querySelector('[label="'+value+'"]');
-      // var getByLabelAT = admission_types.querySelector('[label="'+value+'"]');
-      
+
+      // asignar display:block a opciones dentro del optgroup
+      var SPoptions = getByLabelSP.querySelectorAll('option');
+      var APoptions = getByLabelAP.querySelectorAll('option');
+
+
+      if (SPoptions.length === 1) {
+        // Si solo hay una opción, seleccionarla automáticamente
+        SPoptions[0].style.display = "block";
+        SPoptions[0].selected = true;
+      }else{
+        SPoptions[0].selected = true;
+        SPoptions.forEach(function(element){element.style.display = "block";});
+      }
+      APoptions.forEach(function(element){element.style.display = "block";});
 
       getByLabelSP.style.display = "block";
       getByLabelAP.style.display = "block";
 
-      // document.getElementById('options').classList.toggle("d-none");
+      study_plans.disabled = false;
+      academic_process.disabled = false;
       
     };
     
