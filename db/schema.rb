@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_03_20_001848) do
+ActiveRecord::Schema[7.0].define(version: 2026_03_20_023110) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -274,6 +274,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_03_20_001848) do
     t.datetime "updated_at", null: false
     t.string "name"
     t.boolean "offer", default: true
+    t.integer "sections_count", default: 0, null: false
     t.index ["academic_process_id"], name: "index_courses_on_academic_process_id"
     t.index ["subject_id"], name: "index_courses_on_subject_id"
   end
@@ -455,6 +456,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_03_20_001848) do
     t.bigint "language2_id"
     t.integer "region", default: 0
     t.integer "admission_year"
+    t.integer "enroll_academic_processes_count", default: 0, null: false
     t.index ["admission_type_id"], name: "index_grades_on_admission_type_id"
     t.index ["appointment_time"], name: "idx_grades_appointment_time"
     t.index ["enabled_enroll_process_id"], name: "index_grades_on_enabled_enroll_process_id"
@@ -778,6 +780,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_03_20_001848) do
     t.datetime "updated_at", null: false
     t.bigint "teacher_id"
     t.string "classroom"
+    t.integer "academic_records_count", default: 0, null: false
     t.index ["code", "course_id"], name: "index_sections_on_code_and_course_id", unique: true
     t.index ["course_id"], name: "index_sections_on_course_id"
     t.index ["qualified", "course_id"], name: "idx_sections_qualified_course"

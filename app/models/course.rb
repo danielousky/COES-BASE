@@ -6,6 +6,7 @@
 #  name                :string
 #  offer               :boolean          default(TRUE)
 #  offer_as_pci        :boolean
+#  sections_count      :integer          default(0), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
 #  academic_process_id :bigint           not null

@@ -28,7 +28,7 @@ class AcademicRecord < ApplicationRecord
   enum status: {sin_calificar: 0, aprobado: 1, aplazado: 2, retirado: 3, perdida_por_inasistencia: 4}
 
   # ASSOCIATIONS:
-  belongs_to :section
+  belongs_to :section, counter_cache: true
   belongs_to :enroll_academic_process
 
   has_many :qualifications, dependent: :destroy

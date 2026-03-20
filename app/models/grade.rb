@@ -2,28 +2,29 @@
 #
 # Table name: grades
 #
-#  id                        :bigint           not null, primary key
-#  admission_year            :integer
-#  appointment_time          :datetime
-#  current_permanence_status :integer          default("nuevo"), not null
-#  duration_slot_time        :integer
-#  efficiency                :float
-#  enrollment_status         :integer          default("preinscrito"), not null
-#  graduate_status           :integer
-#  region                    :integer          default("no_aplica")
-#  registration_status       :integer
-#  simple_average            :float
-#  weighted_average          :float
-#  created_at                :datetime         not null
-#  updated_at                :datetime         not null
-#  admission_type_id         :bigint           not null
-#  enabled_enroll_process_id :bigint
-#  language1_id              :bigint
-#  language2_id              :bigint
-#  start_id                  :bigint
-#  start_process_id          :bigint
-#  student_id                :bigint           not null
-#  study_plan_id             :bigint           not null
+#  id                              :bigint           not null, primary key
+#  admission_year                  :integer
+#  appointment_time                :datetime
+#  current_permanence_status       :integer          default("nuevo"), not null
+#  duration_slot_time              :integer
+#  efficiency                      :float
+#  enroll_academic_processes_count :integer          default(0), not null
+#  enrollment_status               :integer          default("preinscrito"), not null
+#  graduate_status                 :integer
+#  region                          :integer          default("no_aplica")
+#  registration_status             :integer
+#  simple_average                  :float
+#  weighted_average                :float
+#  created_at                      :datetime         not null
+#  updated_at                      :datetime         not null
+#  admission_type_id               :bigint           not null
+#  enabled_enroll_process_id       :bigint
+#  language1_id                    :bigint
+#  language2_id                    :bigint
+#  start_id                        :bigint
+#  start_process_id                :bigint
+#  student_id                      :bigint           not null
+#  study_plan_id                   :bigint           not null
 #
 # Indexes
 #

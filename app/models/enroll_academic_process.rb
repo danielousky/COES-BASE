@@ -46,7 +46,7 @@ include AcademicProcessable
   # end
   
   # ASSOCIATIONS:
-  belongs_to :grade
+  belongs_to :grade, counter_cache: true
   has_one :student, through: :grade
   has_one :study_plan, through: :grade
   has_one :user, through: :student

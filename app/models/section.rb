@@ -2,17 +2,18 @@
 #
 # Table name: sections
 #
-#  id         :bigint           not null, primary key
-#  capacity   :integer
-#  classroom  :string
-#  code       :string
-#  enabled    :boolean
-#  modality   :integer
-#  qualified  :boolean          default(FALSE), not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  course_id  :bigint           not null
-#  teacher_id :bigint
+#  id                     :bigint           not null, primary key
+#  academic_records_count :integer          default(0), not null
+#  capacity               :integer
+#  classroom              :string
+#  code                   :string
+#  enabled                :boolean
+#  modality               :integer
+#  qualified              :boolean          default(FALSE), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  course_id              :bigint           not null
+#  teacher_id             :bigint
 #
 # Indexes
 #
@@ -38,7 +39,7 @@ class Section < ApplicationRecord
 
   # ASSOCIATIONS:
   # belongs_to
-  belongs_to :course
+  belongs_to :course, counter_cache: true
   belongs_to :teacher, optional: true
   has_one :user, through: :teacher
 
