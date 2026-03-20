@@ -4,9 +4,6 @@
 
 - logged_as_admin = (current_user and current_user.admin? and session[:rol].eql? 'admin') ? true : false
 .mb-0= render partial: 'layouts/main_banner', locals: {bg_color: 'bg-info bg-opacity-20 '}
-- if false
-	.text-center.m-3= image_tag 'logo_completo.svg', width: '15%'
-
 .row
 	- schools_auh = current_user&.admin&.schools_auh
 	- if schools_auh&.any?
@@ -57,41 +54,3 @@
 						= link_to url, class: 'btn btn-primary' do
 							%h4.fa.fa-calendar-check
 							%h6.text-center= "#{object.upcase} #{@process_enroll_name}"
-- if false
-	.mt-4.align-middle.align-items-center{style: 'width:100%'}
-		.row
-			- School.all.each do |school|
-				%h5.col.text-center= school.name
-		.row
-			- School.all.each do |school|
-				- @process_name = nil
-				- ap = school.academic_processes.first
-				- @process_name = ap&.process_name
-				%h5.col.text-center= @process_name
-
-		- ['academic_record', 'section', 'enroll_academic_process'].each do |elem|
-			- object = I18n.t("activerecord.models.#{elem}.one")
-			.row
-				- School.all.each do |school|
-					- @process_name = nil
-					- ap = school.academic_processes.first
-					- @process_name = ap&.process_name
-					- @query = "?query=#{@process_name}" unless @process_name.blank?
-					.col.text-center
-						%h1
-							= link_to "/admin/#{elem}#{@query}", class: 'btn btn-primary btn-lg' do
-								%span.fa.fa-calendar
-								= "#{object.upcase} #{@process_name}"	
-
-- if false
-	:javascript
-
-		document.addEventListener("rails_admin.dom_ready", function() {
-
-			// $('[data-bs-toggle="collapse"]').click();
-			// $('header').remove();
-			// $('li.breadcrumb-item').parent().remove();
-			// $('li.breadcrumb-item').parent().remove();
-			// $('li.breadcrumb-item').remove();
-
-		});
