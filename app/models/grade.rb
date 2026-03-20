@@ -1054,24 +1054,8 @@ class Grade < ApplicationRecord
     end
 
     export do
-      field :school do
-        associated_collection_cache_all false
-        associated_collection_scope do
-          Proc.new { |scope|
-            scope = scope.joins(:school)
-            scope = scope.limit(100)
-          }
-        end        
-      end
-      field :study_plan do
-        associated_collection_cache_all false
-        associated_collection_scope do
-          Proc.new { |scope|
-            scope = scope.joins(:study_plan)
-            scope = scope.limit(100)
-          }
-        end
-      end    
+      field :school
+      field :study_plan
       fields :student, :admission_type, :registration_status, :region, :enrollment_status, :current_permanence_status, :registration_status, :graduate_status, :efficiency, :weighted_average, :simple_average
       field :admission_year do
         label 'Año de Admisión'
@@ -1081,6 +1065,9 @@ class Grade < ApplicationRecord
       end
       field :total_subjects_approved do
         label 'Total Asignaturas Aprobadas'
+      end
+      field :total_credits_approved do
+        label 'Total Créditos Aprobados'
       end
     end
   end

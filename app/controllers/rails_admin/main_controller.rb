@@ -248,6 +248,15 @@ module RailsAdmin
       options = options.merge(query: params[:query]) if params[:query].present?
       options = options.merge(filters: params[:f]) if params[:f].present?
       options = options.merge(bulk_ids: params[:bulk_ids]) if params[:bulk_ids]
+
+      # Agregar JOINs para asociaciones referenciadas en filtros (evita missing FROM-clause)
+      if params[:f].present?
+        filter_keys = params[:f].keys.map(&:to_sym)
+        model_assoc_names = model_config.abstract_model.model.reflect_on_all_associations.map(&:name)
+        assoc_filters = filter_keys & model_assoc_names
+        scope = scope.eager_load(*assoc_filters) if assoc_filters.any?
+      end
+
       model_config.abstract_model.all(options, scope)
     end
 

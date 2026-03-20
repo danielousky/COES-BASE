@@ -97,6 +97,18 @@ class Student < ApplicationRecord
 
 
   # FUNCTIONS:
+  def total_subjects_coursed
+    academic_records.total_subjects_coursed
+  end
+
+  def total_subjects_approved
+    academic_records.total_subjects_approved
+  end
+
+  def total_credits_approved
+    academic_records.total_credits_approved
+  end
+
   def university_degree
     [grade_title&.titleize, grade_university&.titleize, graduate_year].join(" - ") 
   end
@@ -389,34 +401,20 @@ class Student < ApplicationRecord
 
       field :admission_types do
         label 'Tipos de Admisión'
-
-        associated_collection_cache_all false
-        associated_collection_scope do
-          # bindings[:object] & bindings[:controller] are available, but not in scope's block!
-          Proc.new { |scope|
-            # scoping all Players currently, let's limit them to the team's league
-            # Be sure to limit if there are a lot of Players and order them by position
-            scope = scope.joins(:admission_types)
-            scope = scope.limit(30) # 'order' does not work here
-          }
-        end        
       end
 
       field :study_plans do
         label 'Planes de Estudio'
-        filterable :code
-
-        associated_collection_cache_all false
-        associated_collection_scope do
-          # bindings[:object] & bindings[:controller] are available, but not in scope's block!
-          Proc.new { |scope|
-            # scoping all Players currently, let's limit them to the team's league
-            # Be sure to limit if there are a lot of Players and order them by position
-            scope = scope.joins(:study_plans)
-            scope = scope.limit(30) # 'order' does not work here
-          }
-        end        
-      end            
+      end
+      field :total_subjects_coursed do
+        label 'Total Asignaturas Cursadas'
+      end
+      field :total_subjects_approved do
+        label 'Total Asignaturas Aprobadas'
+      end
+      field :total_credits_approved do
+        label 'Total Créditos Aprobados'
+      end
     end
 
     import do
