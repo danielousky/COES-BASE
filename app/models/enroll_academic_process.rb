@@ -15,6 +15,8 @@
 #
 # Indexes
 #
+#  idx_eap_grade_process                                   (grade_id,academic_process_id)
+#  idx_eap_process_statuses                                (academic_process_id,enroll_status,permanence_status)
 #  index_enroll_academic_processes_on_academic_process_id  (academic_process_id)
 #  index_enroll_academic_processes_on_grade_id             (grade_id)
 #

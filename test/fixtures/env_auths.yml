@@ -1,3 +1,23 @@
+# == Schema Information
+#
+# Table name: env_auths
+#
+#  id                    :bigint           not null, primary key
+#  env_authorizable_type :string           default("School")
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  admin_id              :bigint           not null
+#  env_authorizable_id   :bigint
+#
+# Indexes
+#
+#  index_env_auths_on_admin_id          (admin_id)
+#  index_env_auths_on_env_authorizable  (env_authorizable_type,env_authorizable_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (admin_id => admins.user_id) ON DELETE => cascade ON UPDATE => cascade
+#
 one:
   admin_id: <%= ActiveRecord::FixtureSet.identify(:admin_user) %>
   env_authorizable_type: "Faculty"

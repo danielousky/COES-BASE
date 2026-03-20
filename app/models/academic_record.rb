@@ -12,6 +12,8 @@
 #
 # Indexes
 #
+#  idx_academic_records_status_eap                       (status,enroll_academic_process_id)
+#  idx_academic_records_status_section                   (status,section_id)
 #  index_academic_records_on_enroll_academic_process_id  (enroll_academic_process_id)
 #  index_academic_records_on_section_id                  (section_id)
 #

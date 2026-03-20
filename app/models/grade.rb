@@ -27,6 +27,7 @@
 #
 # Indexes
 #
+#  idx_grades_appointment_time                   (appointment_time)
 #  index_grades_on_admission_type_id             (admission_type_id)
 #  index_grades_on_enabled_enroll_process_id     (enabled_enroll_process_id)
 #  index_grades_on_start_id                      (start_id)

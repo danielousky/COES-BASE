@@ -20,6 +20,7 @@
 #
 # Indexes
 #
+#  idx_subjects_ordinal_active_area   (ordinal,active,area_id)
 #  index_subjects_on_area_id          (area_id)
 #  index_subjects_on_departament_id   (departament_id)
 #  index_subjects_on_school_id        (school_id)

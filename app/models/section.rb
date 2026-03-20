@@ -16,6 +16,7 @@
 #
 # Indexes
 #
+#  idx_sections_qualified_course         (qualified,course_id)
 #  index_sections_on_code_and_course_id  (code,course_id) UNIQUE
 #  index_sections_on_course_id           (course_id)
 #  index_sections_on_teacher_id          (teacher_id)
