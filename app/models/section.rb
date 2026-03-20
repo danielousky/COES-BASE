@@ -117,11 +117,11 @@ class Section < ApplicationRecord
 
   # Atención: Este scope no esta trabajando
   # scope :codes, -> () {select(:code).all.distinct.order(code: :asc).map{|s| s.code}}
-  scope :codes, -> () {all.order(code: :asc).map{|s| s.code}.uniq}
+  scope :codes, -> () { order(code: :asc).distinct.pluck(:code) }
 
-  scope :todos, -> { where('0 = 0') }
+  scope :todos, -> { all }
   scope :without_teacher_assigned, -> () {where(teacher_id: nil)}
-  scope :with_teacher_assigned, -> () {where('teacher_id IN NOT NULL')}
+  scope :with_teacher_assigned, -> () {where.not(teacher_id: nil)}
 
   scope :has_capacity, -> {joins(:academic_records).group('sections.id').having('count(academic_records.id) < sections.capacity').order('count(academic_records.id)')}
 
@@ -801,8 +801,7 @@ class Section < ApplicationRecord
     begin
       aux = sprintf("%02i", self.code)
       self.code = aux
-    rescue Exception => e
-
+    rescue StandardError
     end
   end
 

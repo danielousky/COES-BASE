@@ -45,7 +45,6 @@ class MassiveActasGenerationJob < ApplicationJob
     # Crear un blob temporal para el PDF
     begin
       Rails.logger.info "Guardando archivo en S3"
-      p "     Guardando archivo en S3    ".center(1000, "#")
       
       blob = ActiveStorage::Blob.create_and_upload!(
         io: StringIO.new(combined_pdf.to_pdf),
@@ -55,18 +54,16 @@ class MassiveActasGenerationJob < ApplicationJob
       Rails.logger.info "Archivo guardado en S3 exitosamente: #{blob.key}"
     rescue => e
       Rails.logger.error "Error guardando archivo en S3: #{e.message}"
+      UserMailer.general(user, "Hubo un error al guardar el archivo de actas en S3: #{e.message}").deliver_now if user
       raise e
-      # Enviar correo con el error (inalcanzable por el raise, pero se conserva por documentación)
-      # UserMailer.general(user, "Hubo un error al guardar el archivo de actas en S3: #{e.message}").deliver_now if user
     end
     
     # Notificar al usuario si se proporcionó
     if user
-      # p "Enviando Correo" if UserMailer.actas_generation_complete(user, combined_pdf.to_pdf, filename).deliver_now
-      p "Enviando Correo S3" if UserMailer.actas_generation_complete(user, blob, filename).deliver_now
+      Rails.logger.info "Enviando correo con enlace S3"
+      UserMailer.actas_generation_complete(user, blob, filename).deliver_now
     end
     
-    p "Generación de actas completada: #{filename}"
     Rails.logger.info "Generación de actas completada: #{filename}"
   end
 end

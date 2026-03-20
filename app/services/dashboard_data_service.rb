@@ -1,13 +1,16 @@
 class DashboardDataService
+  include ActionView::Helpers::DateHelper
   attr_reader :schools, :period, :academic_processes, :enrolling, :grading
 
   def initialize(admin, period_name)
     @schools = admin.schools_auh&.order(:name) || School.none
+    @school_ids = @schools.pluck(:id)
     @period = Period.find_by(name: period_name)
-    @academic_processes = AcademicProcess.where(school_id: @schools.pluck(:id), period_id: @period&.id)
-    @process_ids = @academic_processes.pluck(:id)
-    @enrolling = @academic_processes.where(enroll: true).any?
-    @grading = @academic_processes.where(active: true).any?
+    @academic_processes = AcademicProcess.where(school_id: @school_ids, period_id: @period&.id).to_a
+    @process_ids = @academic_processes.map(&:id)
+    @process_by_school = @academic_processes.index_by(&:school_id)
+    @enrolling = @academic_processes.any?(&:enroll)
+    @grading = @academic_processes.any?(&:active)
   end
 
   def enrollment_by_school
@@ -99,6 +102,9 @@ class DashboardDataService
   end
 
   def top_students(limit = 10, type_entity: nil)
+    @top_students_cache ||= {}
+    return @top_students_cache[[limit, type_entity]] if @top_students_cache.key?([limit, type_entity])
+
     scope = EnrollAcademicProcess
       .where(academic_process_id: @process_ids)
       .confirmado
@@ -109,7 +115,7 @@ class DashboardDataService
         .where(schools: { type_entity: School.type_entities[type_entity] })
     end
 
-    scope
+    @top_students_cache[[limit, type_entity]] = scope
       .left_joins(academic_records: { section: { course: :subject } })
       .joins(:grade)
       .select(
@@ -127,6 +133,9 @@ class DashboardDataService
   end
 
   def perfect_score_count(type_entity: nil)
+    @perfect_score_cache ||= {}
+    return @perfect_score_cache[type_entity] if @perfect_score_cache.key?(type_entity)
+
     scope = EnrollAcademicProcess
       .where(academic_process_id: @process_ids)
       .confirmado
@@ -137,7 +146,7 @@ class DashboardDataService
         .where(schools: { type_entity: School.type_entities[type_entity] })
     end
 
-    scope.count
+    @perfect_score_cache[type_entity] = scope.count
   end
 
   def school_type_entities
@@ -145,6 +154,8 @@ class DashboardDataService
   end
 
   def alerts
+    return [] if @process_ids.empty?
+
     items = []
     st = section_totals
     et = enrollment_totals
@@ -175,7 +186,7 @@ class DashboardDataService
   end
 
   def trend_data(last_n = 5)
-    school_ids = @schools.pluck(:id)
+    school_ids = @school_ids
     period_ids = AcademicProcess.where(school_id: school_ids)
       .joins(:period).order('periods.name DESC')
       .limit(last_n + 1).pluck(:period_id).uniq
@@ -196,7 +207,7 @@ class DashboardDataService
     school_id = school.id
     enroll = enrollment_by_school[school_id] || { confirmado: 0, preinscrito: 0, reservado: 0, total: 0 }
     secs = section_stats[school_id] || { total: 0, qualified: 0, no_teacher: 0, percentage: 0 }
-    process = @academic_processes.find_by(school_id: school_id)
+    process = @process_by_school[school_id]
 
     {
       school: school,
@@ -216,7 +227,7 @@ class DashboardDataService
       .includes(:user)
       .order('users.current_sign_in_at DESC')
 
-    admin_user_ids = admins.map { |a| a.user_id.to_s }
+    admin_user_ids = admins.pluck(:user_id).map(&:to_s)
 
     # Última acción de cada admin vía PaperTrail (DISTINCT ON de PostgreSQL)
     last_actions = {}
@@ -257,15 +268,15 @@ class DashboardDataService
         role: I18n.t("activerecord.attributes.admin.roles.#{entry[:admin].role}", default: entry[:admin].role.humanize),
         active: entry[:active],
         last_action: entry[:last_action],
-        last_action_ago: entry[:last_action_at] ? time_ago(entry[:last_action_at]) : nil,
-        avatar_url: user.profile_picture.attached? ? nil : nil # se resuelve en la vista
+        last_action_ago: entry[:last_action_at] ? "Hace #{time_ago_in_words(entry[:last_action_at])}" : nil,
+        avatar_url: nil
       }
     end
   end
 
   private
 
-  def build_school_hash(raw_grouped, statuses)
+  def build_school_hash(raw_grouped, _statuses = nil)
     result = {}
     raw_grouped.each do |(school_id, status_idx), count|
       status_name = EnrollAcademicProcess.enroll_statuses.key(status_idx) || status_idx.to_s
@@ -280,8 +291,7 @@ class DashboardDataService
     EnrollAcademicProcess
       .where(academic_process_id: @process_ids)
       .preinscrito
-      .joins("INNER JOIN payment_reports ON payment_reports.payable_id = enroll_academic_processes.id AND payment_reports.payable_type = 'EnrollAcademicProcess'")
-      .distinct
+      .joins(:payment_reports)
       .count
   end
 
@@ -300,16 +310,6 @@ class DashboardDataService
     end
   end
 
-  def time_ago(time)
-    seconds = (Time.current - time).to_i
-    if seconds < 60
-      'Hace un momento'
-    elsif seconds < 3600
-      "Hace #{seconds / 60} min"
-    else
-      "Hace #{seconds / 3600}h"
-    end
-  end
 
   def sections_over_capacity_count
     Section

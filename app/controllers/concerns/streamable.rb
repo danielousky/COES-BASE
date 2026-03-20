@@ -12,6 +12,6 @@ module Streamable
     response.headers['X-Accel-Buffering'] = 'no'
     response.headers['ETag'] = '0'
     response.headers['Last-Modified'] = '0'
-    response.headers['Content-Disposition'] = "attachment; filename=#{filename}"
+    response.headers['Content-Disposition'] = "attachment; filename=\"#{filename}\""
   end
 end

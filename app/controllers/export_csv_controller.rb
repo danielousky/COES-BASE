@@ -1,26 +1,21 @@
 class ExportCsvController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_admin
   before_action :validate_model_name, only: [:academic_records, :enroll_academic_processes]
   include ActionController::Live
   include Streamable
 
-  ALLOWED_MODELS = %w[School AcademicProcess Period Subject Area Departament Section Course StudyPlan].freeze
-
-  def stream
-    response.headers['Content-Type'] = 'text/event-stream'
-    5.times {
-      response.stream.write "Hola Mundo\n"
-      sleep 4
-    }
-  ensure
-    response.stream.close
-  end
+  ALLOWED_MODELS = {
+    'school' => School, 'academic_process' => AcademicProcess, 'period' => Period,
+    'subject' => Subject, 'area' => Area, 'departament' => Departament,
+    'section' => Section, 'course' => Course, 'study_plan' => StudyPlan
+  }.freeze
 
 
   def academic_records
     # require 'xlsxtream'
     begin
-      @object = params[:model_name].camelize.constantize.find(params[:id])
+      klass = ALLOWED_MODELS[params[:model_name].to_s.underscore]
+      @object = klass.find(params[:id])
 
       model = @object.class.name.underscore
       model_titulo = "#{I18n.t("activerecord.models.#{model}.one")&.titleize}"
@@ -56,7 +51,8 @@ class ExportCsvController < ApplicationController
 
   def enroll_academic_processes
     begin
-      @object = params[:model_name].camelize.constantize.find(params[:id])
+      klass = ALLOWED_MODELS[params[:model_name].to_s.underscore]
+      @object = klass.find(params[:id])
       cod = @object.name
       cod ||= @object.code
       cod ||= @object.id
@@ -84,8 +80,7 @@ class ExportCsvController < ApplicationController
   private
 
   def validate_model_name
-    model_name = params[:model_name].to_s.camelize
-    unless ALLOWED_MODELS.include?(model_name)
+    unless ALLOWED_MODELS.key?(params[:model_name].to_s.underscore)
       flash[:danger] = 'Modelo no permitido para exportación'
       redirect_back fallback_location: '/admin'
     end

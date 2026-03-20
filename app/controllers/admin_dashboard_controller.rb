@@ -1,9 +1,8 @@
 class AdminDashboardController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_admin
+  skip_before_action :force_password_change!, only: [:enrollment_counts]
 
   def enrollment_counts
-    return head(:forbidden) unless current_user&.admin?
-
     dashboard = DashboardDataService.new(current_user.admin, session[:period_name])
     json = dashboard.enrollment_counts_json
 
