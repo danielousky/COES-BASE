@@ -12,3 +12,44 @@
 	top:0;
 	background-color: #F4F4F4;
 }
+
+// Accesibilidad: indicador de foco visible para navegación por teclado
+*:focus-visible {
+	outline: 2px solid var(--bs-primary);
+	outline-offset: 2px;
+}
+
+// Estilos de impresión: ocultar elementos de navegación y optimizar tablas
+@media print {
+	.navbar, .sidebar, .offcanvas, footer, .btn, .modal, .flash-messages,
+	.breadcrumb, .pagination, .dropdown-menu {
+		display: none !important;
+	}
+
+	body {
+		font-size: 12pt;
+		color: #000;
+		background: #fff;
+	}
+
+	a[href]:after {
+		content: none;
+	}
+
+	table {
+		page-break-inside: auto;
+	}
+
+	tr {
+		page-break-inside: avoid;
+		page-break-after: auto;
+	}
+
+	thead {
+		display: table-header-group;
+	}
+
+	.table-responsive {
+		overflow: visible !important;
+	}
+}
