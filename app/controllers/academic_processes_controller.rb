@@ -193,7 +193,7 @@ class AcademicProcessesController < ApplicationController
 
       @academic_process.courses.destroy_all
       begin
-        cloneble_academic_process.courses.each do |course|
+        cloneble_academic_process.courses.includes(sections: { timetable: :timeblocks }).each do |course|
           nuevo_curso = course.dup
           nuevo_curso.academic_process_id = @academic_process.id
           if nuevo_curso.save

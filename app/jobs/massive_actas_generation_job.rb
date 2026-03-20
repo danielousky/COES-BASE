@@ -6,16 +6,17 @@ class MassiveActasGenerationJob < ApplicationJob
     # p "     Iniciando proceso de actas masivas    ".center(300, "-")
     
     academic_process = AcademicProcess.find(academic_process_id)
-    sections = academic_process.sections.qualified#.limit(1)
-    
+    sections = academic_process.sections.qualified
+    total_sections = sections.count
+    user = user_id ? User.find(user_id) : nil
 
     # Crear un PDF combinado
     combined_pdf = CombinePDF.new
-    
+
     # Generar PDFs y combinarlos usando la misma lógica que funciona en el controlador
     sections.each_with_index do |section, index|
       # p "     Procesando Acta sección #{section.name}    ".center(1000, "#")
-      Rails.logger.info "Procesando sección #{index + 1} de #{sections.count}: #{section.id}"
+      Rails.logger.info "Procesando sección #{index + 1} de #{total_sections}: #{section.id}"
       
       begin
           
@@ -32,8 +33,7 @@ class MassiveActasGenerationJob < ApplicationJob
         Rails.logger.error "Error procesando sección #{section.id}: #{e.message}"
 
         # Enviar correo con el error
-        if user_id
-          user = User.find(user_id)
+        if user
           UserMailer.general(user, "Hubo un error al generar el acta para la sección #{section.name} (ID: #{section.id}): #{e.message}").deliver_now
         end
       end
@@ -56,17 +56,12 @@ class MassiveActasGenerationJob < ApplicationJob
     rescue => e
       Rails.logger.error "Error guardando archivo en S3: #{e.message}"
       raise e
-      # Enviar correo con el error
-      if user_id
-        user = User.find(user_id)
-        UserMailer.general(user, "Hubo un error al guardar el archivo de actas en S3: #{e.message}").deliver_now
-      end
+      # Enviar correo con el error (inalcanzable por el raise, pero se conserva por documentación)
+      # UserMailer.general(user, "Hubo un error al guardar el archivo de actas en S3: #{e.message}").deliver_now if user
     end
     
     # Notificar al usuario si se proporcionó
-    if user_id
-      user = User.find(user_id)
-      
+    if user
       # p "Enviando Correo" if UserMailer.actas_generation_complete(user, combined_pdf.to_pdf, filename).deliver_now
       p "Enviando Correo S3" if UserMailer.actas_generation_complete(user, blob, filename).deliver_now
     end

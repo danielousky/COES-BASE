@@ -6,7 +6,7 @@ class SectionsController < ApplicationController
 
   # GET /sections or /sections.json
   def index
-    @sections = Section.all
+    @sections = Section.includes(:teacher, course: [:subject, { academic_process: :school }])
   end
 
   def export

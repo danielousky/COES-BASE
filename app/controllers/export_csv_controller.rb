@@ -29,7 +29,7 @@ class ExportCsvController < ApplicationController
 
       a = AcademicRecord.header_for_report #['#', 'CI', 'NOMBRES', 'APELLIDOS', 'ESCUELA', 'CATEDRA','CÓDIGO ASIG', 'NOMBRE ASIG','PERIODO','SECCIÓN','ESTADO']
       
-      @object.academic_records.includes(:section, :user, :period, :subject, :area).find_each(batch_size: 500).with_index do |academic_record, i|
+      @object.academic_records.includes(:section, :user, :subject, :area, :study_plan, :school, period: :period_type).find_each(batch_size: 500).with_index do |academic_record, i|
         response.stream.write "#{a.join(';')}\n" if (i.eql? 0) 
         response.stream.write "#{i+1}; #{academic_record.values_for_report.join(';')}\n"
       end

@@ -3,7 +3,7 @@ class GradesController < ApplicationController
 
   # GET /grades or /grades.json
   def index
-    @grades = Grade.all
+    @grades = Grade.includes(:study_plan, :admission_type, student: :user)
   end
 
 

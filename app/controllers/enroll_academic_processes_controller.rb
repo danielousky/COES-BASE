@@ -4,7 +4,7 @@ class EnrollAcademicProcessesController < ApplicationController
 
   # GET /enroll_academic_processes or /enroll_academic_processes.json
   def index
-    @enroll_academic_processes = EnrollAcademicProcess.all
+    @enroll_academic_processes = EnrollAcademicProcess.includes(:academic_process, grade: [:study_plan, { student: :user }])
   end
 
   # GET /enroll_academic_processes/1 or /enroll_academic_processes/1.json
