@@ -7,6 +7,8 @@
   - alerts = @dashboard.alerts
   - school_types = @dashboard.school_type_entities
   - trend = @dashboard.trend_data
+  - superadmin = current_user&.admin&.desarrollador? || current_user&.admin&.jefe_control_estudio?
+  - active_admins_list = superadmin ? @dashboard.active_admins(current_user_id: current_user&.id) : []
 
   .d-flex.justify-content-between.align-items-center.mb-3
     %h5.mb-0
@@ -237,6 +239,44 @@
                           Períodos
 
     .col-lg-4
+      - if superadmin && active_admins_list.any?
+        .card.shadow-sm.mb-3#active-admins-panel
+          .card-header.bg-white.border-bottom.py-3
+            .d-flex.justify-content-between.align-items-center
+              %h6.card-title.mb-0
+                %i.fa-solid.fa-users-gear.me-1.text-secondary
+                Admins Activos
+              %span.badge.bg-secondary.rounded-pill= active_admins_list.size
+          .card-body.p-0
+            .list-group.list-group-flush
+              - avatar_colors = %w[#0d6efd #198754 #dc3545 #ffc107 #0dcaf0 #6f42c1 #fd7e14 #20c997]
+              - active_admins_list.each do |entry|
+                - user = entry[:user]
+                - admin = entry[:admin]
+                - color = avatar_colors[user.id % avatar_colors.length]
+                .list-group-item.px-3.py-2
+                  .d-flex.align-items-center.gap-2
+                    .position-relative
+                      - if user.profile_picture.attached?
+                        = image_tag user.profile_picture.variant(:icon), class: 'rounded-circle', style: 'width: 32px; height: 32px; object-fit: cover;'
+                      - else
+                        .d-flex.align-items-center.justify-content-center.rounded-circle.text-white.fw-bold{style: "width: 32px; height: 32px; font-size: 0.7rem; background: #{color};"}
+                          = "#{user.first_name&.first}#{user.last_name&.first}".upcase
+                      - if entry[:active]
+                        %span.position-absolute.live-pulse-sm{style: 'bottom: 0; right: 0;', 'data-bs-toggle': 'tooltip', title: 'Activo'}
+                      - else
+                        %span.position-absolute.rounded-circle.bg-secondary{style: 'bottom: 0; right: 0; width: 8px; height: 8px; border: 1px solid white;', 'data-bs-toggle': 'tooltip', title: 'Inactivo'}
+                    .flex-grow-1{style: 'min-width: 0'}
+                      .d-flex.justify-content-between.align-items-center
+                        %span.fw-semibold{style: 'font-size: 0.85rem'}= user.short_name
+                        %span.badge.bg-opacity-10{class: admin.desarrollador? ? 'bg-danger text-danger' : admin.jefe_control_estudio? ? 'bg-primary text-primary' : 'bg-secondary text-secondary', style: 'font-size: 0.65rem'}
+                          = admin.role.humanize
+                      - if entry[:last_action]
+                        %small.text-muted.text-truncate.d-block{style: 'font-size: 0.72rem', title: "#{entry[:last_action]} — #{entry[:last_action_at]&.strftime('%H:%M')}"}
+                          = entry[:last_action]
+                          - if entry[:last_action_at]
+                            %span.ms-1= "· Hace #{time_ago_in_words(entry[:last_action_at])}"
+
       - type_labels = { 'pregrado' => 'Pregrado', 'postgrado' => 'Postgrado', 'extension' => 'Extensión', 'investigacion' => 'Investigación' }
       - display_types = school_types.select { |t| %w[pregrado postgrado].include?(t) }
       - display_types = ['pregrado'] if display_types.empty?

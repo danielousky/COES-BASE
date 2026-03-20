@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_03_20_023110) do
+ActiveRecord::Schema[7.0].define(version: 2026_03_20_154420) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -986,6 +986,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_03_20_023110) do
     t.datetime "created_at"
     t.text "object_changes"
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
+    t.index ["whodunnit", "created_at"], name: "index_versions_on_whodunnit_and_created_at"
   end
 
   add_foreign_key "academic_processes", "academic_processes", column: "process_before_id"

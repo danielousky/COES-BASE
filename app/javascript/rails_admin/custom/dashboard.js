@@ -225,9 +225,43 @@ function initAutoRefresh() {
             });
           }
         }
+        // Actualizar panel de admins activos
+        if (data.active_admins) {
+          updateActiveAdminsPanel(data.active_admins);
+        }
       })
       .catch(function () { /* silenciar errores de red */ });
   }, 30000);
+}
+
+// ── Actualizar panel de admins activos ───────────────────────────────
+function updateActiveAdminsPanel(admins) {
+  var panel = document.querySelector('#active-admins-panel');
+  if (!panel) return;
+
+  var badge = panel.querySelector('.badge.bg-secondary');
+  if (badge) badge.textContent = admins.length;
+
+  var list = panel.querySelector('.list-group');
+  if (!list || admins.length === 0) return;
+
+  var colors = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1', '#fd7e14', '#20c997'];
+
+  var html = admins.map(function (admin) {
+    var dotClass = admin.active
+      ? '<span class="position-absolute live-pulse-sm" style="bottom: 0; right: 0;"></span>'
+      : '<span class="position-absolute rounded-circle bg-secondary" style="bottom: 0; right: 0; width: 8px; height: 8px; border: 1px solid white;"></span>';
+
+    var avatar = '<div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold" style="width: 32px; height: 32px; font-size: 0.7rem; background: ' + colors[Math.abs(admin.name.length) % colors.length] + ';">' + admin.initials + '</div>';
+
+    var actionText = admin.last_action
+      ? '<small class="text-muted text-truncate d-block" style="font-size: 0.72rem">' + admin.last_action + (admin.last_action_ago ? ' · ' + admin.last_action_ago : '') + '</small>'
+      : '';
+
+    return '<div class="list-group-item px-3 py-2"><div class="d-flex align-items-center gap-2"><div class="position-relative">' + avatar + dotClass + '</div><div class="flex-grow-1" style="min-width: 0"><div class="d-flex justify-content-between align-items-center"><span class="fw-semibold" style="font-size: 0.85rem">' + admin.name + '</span><span class="badge bg-opacity-10 bg-secondary text-secondary" style="font-size: 0.65rem">' + admin.role + '</span></div>' + actionText + '</div></div></div>';
+  }).join('');
+
+  list.innerHTML = html;
 }
 
 function animateSingleCounter(el, target) {

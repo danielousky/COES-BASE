@@ -207,9 +207,60 @@ class DashboardDataService
     }
   end
 
+  # Admins activos: usuarios admin logueados recientemente
+  def active_admins(current_user_id: nil)
+    timeout = 2.hours.ago
+    admins = Admin.joins(:user)
+      .where('users.current_sign_in_at > ?', timeout)
+      .where.not(users: { id: current_user_id })
+      .includes(:user)
+      .order('users.current_sign_in_at DESC')
+
+    admin_user_ids = admins.map { |a| a.user_id.to_s }
+
+    # Última acción de cada admin vía PaperTrail (DISTINCT ON de PostgreSQL)
+    last_actions = {}
+    if admin_user_ids.any?
+      rows = PaperTrail::Version
+        .select("DISTINCT ON (whodunnit) whodunnit, item_type, event, created_at")
+        .where(whodunnit: admin_user_ids)
+        .order(Arel.sql('whodunnit, created_at DESC'))
+      rows.each { |v| last_actions[v.whodunnit] = v }
+    end
+
+    admins.map do |admin|
+      user = admin.user
+      version = last_actions[user.id.to_s]
+      active = version && version.created_at > 15.minutes.ago
+
+      {
+        admin: admin,
+        user: user,
+        active: active,
+        last_action: version ? format_action(version) : nil,
+        last_action_at: version&.created_at
+      }
+    end
+  end
+
   # JSON para endpoint de auto-refresh
   def enrollment_counts_json
     enrollment_by_school.transform_keys(&:to_s).merge('totals' => enrollment_totals)
+  end
+
+  def active_admins_json(current_user_id: nil)
+    active_admins(current_user_id: current_user_id).map do |entry|
+      user = entry[:user]
+      {
+        name: user.short_name,
+        initials: "#{user.first_name&.first}#{user.last_name&.first}".upcase,
+        role: I18n.t("activerecord.attributes.admin.roles.#{entry[:admin].role}", default: entry[:admin].role.humanize),
+        active: entry[:active],
+        last_action: entry[:last_action],
+        last_action_ago: entry[:last_action_at] ? time_ago(entry[:last_action_at]) : nil,
+        avatar_url: user.profile_picture.attached? ? nil : nil # se resuelve en la vista
+      }
+    end
   end
 
   private
@@ -232,6 +283,32 @@ class DashboardDataService
       .joins("INNER JOIN payment_reports ON payment_reports.payable_id = enroll_academic_processes.id AND payment_reports.payable_type = 'EnrollAcademicProcess'")
       .distinct
       .count
+  end
+
+  def format_action(version)
+    # Si el evento es custom (paper_trail_event), ya tiene texto legible
+    return version.event.sub(/\A¡/, '').sub(/!\z/, '').capitalize unless %w[create update destroy].include?(version.event)
+
+    model_name = I18n.t(
+      "activerecord.models.#{version.item_type.underscore}.one",
+      default: version.item_type.titleize
+    )
+    case version.event
+    when 'create' then "Registró #{model_name}"
+    when 'update' then "Actualizó #{model_name}"
+    when 'destroy' then "Eliminó #{model_name}"
+    end
+  end
+
+  def time_ago(time)
+    seconds = (Time.current - time).to_i
+    if seconds < 60
+      'Hace un momento'
+    elsif seconds < 3600
+      "Hace #{seconds / 60} min"
+    else
+      "Hace #{seconds / 3600}h"
+    end
   end
 
   def sections_over_capacity_count
