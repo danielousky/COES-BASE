@@ -182,7 +182,7 @@ class Grade < ApplicationRecord
 		csv_data =CSV.generate(headers: true, col_sep: ";") do |csv|
 
 			csv << %w(CEDULA ASIGNATURA DENOMINACION CREDITO NOTA_FINAL NOTA_DEFI TIPO_EXAM PER_LECTI ANO_LECTI SECCION PLAN1)
-      academic_records.each do |academic_record|
+      academic_records.includes(:section, :subject, :study_plan, :qualifications, academic_process: [:period, :period_type]).each do |academic_record|
 
         sec = academic_record.section
         asig = academic_record.subject
@@ -610,18 +610,25 @@ class Grade < ApplicationRecord
   end
 
   def asignaturas_ofertables_segun_dependencia
-    aprobadas_ids = self.academic_records.aprobado.includes(:subject).map { |ins| ins.subject.id }.uniq
+    aprobadas_ids = self.academic_records.aprobado.joins(:subject).pluck('subjects.id').uniq
 
     # Todas las asignaturas de la escuela
     subjects = self.school.subjects
+    subject_ids = subjects.pluck(:id)
+
+    # Cargar todas las dependencias en una sola consulta
+    dependencies_by_subject = SubjectLink.where(depend_subject_id: subject_ids)
+                                         .pluck(:depend_subject_id, :prelate_subject_id)
+                                         .group_by(&:first)
+                                         .transform_values { |pairs| pairs.map(&:last) }
 
     # Filtrar asignaturas que no estén aprobadas y que todas sus dependencias estén aprobadas
     ofertables_ids = subjects.select do |subject|
       next false if aprobadas_ids.include?(subject.id) # Ya aprobada, no ofertar
-      
+
       # Obtener las IDs de las asignaturas de las que depende la actual
-      dependencias = subject.depend_subjects.pluck(:id)
-      
+      dependencias = dependencies_by_subject[subject.id] || []
+
       # Si no tiene dependencias, o todas están aprobadas
       dependencias.empty? || dependencias.all? { |dep_id| aprobadas_ids.include?(dep_id) }
     end.map(&:id)
@@ -646,12 +653,18 @@ class Grade < ApplicationRecord
 
       # Ahora por cada asignatura válida miramos sus respectivas dependencias a ver si todas están aprobadas
 
-      # OJO: REVISAR, Creo que este paso es REDUNDANTE, si tienes las dependencias de las aprovadas, no deberías mirar si aprobó las asignaturas de esas dependencias. 
+      # OJO: REVISAR, Creo que este paso es REDUNDANTE, si tienes las dependencias de las aprovadas, no deberías mirar si aprobó las asignaturas de esas dependencias.
       # OJO2: ¡Revisado! y sí debe ir, porque sino oferta asignaturas que no debe
+
+      # Cargar todas las dependencias en una sola consulta
+      all_deps = SubjectLink.where(depend_subject_id: dependent_subject_ids)
+                            .pluck(:depend_subject_id, :prelate_subject_id)
+                            .group_by(&:first)
+                            .transform_values { |pairs| pairs.map(&:last) }
+
       dependent_subject_ids.each do |subj_id|
-        ids_aux = SubjectLink.where(depend_subject_id: subj_id).map{|dep| dep.prelate_subject_id}
-        ids_aux.reject!{|id| asig_aprobadas_ids.include? id}
-        ids_subjects_positives << subj_id if (ids_aux.eql? []) #Si aprobó todas las dependencias
+        ids_aux = (all_deps[subj_id] || []).reject { |id| asig_aprobadas_ids.include?(id) }
+        ids_subjects_positives << subj_id if ids_aux.empty?
       end
 
       # Buscamos las asignaturas sin prelación
@@ -665,7 +678,7 @@ class Grade < ApplicationRecord
   end
 
   def is_new?
-    enroll_academic_processes.count <= 1
+    enroll_academic_processes.limit(2).count <= 1
   end
 
   def academic_records_any?
@@ -700,7 +713,7 @@ class Grade < ApplicationRecord
   end
 
   def subjects_approved_ids
-    self.academic_records.aprobado.joins(:subject).select('subjects.id').map{|su| su.id}
+    self.academic_records.aprobado.joins(:subject).pluck('subjects.id')
   end
 
   # TOTALS CREDITS:

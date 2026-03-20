@@ -119,7 +119,7 @@ class AcademicProcess < ApplicationRecord
 
   def invalid_grades_to_csv
 
-    grades_others = Grade.enrolled_in_academic_process(self.process_before_id).others_permanence_invalid_to_enroll
+    grades_others = Grade.enrolled_in_academic_process(self.process_before_id).others_permanence_invalid_to_enroll.includes(student: :user)
 
     CSV.generate do |csv|
       csv << ['Est. Permanencia', 'Cédula', 'Apellido y Nombre', 'Eficiencia', 'Promedio', 'Ponderado']
