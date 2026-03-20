@@ -1,22 +1,16 @@
-
--# academic_process = AcademicProcess.find session[:academic_processes_id]
--# @process_name = academic_process&.process_name
-
 - logged_as_admin = (current_user and current_user.admin? and session[:rol].eql? 'admin') ? true : false
 .mb-0= render partial: 'layouts/main_banner', locals: {bg_color: 'bg-info bg-opacity-20 '}
 .row
 	- schools_auh = current_user&.admin&.schools_auh
 	- if schools_auh&.any?
-		- schools_auh.order(:name).each do |school|
-
-			- period = Period.where(name: session[:period_name]).first
-			- ap = school.academic_processes.where(period_id: period&.id).first
-			- @process_name = ap&.process_name 
-			- ap ||= school.academic_processes.enrolls.first
+		- period = Period.find_by(name: session[:period_name])
+		- school_auth = current_user&.admin&.authorized_read? 'School'
+		- schools_auh.includes(:academic_processes).order(:name).each do |school|
+			- ap = school.academic_processes.find { |a| a.period_id == period&.id }
+			- @process_name = ap&.process_name
+			- ap ||= school.academic_processes.find(&:enroll)
 			- ap ||= school.academic_processes.first
 			- @process_enroll_name = ap&.process_name
-			-# @query = "&query=#{@process_name}" unless @process_name.blank?
-			- school_auth = current_user&.admin&.authorized_read? 'School'
 
 			.col.mx-3.mb-3				
 				.row
@@ -30,8 +24,6 @@
 							%h6.text-center Períodos
 					- if logged_as_admin and current_user.admin.authorized_read? 'AcademicRecord'
 						- object = I18n.t("activerecord.models.academic_record.other")
-
-						-# url = "/admin/academic_record?f%5Bschool%5D%5B81356%5D%5Bo%5D=like&f%5Bschool%5D%5B81356%5D%5Bv%5D=#{school.short_name}&#{@query}"
 						- url = "/admin/academic_record?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
 
 						= link_to url, class: 'btn btn-primary' do
@@ -40,8 +32,6 @@
 				- if logged_as_admin and current_user.admin.authorized_read? 'Section'
 					.row
 						- object = I18n.t("activerecord.models.section.other")
-						-# url = "/admin/section?f%5Bschool%5D%5B81356%5D%5Bo%5D=like&f%5Bschool%5D%5B81356%5D%5Bv%5D=#{school.short_name}&#{@query}"
-						-# url = "/admin/enroll_academic_process?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}&#{@query}"
 						- url = "/admin/section?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
 						= link_to url, class: 'btn btn-primary' do
 							%h4.fa.fa-list
@@ -49,7 +39,6 @@
 				- if logged_as_admin and current_user.admin.authorized_manage? 'EnrollAcademicProcess'
 					.row
 						- object = I18n.t("activerecord.models.enroll_academic_process.other")
-						-# url = "/admin/enroll_academic_process?f%5Bschool%5D%5B81356%5D%5Bo%5D=like&f%5Bschool%5D%5B81356%5D%5Bv%5D=#{school.short_name}&#{@query}"
 						- url = "/admin/enroll_academic_process?f[school][81356][o]=like&f[school][81356][v]=#{school.short_name}"
 						= link_to url, class: 'btn btn-primary' do
 							%h4.fa.fa-calendar-check
