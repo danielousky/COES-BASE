@@ -28,13 +28,12 @@ module RailsAdmin
 
         register_instance_option :controller do
           proc do
-            # if current_user.instance_of? Teacher
-            #   redirect_to '/admin/teacher_dashboard'
-            # elsif current_user.instance_of? Director
-            #   redirect_to '/admin/campus_director_dashboard'
-            # elsif current_user.instance_of? Admin
-            #   redirect_to '/admin/admin_dashboard'
-            # end
+            admin = current_user&.admin
+            if admin
+              @dashboard = DashboardDataService.new(admin, session[:period_name])
+              @periods = admin.periods.limit(8)
+              @multiple_schools = admin.multiple_schools?
+            end
             render action: @action.template_name
           end
         end

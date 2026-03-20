@@ -117,6 +117,13 @@ class ApplicationController < ActionController::Base
 
 
 
+  def require_admin
+    unless logged_as_admin?
+      flash[:danger] = 'No autorizado'
+      redirect_back fallback_location: root_path
+    end
+  end
+
   def authenticate_teacher!
     if !logged_as_teacher?
       reset_session

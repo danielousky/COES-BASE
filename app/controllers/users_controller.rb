@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
-  skip_before_action :authenticate_user!, only: [ :edit ]
   before_action :set_user, only: [:edit, :update, :edit_images, :reset_password]
+  before_action :require_admin, only: %i[ reset_password ]
   # before_action :authenticate_student_or_teacher!
 
   layout 'logged'
@@ -28,7 +28,7 @@ class UsersController < ApplicationController
         flash[:danger] = "#{@user.errors.full_messages.to_sentence}"
       end
       
-    rescue Exception => e
+    rescue StandardError => e
       e = 'Sin cambios realizados' if e.to_s.include? 'param is missing or the value is empty: user'
       flash[:info] = e
     end

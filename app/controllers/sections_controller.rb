@@ -1,11 +1,12 @@
 class SectionsController < ApplicationController
   before_action :set_section, only: %i[ show update export change_qualification_status]
+  before_action :require_admin, only: %i[ bulk_delete ]
 
   layout 'logged'
 
   # GET /sections or /sections.json
   def index
-    @sections = Section.all
+    @sections = Section.includes(:teacher, course: [:subject, { academic_process: :school }])
   end
 
   def export
@@ -15,7 +16,6 @@ class SectionsController < ApplicationController
   end
 
   def bulk_delete
-
     if Section.where(id: params[:bulk_ids]).destroy_all
       flash[:info] = 'Secciones Eliminadas'
     else

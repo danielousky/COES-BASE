@@ -11,11 +11,11 @@
     %li.nav-item
       - if _current_user&.profile_picture&.attached?
         - begin
-          = image_tag _current_user.profile_picture_as_thumb, class: "avatar", size: '35x35'
-        - rescue Exception => e
-          = image_tag 'foto_perfil_default_35.png'
+          = image_tag _current_user.profile_picture_as_thumb, class: "avatar", size: '35x35', alt: 'Foto de perfil'
+        - rescue StandardError => e
+          = image_tag 'foto_perfil_default_35.png', alt: 'Foto de perfil'
       - else
-        = image_tag 'foto_perfil_default_35.png'
+        = image_tag 'foto_perfil_default_35.png', alt: 'Foto de perfil'
     - if user_link = edit_user_link
       %li.nav-item.edit_user_root_link
         =# user_link

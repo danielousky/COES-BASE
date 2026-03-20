@@ -1,4 +1,9 @@
-# one:
-#   record: name_of_fixture (ClassOfFixture)
-#   name: content
-#   body: <p>In a <i>million</i> stars!</p>
+billboard_one_content:
+  record: one (Billboard)
+  name: content
+  body: "<p>Contenido de prueba para cartelera</p>"
+
+billboard_two_content:
+  record: two (Billboard)
+  name: content
+  body: "<p>Otra cartelera de prueba</p>"

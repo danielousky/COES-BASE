@@ -12,6 +12,6 @@ class AsignaturaAprobadaUnicaValidator < ActiveModel::Validator
       # query optimo o mejor (opinón personal)
       # record.estudiante.inscripcionsecciones.aprobado.joins(:grado).joins(:asignatura).where("grados.estudiante_id = #{record.estudiante_id} and grados.escuela_id = #{record.escuela_id} and asignaturas.id = #{record.asignatura.id}")
 
-      record.grado.inscripciones.joins(:asignatura).aprobadas.where("asignaturas.id = '#{record.asignatura.id}'").first
+      record.grado.inscripciones.joins(:asignatura).aprobadas.where('asignaturas.id': record.asignatura.id).first
     end
 end

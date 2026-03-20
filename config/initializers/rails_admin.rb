@@ -64,10 +64,7 @@ RailsAdmin.config do |config|
 
   config.actions do
     dashboard do                     # mandatory
-      # require_relative '../../lib/rails_admin/config/actions/dashboard'
-      show_in_menu false
-      show_in_navigation false
-      visible false
+      require_relative '../../lib/rails_admin/config/actions/dashboard'
     end
 
     index do                         # mandatory

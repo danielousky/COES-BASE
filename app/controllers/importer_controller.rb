@@ -1,4 +1,6 @@
 class ImporterController < ApplicationController
+	before_action :require_admin
+
 	def entities
 		case params[:entity]
 		when 'subjects'	
@@ -43,7 +45,7 @@ class ImporterController < ApplicationController
 				else
 					redirect_to "/admin/#{params[:entity].singularize}"
 				end
-			rescue Exception => e
+			rescue StandardError => e
 				flash[:danger] = "Error General: #{e}"
 				redirect_back fallback_location: root_path
 			end
@@ -52,4 +54,5 @@ class ImporterController < ApplicationController
 			redirect_back fallback_location: root_path
 		end
 	end
+
 end

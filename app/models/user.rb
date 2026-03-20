@@ -112,7 +112,7 @@ class User < ApplicationRecord
   # attr_accessor :password_confirmation
 
   # SCOPES:
-  scope :my_search, -> (keyword) {where("ci ILIKE '%#{keyword}%' OR email ILIKE '%#{keyword}%' OR first_name ILIKE '%#{keyword}%' OR last_name ILIKE '%#{keyword}%' OR number_phone ILIKE '%#{keyword}%'") }
+  scope :my_search, -> (keyword) {where("ci ILIKE :kw OR email ILIKE :kw OR first_name ILIKE :kw OR last_name ILIKE :kw OR number_phone ILIKE :kw", kw: "%#{keyword}%") }
 
   # CALLBACKS:
   # before_create :set_default_values#, if: :new_record?

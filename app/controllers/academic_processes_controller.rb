@@ -1,6 +1,8 @@
 class AcademicProcessesController < ApplicationController
   include ActionController::Live
+  include Streamable
   before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
+  before_action :require_admin, only: %i[ massive_confirmation clean_courses run_regulation ]
 
   def massive_confirmation
     total = @academic_process.enroll_academic_processes.not_confirmado.with_payment_report
@@ -8,7 +10,7 @@ class AcademicProcessesController < ApplicationController
     begin
       total.each {|ins| ins.confirm_with_email}
       flash[:success] = "Se actualizaron #{total_count} inscripciones"
-    rescue Exception => e
+    rescue StandardError => e
       flash[:danger] = "No fue posible completar la operación: #{e}"
     end
     redirect_back fallback_location: '/admin/enroll_academic_process'
@@ -18,15 +20,7 @@ class AcademicProcessesController < ApplicationController
     sections = @academic_process.sections.qualified
     
     aux = "Total Actas Periodo #{@academic_process.name}.pdf"
-    response.headers.delete('Content-Length')
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    response.headers['Content-Type'] = "application/pdf"
-    response.headers['X-Accel-Buffering'] = 'no'
-    response.headers['ETag'] = '0'
-    response.headers['Last-Modified'] = '0'
-    response.headers['Content-Disposition'] = "attachment; filename=#{aux}"
+    set_streaming_headers(aux, content_type: "application/pdf")
     
     begin
       # Crear un PDF combinado
@@ -62,7 +56,7 @@ class AcademicProcessesController < ApplicationController
       # Enviar el PDF combinado completo
       response.stream.write combined_pdf.to_pdf
       
-    rescue Exception => e
+    rescue StandardError => e
       Rails.logger.error "Error en generación masiva de actas: #{e.message}"
       flash[:danger] = "No se pudo generar el archivo: #{e.message}"
       redirect_back fallback_location: '/admin/academic_process'
@@ -80,13 +74,18 @@ class AcademicProcessesController < ApplicationController
   end
 
   def download_actas
-    filename = params[:filename]
+    filename = File.basename(params[:filename].to_s)
     file_path = Rails.root.join('tmp', filename)
-    
+
+    unless file_path.to_s.start_with?(Rails.root.join('tmp').to_s)
+      flash[:danger] = "Acceso no permitido."
+      return redirect_back fallback_location: '/admin/academic_process'
+    end
+
     if File.exist?(file_path)
-      send_file file_path, 
-                filename: filename, 
-                type: 'application/pdf', 
+      send_file file_path,
+                filename: filename,
+                type: 'application/pdf',
                 disposition: 'attachment'
     else
       flash[:danger] = "El archivo solicitado no existe o ha expirado."
@@ -121,7 +120,7 @@ class AcademicProcessesController < ApplicationController
     total_actualizados = 0
     total_error = 0
     @academic_process.school.enrollment_days.each{|ed| ed.destroy}
-    @academic_process.enroll_academic_processes.each do |iep|
+    @academic_process.enroll_academic_processes.includes(:grade).each do |iep|
 
       grade = iep.grade
       
@@ -194,7 +193,7 @@ class AcademicProcessesController < ApplicationController
 
       @academic_process.courses.destroy_all
       begin
-        cloneble_academic_process.courses.each do |course|
+        cloneble_academic_process.courses.includes(sections: { timetable: :timeblocks }).each do |course|
           nuevo_curso = course.dup
           nuevo_curso.academic_process_id = @academic_process.id
           if nuevo_curso.save
@@ -227,7 +226,7 @@ class AcademicProcessesController < ApplicationController
             errors += 1
           end
         end
-      rescue Exception => e
+      rescue StandardError => e
         flash[:danger] = e
       end  
       flash[:danger] = "#{errors} Cargas con errores. Vuelva a intentarlo." if errors > 0

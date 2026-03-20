@@ -15,6 +15,8 @@
 #
 # Indexes
 #
+#  idx_eap_grade_process                                   (grade_id,academic_process_id)
+#  idx_eap_process_statuses                                (academic_process_id,enroll_status,permanence_status)
 #  index_enroll_academic_processes_on_academic_process_id  (academic_process_id)
 #  index_enroll_academic_processes_on_grade_id             (grade_id)
 #
@@ -44,7 +46,7 @@ include AcademicProcessable
   # end
   
   # ASSOCIATIONS:
-  belongs_to :grade
+  belongs_to :grade, counter_cache: true
   has_one :student, through: :grade
   has_one :study_plan, through: :grade
   has_one :user, through: :student
@@ -100,7 +102,7 @@ include AcademicProcessable
   
   scope :total_with_i_academic_records, -> (i){(joins(:academic_records).group(:"enroll_academic_processes.id").having('COUNT(*) = ?', i).count).count}
 
-  scope :custom_search, -> (keyword) { joins(:user, :period).where("users.ci ILIKE '%#{keyword}%' OR periods.name ILIKE '%#{keyword}%'") }
+  scope :custom_search, -> (keyword) { joins(:user, :period).where("users.ci ILIKE :kw OR periods.name ILIKE :kw", kw: "%#{keyword}%") }
 
   scope :with_0_academic_records, -> { left_joins(:academic_records).where(academic_records: { id: nil }) }
   scope :sin_inscripciones, -> { with_0_academic_records}  

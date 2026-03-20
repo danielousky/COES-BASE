@@ -1,9 +1,10 @@
 class AcademicRecordsController < ApplicationController
   before_action :set_academic_record, only: %i[ show edit update destroy ]
+  before_action :require_admin, only: %i[ destroy ]
 
   # GET /academic_records or /academic_records.json
   def index
-    @academic_records = AcademicRecord.all
+    @academic_records = AcademicRecord.includes(enroll_academic_process: { grade: { student: :user } })
   end
 
   # GET /academic_records/1 or /academic_records/1.json

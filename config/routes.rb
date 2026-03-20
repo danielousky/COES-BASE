@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   match "/export_csv/enroll_academic_processes/:id" => "export_csv#enroll_academic_processes", via: :get
   
   match "/session_admin/change_period_session" => "session_admin#change_period_session", via: :post
+  get "/admin_dashboard/enrollment_counts", to: "admin_dashboard#enrollment_counts", as: :admin_dashboard_enrollment_counts
 
   match "/admin/course/:id/move_academic_records_progress" => "rails_admin/main#move_academic_records", via: :get, as: :move_academic_records_progress
 
@@ -67,18 +68,18 @@ Rails.application.routes.draw do
 
   resources :enrollment_days, only: [:create, :destroy] do
     member do
-      get 'destroy_all'
+      delete 'destroy_all'
       get 'export'
     end 
   end
 
   resources :academic_processes do
     member do
-      get 'massive_confirmation'
+      post 'massive_confirmation'
       get 'massive_actas_generation'
       get 'massive_actas_generation_async'
-      get 'clean_courses'
-      get 'run_regulation'
+      delete 'clean_courses'
+      post 'run_regulation'
     end
     collection do
       post :change_process_session

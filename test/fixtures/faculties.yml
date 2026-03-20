@@ -1,0 +1,16 @@
+# == Schema Information
+#
+# Table name: faculties
+#
+#  id             :bigint           not null, primary key
+#  code           :string
+#  coes_boss_name :string
+#  contact_email  :string
+#  name           :string
+#  short_name     :string
+#  created_at     :datetime         not null
+#  updated_at     :datetime         not null
+#
+one:
+  code: "FHE"
+  name: "Facultad de Humanidades y Educación"

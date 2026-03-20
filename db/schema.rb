@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
+ActiveRecord::Schema[7.0].define(version: 2026_03_20_154420) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -44,6 +44,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.integer "status", default: 0
     t.index ["enroll_academic_process_id"], name: "index_academic_records_on_enroll_academic_process_id"
     t.index ["section_id"], name: "index_academic_records_on_section_id"
+    t.index ["status", "enroll_academic_process_id"], name: "idx_academic_records_status_eap"
+    t.index ["status", "section_id"], name: "idx_academic_records_status_section"
   end
 
   create_table "action_text_rich_texts", force: :cascade do |t|
@@ -272,6 +274,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.datetime "updated_at", null: false
     t.string "name"
     t.boolean "offer", default: true
+    t.integer "sections_count", default: 0, null: false
     t.index ["academic_process_id"], name: "index_courses_on_academic_process_id"
     t.index ["subject_id"], name: "index_courses_on_subject_id"
   end
@@ -326,7 +329,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.float "efficiency", default: 1.0
     t.float "simple_average", default: 0.0
     t.float "weighted_average", default: 0.0
+    t.index ["academic_process_id", "enroll_status", "permanence_status"], name: "idx_eap_process_statuses"
     t.index ["academic_process_id"], name: "index_enroll_academic_processes_on_academic_process_id"
+    t.index ["grade_id", "academic_process_id"], name: "idx_eap_grade_process"
     t.index ["grade_id"], name: "index_enroll_academic_processes_on_grade_id"
   end
 
@@ -451,7 +456,9 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.bigint "language2_id"
     t.integer "region", default: 0
     t.integer "admission_year"
+    t.integer "enroll_academic_processes_count", default: 0, null: false
     t.index ["admission_type_id"], name: "index_grades_on_admission_type_id"
+    t.index ["appointment_time"], name: "idx_grades_appointment_time"
     t.index ["enabled_enroll_process_id"], name: "index_grades_on_enabled_enroll_process_id"
     t.index ["start_id"], name: "index_grades_on_start_id"
     t.index ["start_process_id"], name: "index_grades_on_start_process_id"
@@ -773,8 +780,10 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.datetime "updated_at", null: false
     t.bigint "teacher_id"
     t.string "classroom"
+    t.integer "academic_records_count", default: 0, null: false
     t.index ["code", "course_id"], name: "index_sections_on_code_and_course_id", unique: true
     t.index ["course_id"], name: "index_sections_on_course_id"
+    t.index ["qualified", "course_id"], name: "idx_sections_qualified_course"
     t.index ["teacher_id"], name: "index_sections_on_teacher_id"
   end
 
@@ -848,6 +857,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.string "color"
     t.index ["area_id"], name: "index_subjects_on_area_id"
     t.index ["departament_id"], name: "index_subjects_on_departament_id"
+    t.index ["ordinal", "active", "area_id"], name: "idx_subjects_ordinal_active_area"
     t.index ["school_id"], name: "index_subjects_on_school_id"
     t.index ["subject_type_id"], name: "index_subjects_on_subject_type_id"
   end
@@ -976,6 +986,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_06_24_181949) do
     t.datetime "created_at"
     t.text "object_changes"
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
+    t.index ["whodunnit", "created_at"], name: "index_versions_on_whodunnit_and_created_at"
   end
 
   add_foreign_key "academic_processes", "academic_processes", column: "process_before_id"

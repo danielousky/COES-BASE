@@ -12,3 +12,80 @@
 	top:0;
 	background-color: #F4F4F4;
 }
+
+// Accesibilidad: indicador de foco visible para navegación por teclado
+*:focus-visible {
+	outline: 2px solid var(--bs-primary);
+	outline-offset: 2px;
+}
+
+// Dashboard: indicador de pulso en vivo
+.live-pulse {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	background: #198754;
+	border-radius: 50%;
+	animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+	0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+	70% { box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
+	100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+}
+
+// Dashboard: indicador de pulso pequeño para avatares
+.live-pulse-sm {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	background: #198754;
+	border-radius: 50%;
+	border: 1px solid white;
+	animation: live-pulse 2s ease-in-out infinite;
+}
+
+// Dashboard: animación de entrada para cards
+.card {
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	&:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1) !important;
+	}
+}
+
+// Estilos de impresión: ocultar elementos de navegación y optimizar tablas
+@media print {
+	.navbar, .sidebar, .offcanvas, footer, .btn, .modal, .flash-messages,
+	.breadcrumb, .pagination, .dropdown-menu {
+		display: none !important;
+	}
+
+	body {
+		font-size: 12pt;
+		color: #000;
+		background: #fff;
+	}
+
+	a[href]:after {
+		content: none;
+	}
+
+	table {
+		page-break-inside: auto;
+	}
+
+	tr {
+		page-break-inside: avoid;
+		page-break-after: auto;
+	}
+
+	thead {
+		display: table-header-group;
+	}
+
+	.table-responsive {
+		overflow: visible !important;
+	}
+}

@@ -1,7 +1,7 @@
 %h4.bg-primary.text-light.text-center= "Cita Horaria #{@object.short_desc}"
 - if (current_user&.admin&.authorized_read? 'AcademicProcess')
   - if EnrollmentDay.any?
-    = link_to "/enrollment_days/#{-1}/destroy_all", class: 'btn btn-danger mx-2 float-end', 'data-bs-toggle': :tooltip, title: 'Eliminar todas las citas horarias', data: {confirm: 'Esta acción eliminará todas las citas horarias registradas en COES ¿Está completamente seguro?'} do
+    = link_to "/enrollment_days/#{-1}/destroy_all", method: :delete, class: 'btn btn-danger mx-2 float-end', 'data-bs-toggle': :tooltip, title: 'Eliminar todas las citas horarias', data: {confirm: 'Esta acción eliminará todas las citas horarias registradas en COES ¿Está completamente seguro?'} do
       %i.fa-regular.fa-broom
       Limpiar Citas
 
@@ -13,7 +13,7 @@
         - url = "/academic_processes/#{@object.process_before.id}/run_regulation?id_return=#{@object.id}"
         - title = "Actualiza tanto el estado de permanecia como la eficiencia y los promedios de los estudiantes basado en los períodos anteriores al actual #{@object.process_name}. Incluye eliminación de Citas"
         - confirm_msg = "Esta acción actualizará el estado de permanencia y los promedios de notas de cada estudiante que cursó materias en el periodo anterior #{@object.process_before&.process_name} ¿Está completamente seguro?"
-        = link_to url, class: 'btn m-3 btn-lg btn-primary', 'data-bs-toggle': :tooltip, title: title, data: {confirm: confirm_msg, 'disable-with': "<i class='fa fa-spinner fa-spin'></i> Procesando, espere...".html_safe } do
+        = link_to url, method: :post, class: 'btn m-3 btn-lg btn-primary', 'data-bs-toggle': :tooltip, title: title, data: {confirm: confirm_msg, 'disable-with': "<i class='fa fa-spinner fa-spin'></i> Procesando, espere...".html_safe } do
           %i.fa-regular.fa-refresh
           Actualizar Estados Estudiantes
 

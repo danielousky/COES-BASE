@@ -20,6 +20,7 @@
 #
 # Indexes
 #
+#  idx_subjects_ordinal_active_area   (ordinal,active,area_id)
 #  index_subjects_on_area_id          (area_id)
 #  index_subjects_on_departament_id   (departament_id)
 #  index_subjects_on_school_id        (school_id)
@@ -687,7 +688,7 @@ end
     # p "     #{row[4].strip.downcase.to_sym}      ".center(500, "!")
     if row[4] and !row[4].blank?
       row[4].upcase!
-      row[4] = SubjectType.where("code = '#{row[4]}' OR name = '#{row[4]}'").first&.id
+      row[4] = SubjectType.where("code = :val OR name = :val", val: row[4]).first&.id
       
       row[4] ||= SubjectType.first.id
       

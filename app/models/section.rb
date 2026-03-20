@@ -2,20 +2,22 @@
 #
 # Table name: sections
 #
-#  id         :bigint           not null, primary key
-#  capacity   :integer
-#  classroom  :string
-#  code       :string
-#  enabled    :boolean
-#  modality   :integer
-#  qualified  :boolean          default(FALSE), not null
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
-#  course_id  :bigint           not null
-#  teacher_id :bigint
+#  id                     :bigint           not null, primary key
+#  academic_records_count :integer          default(0), not null
+#  capacity               :integer
+#  classroom              :string
+#  code                   :string
+#  enabled                :boolean
+#  modality               :integer
+#  qualified              :boolean          default(FALSE), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  course_id              :bigint           not null
+#  teacher_id             :bigint
 #
 # Indexes
 #
+#  idx_sections_qualified_course         (qualified,course_id)
 #  index_sections_on_code_and_course_id  (code,course_id) UNIQUE
 #  index_sections_on_course_id           (course_id)
 #  index_sections_on_teacher_id          (teacher_id)
@@ -37,7 +39,7 @@ class Section < ApplicationRecord
 
   # ASSOCIATIONS:
   # belongs_to
-  belongs_to :course
+  belongs_to :course, counter_cache: true
   belongs_to :teacher, optional: true
   has_one :user, through: :teacher
 
@@ -105,20 +107,21 @@ class Section < ApplicationRecord
 
   
   # SCOPE:
-  default_scope {includes(:course, :subject, :period, :area)} # No hace falta
+  scope :with_associations, -> { includes(:course, :subject, :period, :area) }
   scope :sort_by_period, -> {joins(:period).order('periods.name')}
   scope :sort_by_period_reverse, -> {joins(:period).order('periods.name DESC')}
 
-  scope :custom_search, -> (keyword) { joins(:period, :subject, :user).where("users.ci ILIKE '%#{keyword}%' OR users.first_name ILIKE '%#{keyword}%' OR users.last_name ILIKE '%#{keyword}%' OR sections.code ILIKE '%#{keyword}%' OR subjects.name ILIKE '%#{keyword}%' OR subjects.code ILIKE '%#{keyword}%' OR periods.name ILIKE '%#{keyword}%'").sort_by_period }
+  scope :custom_search, -> (keyword) { joins(:period, :subject, :user).where("users.ci ILIKE :kw OR users.first_name ILIKE :kw OR users.last_name ILIKE :kw OR sections.code ILIKE :kw OR subjects.name ILIKE :kw OR subjects.code ILIKE :kw OR periods.name ILIKE :kw", kw: "%#{keyword}%").sort_by_period }
   
   scope :qualified, -> () {where(qualified: true)}
 
   # Atención: Este scope no esta trabajando
   # scope :codes, -> () {select(:code).all.distinct.order(code: :asc).map{|s| s.code}}
-  scope :codes, -> () {all.order(code: :asc).map{|s| s.code}.uniq}
+  scope :codes, -> () { order(code: :asc).distinct.pluck(:code) }
 
+  scope :todos, -> { all }
   scope :without_teacher_assigned, -> () {where(teacher_id: nil)}
-  scope :with_teacher_assigned, -> () {where('teacher_id IN NOT NULL')}
+  scope :with_teacher_assigned, -> () {where.not(teacher_id: nil)}
 
   scope :has_capacity, -> {joins(:academic_records).group('sections.id').having('count(academic_records.id) < sections.capacity').order('count(academic_records.id)')}
 
@@ -362,6 +365,7 @@ class Section < ApplicationRecord
     weight -1
 
     list do
+      scopes [:todos, :without_teacher_assigned]
       sort_by ['periods.name', 'areas.name', 'courses.name', 'subjects.code']
       checkboxes false
       search_by :custom_search
@@ -797,8 +801,7 @@ class Section < ApplicationRecord
     begin
       aux = sprintf("%02i", self.code)
       self.code = aux
-    rescue Exception => e
-
+    rescue StandardError
     end
   end
 

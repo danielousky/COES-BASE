@@ -1,5 +1,6 @@
 class PaymentReportsController < ApplicationController
   before_action :set_payment_report, only: %i[ show edit update destroy quick_validation]
+  before_action :require_admin, only: %i[ quick_validation destroy ]
 
   # GET /payment_reports or /payment_reports.json
   def index

@@ -1,9 +1,10 @@
 class EnrollAcademicProcessesController < ApplicationController
   before_action :set_enroll_academic_process, only: %i[ show edit update destroy study_constance total_retire update_permanece_status preinscribir_admin]
+  before_action :require_admin, only: %i[ total_retire update_permanece_status preinscribir_admin ]
 
   # GET /enroll_academic_processes or /enroll_academic_processes.json
   def index
-    @enroll_academic_processes = EnrollAcademicProcess.all
+    @enroll_academic_processes = EnrollAcademicProcess.includes(:academic_process, grade: [:study_plan, { student: :user }])
   end
 
   # GET /enroll_academic_processes/1 or /enroll_academic_processes/1.json
@@ -138,7 +139,7 @@ class EnrollAcademicProcessesController < ApplicationController
         end
       end
 
-    rescue Exception => e
+    rescue StandardError => e
       estado = 'error'
       msg = "Error: #{e}"       
     end
@@ -177,7 +178,7 @@ class EnrollAcademicProcessesController < ApplicationController
             else
               flash[:info] = '¡Correo de Confirmación Enviado!' if UserMailer.enroll_confirmation(enroll_academic_process.id).deliver_now
             end
-          rescue Exception => e
+          rescue StandardError => e
             flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
           end
         end
@@ -191,7 +192,7 @@ class EnrollAcademicProcessesController < ApplicationController
 
         StudentMailer.preinscrito(enroll_academic_process).deliver
         
-      rescue Exception => e
+      rescue StandardError => e
         flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
       end
       flash[:success] = "Proceso de preinscripción completado con éxito. Un correo con el resumen del proceso le ha sido enviado."
@@ -235,15 +236,11 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   def total_retire
-    aux = true
-    @enroll_academic_process.academic_records.each do |ar|
-      aux = ar.update!(status: :retirado)
-    end
-    if aux.blank? or aux.eql? true
-      flash[:info] = '¡Actualización Exitosa!'
-    else
-      flash[:danger] = aux
-    end
+    @enroll_academic_process.academic_records.find_each { |ar| ar.update!(status: :retirado) }
+    flash[:info] = '¡Actualización Exitosa!'
+  rescue StandardError => e
+    flash[:danger] = "Error al retirar: #{e.message}"
+  ensure
     redirect_back fallback_location: "/admin/student/#{@enroll_academic_process.student.id}"
   end
 
@@ -268,7 +265,7 @@ class EnrollAcademicProcessesController < ApplicationController
           else
             flash[:info] = '¡Correo de Confirmación Enviado!' if UserMailer.enroll_confirmation(@enroll_academic_process.id).deliver_now
           end
-        rescue Exception => e
+        rescue StandardError => e
           flash[:warning] = "Correo de completación de proceso de preinscripción no enviado: #{e}" 
         end
       end
@@ -287,7 +284,7 @@ class EnrollAcademicProcessesController < ApplicationController
         begin
           flash[:info] = 'Se envió un correo al estudiante con la información.' if send_confirmation and UserMailer.enroll_confirmation(@enroll_academic_process.id).deliver_now
           
-        rescue Exception => e
+        rescue StandardError => e
           flash[:warning] = "No se pudo enviar el correo: #{e}"
         end
 
