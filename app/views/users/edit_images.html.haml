@@ -14,7 +14,11 @@
           %b IMPORTANTE: 
           = "Debido a los inconvenientes de conectividad en el país, recomendamos encarecidamente subir archivos de baja resolución y peso (menores a 3 MegaBytes). Si al intentar subir el archivo adjunto el sistema genera un error o tarda más de 3 minutos en responder, puede intentar nuevamente el proceso con un archivo más liviano o enviarlo al correo electrónico #{link_to correo_ayuda} para brindarle el apoyo respectivo.".html_safe
 
-        = image_tag main_app.url_for(@user.profile_picture_as_thumb) unless @user.empty_profile_picture?
+        - unless @user.empty_profile_picture?
+          - begin
+            - thumb = @user.profile_picture_as_thumb
+            = image_tag main_app.url_for(thumb), loading: 'lazy', onerror: "this.onerror=null;this.style.display='none'" if thumb
+          - rescue StandardError
 
         .alert.alert-warning 
           = f.input :profile_picture, required: @user.empty_profile_picture?, input_html: {class: 'file-upload', direct_upload: true, accept: '.png,.jpeg,.jpg'}
@@ -22,7 +26,11 @@
             %b Atención: 
             Suba una foto tipo carnet, de frente y con fondo blanco únicamente.
 
-        = image_tag main_app.url_for(@user.ci_image_as_thumb) unless @user.empty_ci_image?
+        - unless @user.empty_ci_image?
+          - begin
+            - ci_thumb = @user.ci_image_as_thumb
+            = image_tag main_app.url_for(ci_thumb), loading: 'lazy', onerror: "this.onerror=null;this.style.display='none'" if ci_thumb
+          - rescue StandardError
 
         .alert.alert-warning
           = f.input :ci_image, required: @user.empty_ci_image?, input_html: {class: 'file-upload', direct_upload: true, accept: '.png,.jpeg,.jpg'}

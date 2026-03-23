@@ -13,11 +13,11 @@
 - if (current_user&.admin&.authorized_manage? 'EnrollAcademicProcess')
   = render partial: 'grades/enroll_process'
 
-- id = 'ChangePermanenceStatus'
+- permanence_modal_id = "ChangePermanenceStatus#{@grade.id}"
 - title = 'Cambiar Estado de Permanencia'
 
 - content = render '/enroll_academic_processes/change_permanence_status_form'
-= render partial: '/layouts/scaffold-modal', locals: {content: content, title: title, id: id, long: ' '}
+= render partial: '/layouts/scaffold-modal', locals: {content: content, title: title, id: permanence_modal_id, long: ' '}
 
 = render partial: 'grades/academic_resume'
 
@@ -25,12 +25,17 @@
 
 :javascript
 
-  function setValuesPermanenceStatus(id, status){
-    // $('#formChangePermanenceStatus').action(`/enroll_academic_processes/${id}/update_permanece_status`);
+  function openPermanenceModal#{@grade.id}(enroll_id, status){
+    var el = document.getElementById('#{permanence_modal_id}');
+    if (!el) return;
+    var form = el.querySelector('form');
+    var select = el.querySelector('select');
+    if (form) form.setAttribute('action', '/enroll_academic_processes/' + enroll_id + '/update_permanece_status');
+    if (select) select.value = status;
 
-    $('#formChangePermanenceStatus').attr('action', `/enroll_academic_processes/${id}/update_permanece_status`);
-    $('#permanenceStatusId').val(status);
-    // console.log('This: '+this);
-    // console.log('$(This): '+$(this));
-    // $('#_sectioncourse_id').val(this.attributes['course_id'].value);
+    var modal = bootstrap.Modal.getInstance(el);
+    if (!modal) {
+      modal = new bootstrap.Modal(el, { backdrop: 'static', keyboard: false });
+    }
+    modal.show();
   }

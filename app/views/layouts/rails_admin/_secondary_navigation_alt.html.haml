@@ -18,9 +18,13 @@
           = link_to msg, 'javascript:void(0)', {"data-bs-target": "##{id}", "data-bs-toggle": :modal, class: 'nav-link'}
 
 
-    - if _current_user and _current_user.profile_picture and _current_user.profile_picture.attached?
+    - if _current_user and _current_user.profile_picture and _current_user.profile_picture.attached? and _current_user.profile_picture.representable?
       %li.nav-item
-        = image_tag _current_user.profile_picture_as_thumb, class: "avatar", size: '35x35'
+        - begin
+          - thumb = _current_user.profile_picture_as_thumb
+          = image_tag(thumb || 'foto_perfil_default_35.png', class: "avatar", size: '35x35', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default_35.png'")
+        - rescue StandardError
+          = image_tag 'foto_perfil_default_35.png'
     - else
       = image_tag 'foto_perfil_default_35.png'
     - if user_link = edit_user_link

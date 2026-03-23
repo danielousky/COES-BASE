@@ -65,19 +65,22 @@ class User < ApplicationRecord
   end
 
   def profile_picture_as_thumb
-    begin
-      profile_picture.variant(resize_to_limit: [100, 100]).processed
-    rescue Exception => e
-      
-    end
+    return nil unless profile_picture.attached? && profile_picture.representable?
+
+    profile_picture.variant(resize_to_limit: [100, 100]).processed
+  rescue StandardError => e
+    Rails.logger.warn "[ActiveStorage] Error al procesar foto de perfil para usuario #{id}: #{e.message}"
+    nil
   end
 
   def ci_image_as_thumb
-    begin
-      ci_image.variant(resize_to_limit: [100, 100]).processed
-    rescue Exception => e
-    end
-  end  
+    return nil unless ci_image.attached? && ci_image.representable?
+
+    ci_image.variant(resize_to_limit: [100, 100]).processed
+  rescue StandardError => e
+    Rails.logger.warn "[ActiveStorage] Error al procesar imagen CI para usuario #{id}: #{e.message}"
+    nil
+  end
 
   attr_accessor :remove_profile_picture
   after_save { profile_picture.purge if remove_profile_picture.eql? '1' } 

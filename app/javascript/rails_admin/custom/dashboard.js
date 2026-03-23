@@ -1,13 +1,24 @@
 import ApexCharts from 'apexcharts';
 
-// Almacenar instancias de charts para destruirlas en re-navegación
+// Almacenar instancias de charts e intervals para limpiarlas en re-navegación
 var chartInstances = [];
+var activeIntervals = [];
+var dashboardInitialized = false;
 
-function destroyCharts() {
+function cleanup() {
+  // Destruir charts
   chartInstances.forEach(function (chart) {
     try { chart.destroy(); } catch (e) { /* ignorar */ }
   });
   chartInstances = [];
+
+  // Limpiar intervals (auto-refresh)
+  activeIntervals.forEach(function (id) {
+    clearInterval(id);
+  });
+  activeIntervals = [];
+
+  dashboardInitialized = false;
 }
 
 function createChart(el, options) {
@@ -21,8 +32,13 @@ function initDashboard() {
   // Solo ejecutar si estamos en la página del dashboard
   if (!document.querySelector('#chart-enrollment') && !document.querySelector('#chart-approval')) return;
 
-  // Destruir charts anteriores (re-navegación turbo/pjax)
-  destroyCharts();
+  // Evitar doble inicialización (dom_ready + turbo:load pueden disparar juntos)
+  if (dashboardInitialized) return;
+  dashboardInitialized = true;
+
+  // Limpiar estado anterior (re-navegación turbo)
+  cleanup();
+  dashboardInitialized = true; // re-set después de cleanup
 
   // Cada init aislado para que un error no bloquee los demás
   var inits = [
@@ -37,6 +53,9 @@ function initDashboard() {
     try { fn(); } catch (e) { console.warn('[Dashboard] Error en ' + fn.name + ':', e); }
   });
 }
+
+// Limpiar al salir de la página (Turbo)
+document.addEventListener("turbo:before-render", cleanup);
 
 // Registrar para eventos futuros
 document.addEventListener("rails_admin.dom_ready", initDashboard);
@@ -77,11 +96,13 @@ function initCountUpAnimations() {
 
 // ── Radial Gauge: Tasa de Aprobación ────────────────────────────────
 function initApprovalGauge() {
-  const el = document.querySelector('#chart-approval');
+  var el = document.querySelector('#chart-approval');
   if (!el) return;
 
-  const rate = parseInt(el.dataset.rate) || 0;
-  let color = '#198754'; // success
+  var rate = parseInt(el.dataset.rate);
+  if (isNaN(rate)) return;
+
+  var color = '#198754'; // success
   if (rate < 50) color = '#dc3545'; // danger
   else if (rate < 70) color = '#ffc107'; // warning
 
@@ -110,10 +131,18 @@ function initApprovalGauge() {
 
 // ── Bar Chart: Inscripciones por Escuela ────────────────────────────
 function initEnrollmentChart() {
-  const el = document.querySelector('#chart-enrollment');
-  if (!el) return;
+  var el = document.querySelector('#chart-enrollment');
+  if (!el || !el.dataset.chart) return;
 
-  const data = JSON.parse(el.dataset.chart);
+  var data;
+  try { data = JSON.parse(el.dataset.chart); } catch (e) { return; }
+  if (!data || !data.labels || !data.labels.length) return;
+
+  // Sanitizar valores numéricos para evitar NaN en SVG
+  var sanitize = function(arr) {
+    return (arr || []).map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
+  };
+
   createChart(el, {
     chart: {
       type: 'bar', height: 280, stacked: true,
@@ -123,9 +152,9 @@ function initEnrollmentChart() {
     plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 3 } },
     colors: ['#198754', '#0d6efd', '#ffc107'],
     series: [
-      { name: 'Confirmados', data: data.confirmado },
-      { name: 'Preinscritos', data: data.preinscrito },
-      { name: 'Reservados', data: data.reservado }
+      { name: 'Confirmados', data: sanitize(data.confirmado) },
+      { name: 'Preinscritos', data: sanitize(data.preinscrito) },
+      { name: 'Reservados', data: sanitize(data.reservado) }
     ],
     xaxis: { categories: data.labels },
     yaxis: { labels: { style: { fontSize: '12px', fontWeight: 600 } } },
@@ -138,17 +167,23 @@ function initEnrollmentChart() {
 
 // ── Donut Chart: Estado de Calificaciones ───────────────────────────
 function initQualificationsChart() {
-  const el = document.querySelector('#chart-qualifications');
-  if (!el) return;
+  var el = document.querySelector('#chart-qualifications');
+  if (!el || !el.dataset.chart) return;
 
-  const data = JSON.parse(el.dataset.chart);
+  var data;
+  try { data = JSON.parse(el.dataset.chart); } catch (e) { return; }
+  if (!data || !data.labels || !data.values) return;
+
+  // Sanitizar valores
+  var values = data.values.map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
+
   createChart(el, {
     chart: {
       type: 'donut', height: 280,
       animations: { enabled: true, speed: 800, animateGradually: { enabled: true, delay: 200 } }
     },
     labels: data.labels,
-    series: data.values,
+    series: values,
     colors: ['#198754', '#dc3545', '#6c757d', '#adb5bd', '#842029'],
     plotOptions: {
       pie: {
@@ -173,11 +208,15 @@ function initQualificationsChart() {
 
 // ── Sparklines: Tendencia de inscripción ────────────────────────────
 function initSparklines() {
-  const el = document.querySelector('#spark-enrollment');
-  if (!el) return;
+  var el = document.querySelector('#spark-enrollment');
+  if (!el || !el.dataset.values) return;
 
-  const values = JSON.parse(el.dataset.values);
+  var values;
+  try { values = JSON.parse(el.dataset.values); } catch (e) { return; }
   if (!values || values.length < 2) return;
+
+  // Sanitizar
+  values = values.map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
 
   createChart(el, {
     chart: { type: 'area', height: 35, sparkline: { enabled: true } },
@@ -191,14 +230,14 @@ function initSparklines() {
 
 // ── Auto-refresh: Polling de inscripción (cada 30s) ─────────────────
 function initAutoRefresh() {
-  const indicator = document.querySelector('#live-indicator');
+  var indicator = document.querySelector('#live-indicator');
   if (!indicator) return;
 
-  const lastUpdated = document.querySelector('#last-updated');
-  let secondsAgo = 0;
+  var lastUpdated = document.querySelector('#last-updated');
+  var secondsAgo = 0;
 
   // Actualizar texto "hace Xs"
-  setInterval(function () {
+  activeIntervals.push(setInterval(function () {
     secondsAgo++;
     if (lastUpdated) {
       if (secondsAgo < 60) {
@@ -207,10 +246,10 @@ function initAutoRefresh() {
         lastUpdated.textContent = 'Hace ' + Math.floor(secondsAgo / 60) + 'min';
       }
     }
-  }, 1000);
+  }, 1000));
 
   // Fetch datos cada 30 segundos
-  setInterval(function () {
+  activeIntervals.push(setInterval(function () {
     fetch('/admin_dashboard/enrollment_counts')
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -235,7 +274,7 @@ function initAutoRefresh() {
         }
       })
       .catch(function () { /* silenciar errores de red */ });
-  }, 30000);
+  }, 30000));
 }
 
 // ── Escape HTML para prevenir XSS ───────────────────────────────────
@@ -274,4 +313,3 @@ function updateActiveAdminsPanel(admins) {
 
   list.innerHTML = html;
 }
-

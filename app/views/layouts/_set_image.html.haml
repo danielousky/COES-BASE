@@ -1,11 +1,9 @@
 - begin
-  - if image 
-    = link_to main_app.url_for(image), target: '_blank', rel: 'noopener noreferrer' do
-      = image_tag main_app.url_for(image), size: size, alt: alt  
+  - if image
+    - image_url = main_app.url_for(image)
+    = link_to image_url, target: '_blank', rel: 'noopener noreferrer' do
+      = image_tag image_url, size: size, alt: alt, loading: 'lazy', onerror: 'this.onerror=null;this.style.display="none";this.closest("a").outerHTML="<span class=\"badge bg-secondary\">Sin imagen</span>"'
   - else
-    .alert.alert-warning Sin Imagen
-- rescue Exception => e
-  
-
-
-
+    .badge.bg-warning Sin Imagen
+- rescue StandardError => e
+  .badge.bg-secondary Sin Imagen

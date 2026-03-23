@@ -8,13 +8,15 @@
     .row.g-0
       .col-md-4
         .row
-          - profile_image = (user&.profile_picture&.attached?) ? main_app.url_for(user&.profile_picture) : "foto_perfil_default.png"
+          - profile_image_attached = user&.profile_picture&.attached?
+          - profile_image = profile_image_attached ? main_app.url_for(user.profile_picture) : "foto_perfil_default.png"
           = link_to profile_image, target: '_blank', rel: 'noopener noreferrer' do
-            = image_tag profile_image, width: '100px', class: 'card-img-top'
+            = image_tag profile_image, width: '100px', class: 'card-img-top', loading: 'lazy', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default.png'"
         .row
-          - ci_image = (user&.ci_image&.attached?) ? main_app.url_for(user&.ci_image) : "foto_perfil_default.png"
+          - ci_image_attached = user&.ci_image&.attached?
+          - ci_image = ci_image_attached ? main_app.url_for(user.ci_image) : "foto_perfil_default.png"
           = link_to ci_image, target: '_blank', rel: 'noopener noreferrer' do
-            = image_tag ci_image, width: '100px', class: 'card-img-top'        
+            = image_tag ci_image, width: '100px', class: 'card-img-top', loading: 'lazy', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default.png'"
       
       .col-md-8
         .card-body

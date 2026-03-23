@@ -20,8 +20,12 @@
     - if user_signed_in?
 
       .text-muted.mr-3= current_user.name
-      - if current_user and current_user.profile_picture and current_user.profile_picture.attached?
-        = image_tag current_user.profile_picture, class: "avatar", size: '35x35'
+      - if current_user && current_user.profile_picture.attached? && current_user.profile_picture.representable?
+        - thumb = current_user.profile_picture_as_thumb
+        - if thumb
+          = image_tag thumb, class: "avatar", size: '35x35', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default_35.png'"
+        - else
+          = image_tag 'foto_perfil_default_35.png'
       - else
         = image_tag 'foto_perfil_default_35.png'
 

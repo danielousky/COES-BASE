@@ -277,8 +277,14 @@ class Student < ApplicationRecord
         label 'Perfil'
 
         formatted_value do
-          if (bindings[:object].user and bindings[:object].user.profile_picture and bindings[:object].user.profile_picture.attached? and bindings[:object].user.profile_picture.representable?)
-            bindings[:view].render(partial: "layouts/set_image", locals: {image: bindings[:object].user.profile_picture, size: '30x30', alt: "foto perfil #{bindings[:object].user.nick_name}"})
+          user = bindings[:object].user
+          if user && user.profile_picture.attached? && user.profile_picture.representable?
+            thumb = user.profile_picture_as_thumb
+            if thumb
+              bindings[:view].render(partial: "layouts/set_image", locals: {image: thumb, size: '30x30', alt: "foto perfil #{user.nick_name}"})
+            else
+              false
+            end
           else
             false
           end

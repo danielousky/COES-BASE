@@ -29,7 +29,7 @@
         %td.text-center
           = enroll_academic_process.label_permanence_status
           - if (current_user&.admin&.authorized_manage? 'EnrollAcademicProcess') and enabled_to_admin
-            %a{"data-bs-target": "#ChangePermanenceStatus", "data-bs-toggle": :modal, type: :button, onclick: "setValuesPermanenceStatus(#{enroll_academic_process.id}, '#{enroll_academic_process.permanence_status}');"}
+            %a{type: :button, style: 'cursor:pointer', onclick: "openPermanenceModal#{@grade.id}(#{enroll_academic_process.id}, '#{enroll_academic_process.permanence_status}');"}
               .fa.fa-pencil-alt
         %td.text-center= enroll_academic_process.total_subjects
         %td.text-center= enroll_academic_process.total_credits

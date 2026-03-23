@@ -13,12 +13,6 @@
 	background-color: #F4F4F4;
 }
 
-// Accesibilidad: indicador de foco visible para navegación por teclado
-*:focus-visible {
-	outline: 2px solid var(--bs-primary);
-	outline-offset: 2px;
-}
-
 // Dashboard: indicador de pulso en vivo
 .live-pulse {
 	display: inline-block;
@@ -46,14 +40,6 @@
 	animation: live-pulse 2s ease-in-out infinite;
 }
 
-// Dashboard: animación de entrada para cards
-.card {
-	transition: transform 0.15s ease, box-shadow 0.15s ease;
-	&:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1) !important;
-	}
-}
 
 // Estilos de impresión: ocultar elementos de navegación y optimizar tablas
 @media print {

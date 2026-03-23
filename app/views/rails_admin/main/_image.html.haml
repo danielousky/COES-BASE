@@ -4,7 +4,11 @@
 
 	=# image_tag url_for(virtual_object.backup_file)
 	=# image_tag main_app.url_for(object.profile_picture.thumb, only_path: true) if (object.profile_picture and object.profile_picture.attached? and object.profile_picture.content_type.eql? "image/jpeg")
-	= image_tag main_app.url_for(object.profile_picture_as_thumb, only_path: true) if (object.profile_picture and object.profile_picture.attached? and object.profile_picture.content_type.eql? "image/jpeg")
+	- if object.profile_picture&.attached? && object.profile_picture.representable?
+		- begin
+			- thumb = object.profile_picture_as_thumb
+			= image_tag main_app.url_for(thumb, only_path: true), loading: 'lazy', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default.png'" if thumb
+		- rescue StandardError => e
 	=# image_tag Rails.application.routes.url_helpers.rails_blob_path(object.profile_picture, only_path: true) #virtual_object.backup_file #'payment_3087'
 	=# image_path virtual_object.backup_file
 	=# image_path '/public/payment_receives/payment_3087' 

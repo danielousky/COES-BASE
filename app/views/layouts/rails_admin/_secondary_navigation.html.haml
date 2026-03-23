@@ -9,9 +9,13 @@
         Período de la Sesión: #{session[:period_name]}
 
     %li.nav-item
-      - if _current_user&.profile_picture&.attached?
+      - if _current_user&.profile_picture&.attached? and _current_user.profile_picture.representable?
         - begin
-          = image_tag _current_user.profile_picture_as_thumb, class: "avatar", size: '35x35', alt: 'Foto de perfil'
+          - thumb = _current_user.profile_picture_as_thumb
+          - if thumb
+            = image_tag thumb, class: "avatar", size: '35x35', alt: 'Foto de perfil', onerror: "this.onerror=null;this.src='/assets/foto_perfil_default_35.png'"
+          - else
+            = image_tag 'foto_perfil_default_35.png', alt: 'Foto de perfil'
         - rescue StandardError => e
           = image_tag 'foto_perfil_default_35.png', alt: 'Foto de perfil'
       - else

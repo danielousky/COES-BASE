@@ -1,10 +1,9 @@
 - long ||= 'modal-xl'
-.modal.fade{"aria-hidden": true, tabindex: "-1", id: id}
+.modal{"aria-hidden": true, tabindex: "-1", id: id, "data-bs-backdrop": "static", "data-bs-keyboard": "false"}
   .modal-dialog{class: long}
     .modal-content
-      .text-center.pt-3
-        %h5= title
+      .d-flex.justify-content-between.align-items-center.pt-3.px-3
+        %h5.mb-0= title
+        %button.btn-close{"data-bs-dismiss": "modal", "aria-label": "Cerrar"}
       .modal-body
         = content.html_safe
-
-
