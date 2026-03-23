@@ -234,10 +234,8 @@ function initAutoRefresh() {
   activeIntervals.push(setInterval(function () {
     fetch('/admin_dashboard/enrollment_counts')
       .then(function (r) {
-        if (r.status === 401 || r.status === 403) {
-          cleanup();
-          return null;
-        }
+        if (r.status === 401 || r.status === 403) { cleanup(); return null; }
+        if (!r.ok) return null;
         return r.json();
       })
       .then(function (data) {
