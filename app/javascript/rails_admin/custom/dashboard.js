@@ -54,16 +54,8 @@ function initDashboard() {
 // Limpiar al salir de la página (Turbo)
 document.addEventListener("turbo:before-render", cleanup);
 
-// Registrar para eventos futuros
 document.addEventListener("rails_admin.dom_ready", initDashboard);
 document.addEventListener("turbo:load", initDashboard);
-
-// Si el DOM ya está listo, ejecutar inmediatamente
-if (document.readyState !== 'loading') {
-  initDashboard();
-} else {
-  document.addEventListener("DOMContentLoaded", initDashboard);
-}
 
 // ── Animación de contador reutilizable ───────────────────────────────
 function animateCounter(el, target, duration) {
@@ -241,8 +233,15 @@ function initAutoRefresh() {
   // Fetch datos cada 30 segundos
   activeIntervals.push(setInterval(function () {
     fetch('/admin_dashboard/enrollment_counts')
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r.status === 401 || r.status === 403) {
+          cleanup();
+          return null;
+        }
+        return r.json();
+      })
       .then(function (data) {
+        if (!data) return;
         if (data.totals) {
           secondsAgo = 0;
           // Animar los contadores del card de inscritos

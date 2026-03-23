@@ -257,11 +257,15 @@
                 .list-group-item.px-3.py-2
                   .d-flex.align-items-center.gap-2
                     .position-relative
-                      - if user.profile_picture.attached? and user.profile_picture.representable?
-                        = image_tag user.profile_picture.variant(:icon), class: 'rounded-circle', style: 'width: 32px; height: 32px; object-fit: cover;', loading: 'lazy', onerror: "this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div class=\\'d-flex align-items-center justify-content-center rounded-circle text-white fw-bold\\' style=\\'width:32px;height:32px;font-size:0.7rem;background:#{color};\\'>#{user.first_name&.first}#{user.last_name&.first}</div>'"
+                      - thumb = user.profile_picture_as_thumb
+                      - initials = "#{user.first_name&.first}#{user.last_name&.first}".upcase
+                      - if thumb
+                        = image_tag thumb, class: 'rounded-circle', style: 'width: 32px; height: 32px; object-fit: cover;', loading: 'lazy', onerror: "this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'"
+                        .d-flex.align-items-center.justify-content-center.rounded-circle.text-white.fw-bold{style: "display:none;width:32px;height:32px;font-size:0.7rem;background:#{color};"}
+                          = initials
                       - else
                         .d-flex.align-items-center.justify-content-center.rounded-circle.text-white.fw-bold{style: "width: 32px; height: 32px; font-size: 0.7rem; background: #{color};"}
-                          = "#{user.first_name&.first}#{user.last_name&.first}".upcase
+                          = initials
                       - if entry[:active]
                         %span.position-absolute.live-pulse-sm{style: 'bottom: 0; right: 0;', 'data-bs-toggle': 'tooltip', title: 'Activo'}
                       - else
