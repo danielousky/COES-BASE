@@ -208,9 +208,9 @@ include AcademicProcessable
       if !(self.grade.academic_records.qualified.any?)
         reglamento_aux = :nuevo
       elsif total_retire?
-        reglamento_aux = :retiro_semestre
+        reglamento_aux = :retiro_total #:retiro_semestre
       elsif self.academic_records.sin_calificar.any?
-        reglamento_aux = :por_calificar
+        reglamento_aux = :regular
       elsif self.academic_records.coursed.any?
         if coursed_but_not_approved_any?
           reglamento_aux = :articulo3
