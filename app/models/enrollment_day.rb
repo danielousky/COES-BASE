@@ -41,8 +41,8 @@ class EnrollmentDay < ApplicationRecord
 
   #SCOPE
   scope :current_process, -> (academic_process_id) { of_today.where(academic_process_id: academic_process_id)}
-
   scope :of_today, -> {where(start: Time.zone.now.all_day)}
+  scope :expired, -> { where('start < ?', Time.current.beginning_of_day) }
   
   def active_now?
     Time.zone.now > self.start and Time.zone.now < self.start+total_duration_hours.hours

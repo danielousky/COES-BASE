@@ -2,7 +2,7 @@
 - if (current_user&.admin&.authorized_read? 'AcademicProcess')
   - if @object.process_before
     - clean_url = "/academic_processes/#{@object.id}/clean_appointments"
-    - expired_count = @object.school.enrollment_days.where('start < ?', Time.current.beginning_of_day).count
+    - expired_count = @object.school.enrollment_days.expired.count
     - expired_confirm = "Esta acción eliminará #{expired_count} jornada(s) vencida(s) (anteriores a hoy) y limpiará las citas asignadas de esos días en #{@object.school.name}. ¿Está seguro?"
     - all_confirm = "ATENCIÓN: Esta acción eliminará TODAS las jornadas de cita horaria (incluyendo futuras) y limpiará TODAS las citas asignadas a los estudiantes de #{@object.school.name}. ¿Está completamente seguro?"
     .d-flex.justify-content-end.mb-3

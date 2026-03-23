@@ -122,14 +122,11 @@ class AcademicProcessesController < ApplicationController
 
     if expired_only
       today = Time.current.beginning_of_day
-      days_to_clean = school.enrollment_days.where('start < ?', today)
-      total_days = days_to_clean.count
-      days_to_clean.destroy_all
-      total_grades = school.grades.where('appointment_time < ?', today).update_all(appointment_time: nil, duration_slot_time: nil)
+      total_days = school.enrollment_days.expired.delete_all
+      total_grades = school.grades.with_appointment_time.where('appointment_time < ?', today).update_all(appointment_time: nil, duration_slot_time: nil)
       scope_label = 'vencidas'
     else
-      total_days = school.enrollment_days.count
-      school.enrollment_days.destroy_all
+      total_days = school.enrollment_days.delete_all
       total_grades = school.grades.with_appointment_time.update_all(appointment_time: nil, duration_slot_time: nil)
       scope_label = 'todas'
     end
