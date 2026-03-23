@@ -92,7 +92,7 @@
             .progress.mb-2{style: 'height: 6px'}
               .progress-bar.bg-success{style: "width: #{st[:percentage]}%"}
           - if st[:no_teacher] > 0
-            %a.badge.bg-warning.text-dark.text-decoration-none{href: '/admin/section?scope=without_teacher_assigned'}
+            %a.badge.bg-warning.text-dark.text-decoration-none{href: '/admin/section?scope=sin_profesor_asignado'}
               %i.fa-solid.fa-exclamation-triangle.me-1
               #{st[:no_teacher]} sin profesor
 

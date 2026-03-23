@@ -121,6 +121,7 @@ class Section < ApplicationRecord
 
   scope :todos, -> { all }
   scope :without_teacher_assigned, -> () {where(teacher_id: nil)}
+  scope :sin_profesor_asignado, -> () {where(teacher_id: nil)}
   scope :with_teacher_assigned, -> () {where.not(teacher_id: nil)}
 
   scope :has_capacity, -> {joins(:academic_records).group('sections.id').having('count(academic_records.id) < sections.capacity').order('count(academic_records.id)')}
@@ -365,7 +366,7 @@ class Section < ApplicationRecord
     weight -1
 
     list do
-      scopes [:todos, :without_teacher_assigned]
+      scopes [:todos, :sin_profesor_asignado]
       sort_by ['periods.name', 'areas.name', 'courses.name', 'subjects.code']
       checkboxes false
       search_by :custom_search

@@ -164,7 +164,7 @@ class DashboardDataService
       label = st[:no_teacher] == 1 ? 'sección sin profesor asignado' : 'secciones sin profesor asignado'
       items << { type: :warning, icon: 'fa-chalkboard-user',
                  text: "#{st[:no_teacher]} #{label}",
-                 url: '/admin/section?scope=without_teacher_assigned' }
+                 url: '/admin/section?scope=sin_profesor_asignado' }
     end
 
     pending_confirm = pending_confirmation_count
