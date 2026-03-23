@@ -1,8 +1,8 @@
 class AcademicProcessesController < ApplicationController
   include ActionController::Live
   include Streamable
-  before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
-  before_action :require_admin, only: %i[ massive_confirmation clean_courses run_regulation ]
+  before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses clean_appointments run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
+  before_action :require_admin, only: %i[ massive_confirmation clean_courses clean_appointments run_regulation ]
 
   def massive_confirmation
     total = @academic_process.enroll_academic_processes.not_confirmado.with_payment_report
@@ -115,6 +115,32 @@ class AcademicProcessesController < ApplicationController
   #   response.stream.close
   # end
 
+
+  def clean_appointments
+    school = @academic_process.school
+    expired_only = params[:scope] == 'expired'
+
+    if expired_only
+      today = Time.current.beginning_of_day
+      days_to_clean = school.enrollment_days.where('start < ?', today)
+      total_days = days_to_clean.count
+      days_to_clean.destroy_all
+      total_grades = school.grades.where('appointment_time < ?', today).update_all(appointment_time: nil, duration_slot_time: nil)
+      scope_label = 'vencidas'
+    else
+      total_days = school.enrollment_days.count
+      school.enrollment_days.destroy_all
+      total_grades = school.grades.with_appointment_time.update_all(appointment_time: nil, duration_slot_time: nil)
+      scope_label = 'todas'
+    end
+
+    if total_days == 0 && total_grades == 0
+      flash[:info] = "No se encontraron citas #{scope_label} para limpiar"
+    else
+      flash[:success] = "Citas #{scope_label} limpiadas: #{total_days} #{'jornada'.pluralize(total_days)} eliminada(s), #{total_grades} #{'cita'.pluralize(total_grades)} de estudiantes limpiada(s)"
+    end
+    redirect_back fallback_location: "/admin/academic_process/#{@academic_process.id}/enrollment_day"
+  end
 
   def run_regulation
     total_actualizados = 0

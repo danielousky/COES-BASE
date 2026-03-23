@@ -79,6 +79,7 @@ Rails.application.routes.draw do
       get 'massive_actas_generation'
       get 'massive_actas_generation_async'
       delete 'clean_courses'
+      delete 'clean_appointments'
       post 'run_regulation'
     end
     collection do

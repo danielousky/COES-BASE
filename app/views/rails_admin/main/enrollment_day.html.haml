@@ -1,18 +1,32 @@
 %h4.bg-primary.text-light.text-center= "Cita Horaria #{@object.short_desc}"
 - if (current_user&.admin&.authorized_read? 'AcademicProcess')
-  - if EnrollmentDay.any?
-    = link_to "/enrollment_days/#{-1}/destroy_all", method: :delete, class: 'btn btn-danger mx-2 float-end', 'data-bs-toggle': :tooltip, title: 'Eliminar todas las citas horarias', data: {confirm: 'Esta acción eliminará todas las citas horarias registradas en COES ¿Está completamente seguro?'} do
-      %i.fa-regular.fa-broom
-      Limpiar Citas
-
   - if @object.process_before
+    - clean_url = "/academic_processes/#{@object.id}/clean_appointments"
+    - expired_count = @object.school.enrollment_days.where('start < ?', Time.current.beginning_of_day).count
+    - expired_confirm = "Esta acción eliminará #{expired_count} jornada(s) vencida(s) (anteriores a hoy) y limpiará las citas asignadas de esos días en #{@object.school.name}. ¿Está seguro?"
+    - all_confirm = "ATENCIÓN: Esta acción eliminará TODAS las jornadas de cita horaria (incluyendo futuras) y limpiará TODAS las citas asignadas a los estudiantes de #{@object.school.name}. ¿Está completamente seguro?"
+    .d-flex.justify-content-end.mb-3
+      .btn-group
+        = link_to "#{clean_url}?scope=expired", method: :delete, class: 'btn btn-outline-warning', 'data-bs-toggle': :tooltip, title: 'Eliminar solo las jornadas con fecha anterior a hoy', data: {confirm: expired_confirm} do
+          %i.fa-solid.fa-broom
+          Limpiar Vencidas
+          - if expired_count > 0
+            %span.badge.bg-warning.text-dark.ms-1= expired_count
+        %button.btn.btn-outline-warning.dropdown-toggle.dropdown-toggle-split{"data-bs-toggle": :dropdown, "aria-expanded": false}
+          %span.visually-hidden Más opciones
+        %ul.dropdown-menu.dropdown-menu-end
+          %li
+            = link_to clean_url, method: :delete, class: 'dropdown-item text-danger', data: {confirm: all_confirm} do
+              %i.fa-solid.fa-triangle-exclamation.me-1
+              Limpiar Todas las Citas
+
     .alert.alert-danger
       %b Atención
-      Si está planificando una nueva jornada de inscripción por Cita Horaria, es importante que corra la función 'Actualizar Estados Estudiantes' indicada con el enlace abajo para que COES actualice tanto el estado de permanecia como los valores de eficiencia y promedios de cada estudiante antes de agregar la nueva cita. 
+      Si está planificando una nueva jornada de inscripción por Cita Horaria, es importante que corra la función 'Actualizar Estados Estudiantes' indicada con el enlace abajo para que COES actualice tanto el estado de permanecia como los valores de eficiencia y promedios de cada estudiante antes de agregar la nueva cita.
       .text-center
         - url = "/academic_processes/#{@object.process_before.id}/run_regulation?id_return=#{@object.id}"
         - title = "Actualiza tanto el estado de permanecia como la eficiencia y los promedios de los estudiantes basado en los períodos anteriores al actual #{@object.process_name}. Incluye eliminación de Citas"
-        - confirm_msg = "Esta acción actualizará el estado de permanencia y los promedios de notas de cada estudiante que cursó materias en el periodo anterior #{@object.process_before&.process_name} ¿Está completamente seguro?"
+        - confirm_msg = "Esta acción actualizará el estado de permanencia y los promedios de notas de cada estudiante que cursó materias en el periodo anterior #{@object.process_before&.process_name}. También limpiará todas las citas horarias. ¿Está completamente seguro?"
         = link_to url, method: :post, class: 'btn m-3 btn-lg btn-primary', 'data-bs-toggle': :tooltip, title: title, data: {confirm: confirm_msg, 'disable-with': "<i class='fa fa-spinner fa-spin'></i> Procesando, espere...".html_safe } do
           %i.fa-regular.fa-refresh
           Actualizar Estados Estudiantes
