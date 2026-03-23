@@ -44,7 +44,7 @@ document.addEventListener("rails_admin.dom_ready", function() {
 // un estado residual que bloquea la interacción con la página.
 function dismissModalsAndTooltips() {
   // Cerrar todos los modales abiertos (con y sin .fade)
-  document.querySelectorAll('.modal.show, .modal[style*="display: block"]').forEach(function(el) {
+  document.querySelectorAll('.modal.show').forEach(function(el) {
     var instance = bootstrap.Modal.getInstance(el);
     if (instance) {
       try { instance.hide(); } catch(e) { /* ignorar */ }

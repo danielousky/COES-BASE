@@ -6,19 +6,21 @@ var activeIntervals = [];
 var dashboardInitialized = false;
 
 function cleanup() {
-  // Destruir charts
   chartInstances.forEach(function (chart) {
     try { chart.destroy(); } catch (e) { /* ignorar */ }
   });
   chartInstances = [];
 
-  // Limpiar intervals (auto-refresh)
   activeIntervals.forEach(function (id) {
     clearInterval(id);
   });
   activeIntervals = [];
 
   dashboardInitialized = false;
+}
+
+function sanitizeNumbers(arr) {
+  return (arr || []).map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
 }
 
 function createChart(el, options) {
@@ -32,13 +34,8 @@ function initDashboard() {
   // Solo ejecutar si estamos en la página del dashboard
   if (!document.querySelector('#chart-enrollment') && !document.querySelector('#chart-approval')) return;
 
-  // Evitar doble inicialización (dom_ready + turbo:load pueden disparar juntos)
   if (dashboardInitialized) return;
   dashboardInitialized = true;
-
-  // Limpiar estado anterior (re-navegación turbo)
-  cleanup();
-  dashboardInitialized = true; // re-set después de cleanup
 
   // Cada init aislado para que un error no bloquee los demás
   var inits = [
@@ -138,11 +135,6 @@ function initEnrollmentChart() {
   try { data = JSON.parse(el.dataset.chart); } catch (e) { return; }
   if (!data || !data.labels || !data.labels.length) return;
 
-  // Sanitizar valores numéricos para evitar NaN en SVG
-  var sanitize = function(arr) {
-    return (arr || []).map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
-  };
-
   createChart(el, {
     chart: {
       type: 'bar', height: 280, stacked: true,
@@ -152,9 +144,9 @@ function initEnrollmentChart() {
     plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 3 } },
     colors: ['#198754', '#0d6efd', '#ffc107'],
     series: [
-      { name: 'Confirmados', data: sanitize(data.confirmado) },
-      { name: 'Preinscritos', data: sanitize(data.preinscrito) },
-      { name: 'Reservados', data: sanitize(data.reservado) }
+      { name: 'Confirmados', data: sanitizeNumbers(data.confirmado) },
+      { name: 'Preinscritos', data: sanitizeNumbers(data.preinscrito) },
+      { name: 'Reservados', data: sanitizeNumbers(data.reservado) }
     ],
     xaxis: { categories: data.labels },
     yaxis: { labels: { style: { fontSize: '12px', fontWeight: 600 } } },
@@ -174,8 +166,7 @@ function initQualificationsChart() {
   try { data = JSON.parse(el.dataset.chart); } catch (e) { return; }
   if (!data || !data.labels || !data.values) return;
 
-  // Sanitizar valores
-  var values = data.values.map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
+  var values = sanitizeNumbers(data.values);
 
   createChart(el, {
     chart: {
@@ -215,8 +206,7 @@ function initSparklines() {
   try { values = JSON.parse(el.dataset.values); } catch (e) { return; }
   if (!values || values.length < 2) return;
 
-  // Sanitizar
-  values = values.map(function(v) { return (typeof v === 'number' && !isNaN(v)) ? v : 0; });
+  values = sanitizeNumbers(values);
 
   createChart(el, {
     chart: { type: 'area', height: 35, sparkline: { enabled: true } },

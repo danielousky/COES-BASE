@@ -49,7 +49,6 @@
 
   selectElement.addEventListener("change", e => {
     let file = e.currentTarget.files[0];
-    console.log("FILE UPLOAD");
     if( typeof file.name != "undefined"){
       let file_size = ((file.size/1024)/1024).toFixed(0);
       if (file_size > 50) {
@@ -75,9 +74,6 @@
   addEventListener("direct-upload:start", event => {
     const { id } = event.detail;
     const element = document.getElementById(`direct-upload-${id}`);
-    const cancel = document.getElementById(`cancelBtn`);
-    cancel.classList.add('disabled');
-    cancel.disabled();
     element.classList.remove("direct-upload--pending");
   })
 

@@ -1,15 +1,7 @@
 .d-flex.align-items-center
-    - if user.profile_picture.attached? and user.profile_picture.representable?
-        - begin
-            - thumb = user.profile_picture_as_thumb
-            - if thumb
-                = image_tag thumb, class: "rounded-circle me-2", style: 'max-width: 30px; max-height: 30px;', loading: 'lazy', onerror: "this.onerror=null;this.style.display='none';this.nextElementSibling&&this.nextElementSibling.remove();this.insertAdjacentHTML('afterend','<span class=\"bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2\" style=\"width:30px;height:30px;\"><i class=\"fa fa-user text-white\" style=\"font-size:12px;\"></i></span>')"
-            - else
-                .bg-secondary.rounded-circle.d-flex.align-items-center.justify-content-center.me-2{style: 'width: 30px; height: 30px;'}
-                    %i.fa.fa-user.text-white{style: 'font-size: 12px;'}
-        - rescue StandardError => e
-            .bg-secondary.rounded-circle.d-flex.align-items-center.justify-content-center.me-2{style: 'width: 30px; height: 30px;'}
-                %i.fa.fa-user.text-white{style: 'font-size: 12px;'}
+    - thumb = user.profile_picture_as_thumb
+    - if thumb
+        = image_tag thumb, class: "rounded-circle me-2", style: 'max-width: 30px; max-height: 30px;', loading: 'lazy', onerror: "this.onerror=null;this.style.display='none'"
     - else
         .bg-secondary.rounded-circle.d-flex.align-items-center.justify-content-center.me-2{style: 'width: 30px; height: 30px;'}
             %i.fa.fa-user.text-white{style: 'font-size: 12px;'}

@@ -40,6 +40,14 @@
 	animation: live-pulse 2s ease-in-out infinite;
 }
 
+// Hover sutil en cards (desactivado con modal abierto para evitar flickering del backdrop)
+body:not(.modal-open) .card {
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	&:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 0.5rem 1rem rgba(0,0,0,.1) !important;
+	}
+}
 
 // Estilos de impresión: ocultar elementos de navegación y optimizar tablas
 @media print {

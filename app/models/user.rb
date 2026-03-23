@@ -67,7 +67,7 @@ class User < ApplicationRecord
   def profile_picture_as_thumb
     return nil unless profile_picture.attached? && profile_picture.representable?
 
-    profile_picture.variant(resize_to_limit: [100, 100]).processed
+    profile_picture.variant(:thumb).processed
   rescue StandardError => e
     Rails.logger.warn "[ActiveStorage] Error al procesar foto de perfil para usuario #{id}: #{e.message}"
     nil
@@ -76,7 +76,7 @@ class User < ApplicationRecord
   def ci_image_as_thumb
     return nil unless ci_image.attached? && ci_image.representable?
 
-    ci_image.variant(resize_to_limit: [100, 100]).processed
+    ci_image.variant(:thumb).processed
   rescue StandardError => e
     Rails.logger.warn "[ActiveStorage] Error al procesar imagen CI para usuario #{id}: #{e.message}"
     nil
