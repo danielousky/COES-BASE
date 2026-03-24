@@ -3,6 +3,27 @@
 es:
   contains: 'Contiene'
   admin:
+    js:
+      true: "Verdadero"
+      false: "Falso"
+      is_present: Está presente
+      is_blank: Está vacío
+      date: Fecha ...
+      between_and_: Entre ... y ...
+      today: Hoy
+      yesterday: Ayer
+      this_week: Esta semana
+      last_week: Semana pasada
+      time: Hora ...
+      number: Número ...
+      contains: Contiene
+      does_not_contain: No contiene
+      is_exactly: Es exactamente
+      starts_with: Comienza con
+      ends_with: Termina con
+      too_many_objects: "Demasiados objetos, use el buscador de arriba"
+      no_objects: "No se encontraron objetos"
+      clear: Limpiar    
     contains: 'Contiene'
     home:
       name: "Principal"
