@@ -90,7 +90,8 @@ class EnrollmentDay < ApplicationRecord
 
 
   def own_grades
-    self.school.grades.with_day_enroll_eql_to(self.start)
+    end_time = self.start + total_duration_hours.hours + slot_duration_minutes.minutes
+    self.school.grades.where(appointment_time: self.start..end_time)
   end
 
   def own_grades_count

@@ -127,7 +127,7 @@ class Grade < ApplicationRecord
   
   scope :total_with_enrollments_in_period, -> (period_id) { with_enrollments_in_period(period_id).uniq.count }
   
-  scope :valid_to_enrolls, -> (academic_process_id, process_before_id) {valid_to_enrolls_pre(process_before_id).or(Grade.special_authorized(academic_process_id))}
+  scope :valid_to_enrolls, -> (academic_process_id, process_before_id) {where(id: valid_to_enrolls_pre(process_before_id)).or(without_appointment_time.special_authorized(academic_process_id)).distinct}
 
   scope :valid_to_enrolls_pre, -> (process_before_id) {without_appointment_time.current_permanence_valid_to_enroll.enrolled_in_academic_process(process_before_id)}
 
@@ -466,6 +466,16 @@ class Grade < ApplicationRecord
 
   def label_study_plan
     ApplicationController.helpers.label_status('bg-info', study_plan&.code)
+  end
+
+  def label_enabled_enroll_process
+    return unless enabled_enroll_process
+
+    ApplicationController.helpers.label_status_with_tooltip(
+      'bg-primary',
+      "<i class='fa-solid fa-user-check'></i>".html_safe,
+      "Permiso Especial: #{enabled_enroll_process.process_name}"
+    )
   end
 
   def label_cita_horaria

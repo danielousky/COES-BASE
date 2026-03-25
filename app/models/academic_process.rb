@@ -302,10 +302,9 @@ class AcademicProcess < ApplicationRecord
   def update_grades_enrollment_day (to_enroll_academic_processes, final_lap, appointment_time, duration_slot_time)
 
     total_updated = 0
-    entities = self.ready_to_enrollment_day to_enroll_academic_processes
+    grades = self.ready_to_enrollment_day to_enroll_academic_processes
 
-    entities[0..final_lap].each do |ent| 
-      grade = to_enroll_academic_processes ? ent.grade : ent
+    grades[0..final_lap].each do |grade|
       total_updated += 1 if grade.update(appointment_time: appointment_time, duration_slot_time: duration_slot_time)
     end
     return total_updated
@@ -316,11 +315,18 @@ class AcademicProcess < ApplicationRecord
   end
 
   def grades_ready_to_enrollment_day
-    self.school.grades.valid_to_enrolls(self.id,self.process_before.id).sort_by_numbers.uniq if process_before
+    self.school.grades.valid_to_enrolls(self.id, self.process_before.id).sort_by_numbers if process_before
   end
 
   def enrolleds_ready_to_enrollment_day
-    self.process_before&.enroll_academic_processes.valid_to_enroll_in.sort_by_numbers_of_this_process
+    return nil unless process_before
+
+    grades = self.school.grades.valid_to_enrolls(self.id, self.process_before.id)
+    eap_numbers = EnrollAcademicProcess.where(academic_process_id: self.process_before.id)
+      .pluck(:grade_id, :efficiency, :simple_average, :weighted_average)
+      .each_with_object({}) { |(gid, eff, sa, wa), h| h[gid] = [eff || 0, sa || 0, wa || 0] }
+
+    grades.sort_by { |g| eap_numbers.fetch(g.id, [0, 0, 0]).map(&:-@) }
   end
 
   def update_enroll_academic_processes_permanence_status
