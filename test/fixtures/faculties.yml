@@ -13,4 +13,6 @@
 #
 one:
   code: "FHE"
-  name: "Facultad de Humanidades y Educación"
+  name: "Facultad de Humanidades y Educacion"
+  contact_email: "fhe@test.com"
+  coes_boss_name: "Jefe Control Estudios FHE"

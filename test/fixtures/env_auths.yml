@@ -21,4 +21,4 @@
 one:
   admin_id: <%= ActiveRecord::FixtureSet.identify(:admin_user) %>
   env_authorizable_type: "Faculty"
-  env_authorizable_id: 1
+  env_authorizable_id: <%= ActiveRecord::FixtureSet.identify(:one) %>
