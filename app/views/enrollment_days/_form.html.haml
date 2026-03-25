@@ -20,13 +20,13 @@
               = "#{a} Horas"
 
 
-    = f.input :max_grades, required: true, input_html: { min: 10, max: total_grades_without_appointment+1, step: 1, value: total_grades_without_appointment+1}
+    = f.input :max_grades, required: true, input_html: { min: 10, max: total_grades_without_appointment, step: 1, value: total_grades_without_appointment}
     =# f.number_field :max_grados, class: 'form-control', value: @total_grados_sin_cita, min: 10, max: @total_grados_sin_cita+1, step: 1, required: true
 
     = f.input :slot_duration_minutes, collection: [["30 Minutos", 30],["60 Minutos", 60],["120 Minutos", 120]], as: :radio_buttons, required: true      
     %hr
     .alert.alert-warning
-      = f.input :by_before_process
+      = f.input :by_before_process, hint: 'Si se activa, las citas se ordenan por eficiencia, promedio y ponderado del período anterior. Los estudiantes con permiso especial sin inscripción previa quedarán al final.'
   .modal-footer
     = f.button :submit, value: 'Crear Jornada de inscripción por cita horaria', class: 'btn btn-success'
 

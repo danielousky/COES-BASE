@@ -2,10 +2,7 @@
 - enrollment_days = academic_process.enrollment_days
 - grades_without_appointment = academic_process.grades_ready_to_enrollment_day
 
-- grades_without_appointment = academic_process.school.grades.valid_to_enrolls(academic_process.id,academic_process.process_before.id)
-
-- totales = grades_without_appointment.group(:current_permanence_status).count
-- grades_without_appointment = grades_without_appointment.sort_by_numbers.uniq
+- totales = grades_without_appointment&.unscope(:order)&.group(:current_permanence_status)&.count || {}
 - grades_others = Grade.enrolled_in_academic_process(academic_process.process_before_id).others_permanence_invalid_to_enroll
 
 - if logged_as_admin and grades_without_appointment.any? and (current_user&.admin&.authorized_create? 'AcademicProcess')
@@ -21,8 +18,8 @@
 %ul#myTab.nav.nav-tabs{role: "tablist"}
   %li.nav-item{role: "presentation"}
     %div{'data-bs-toggle': :tooltip, title: "#{grades_others.count} Estudiante(s) que no aplican a Nueva Jornada por Cita Horaria"}
-      %button#otherGrades-tab.nav-link{"aria-controls": "otherGrades", "aria-selected": true, "data-bs-target": "#otherGrades", "data-bs-toggle": :tab, role: :tab, type: "button"}
-        .label.bg-info.text-dark= grades_others.count
+      %button#otherGrades-tab.nav-link{"aria-controls": "otherGrades", "aria-selected": false, "data-bs-target": "#otherGrades", "data-bs-toggle": :tab, role: :tab, type: "button"}
+        .label.bg-warning.text-dark= grades_others.count
         No Aplican
   %li.nav-item{role: "presentation"}
     %div{'data-bs-toggle': :tooltip, title: "#{total_grades} Estudiante(s) válido(s) para aplicar en Nueva Jornada"}
