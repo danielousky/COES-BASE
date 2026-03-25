@@ -63,7 +63,13 @@ class EnrollmentDaysController < ApplicationController
 
       end
 
-      flash[:success] += ". Se generaron #{total_updated} citas"
+      esperados = @enrollment_day.max_grades
+      if total_updated < esperados
+        sin_asignar = esperados - total_updated
+        flash[:warning] = "Se generaron #{total_updated} citas de #{esperados} esperadas. #{sin_asignar} estudiante(s) no pudieron ser asignados."
+      else
+        flash[:success] += ". Se generaron #{total_updated} citas"
+      end
     else
       flash[:danger] = @enrollment_day.errors.full_messages.to_sentence
     end
