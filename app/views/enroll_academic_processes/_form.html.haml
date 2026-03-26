@@ -75,7 +75,7 @@
   .border.p-1{style: 'overflow-y:scroll;max-height:280px'}
     = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: courses_offer, pcis: false, academic_process_id: academic_process.id}
 
-    - pcis = academic_process.period.courses.joins(:school).where("schools.id != '?'", school.id).pcis.order_by_subject_code.uniq
+    - pcis = academic_process.period.courses.joins(:school).where("schools.id != '?'", school.id).where(schools: { type_entity: :pregrado }).pcis.order_by_subject_code.uniq
     - if pcis.any?
       %hr
       = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: pcis, pcis: true, academic_process_id: academic_process.id}
