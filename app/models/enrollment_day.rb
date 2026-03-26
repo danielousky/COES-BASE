@@ -99,9 +99,18 @@ class EnrollmentDay < ApplicationRecord
   end
 
   def own_grades_sort_by_appointment
-    # self.own_grades.order([appointment_time: :asc, duration_slot_time: :asc, efficiency: :desc, simple_average: :desc, weighted_average: :desc])
-    
-    self.own_grades.joins(:enroll_academic_processes).order([appointment_time: :asc, duration_slot_time: :asc, 'enroll_academic_processes.efficiency': :desc, 'enroll_academic_processes.simple_average': :desc, 'enroll_academic_processes.weighted_average': :desc]).uniq
+    grades = own_grades.to_a
+
+    if by_before_process && academic_process.process_before
+      eap_numbers = EnrollAcademicProcess
+        .where(academic_process_id: academic_process.process_before_id)
+        .pluck(:grade_id, :efficiency, :simple_average, :weighted_average)
+        .each_with_object({}) { |(gid, eff, sa, wa), h| h[gid] = [eff || 0, sa || 0, wa || 0] }
+
+      grades.sort_by { |g| [g.appointment_time, g.duration_slot_time] + eap_numbers.fetch(g.id, [0, 0, 0]).map(&:-@) }
+    else
+      grades.sort_by { |g| [g.appointment_time, g.duration_slot_time, -(g.efficiency || 0), -(g.simple_average || 0), -(g.weighted_average || 0)] }
+    end
   end
 
   def own_grades_sort_by_numbers
