@@ -120,17 +120,19 @@ class AcademicProcessesController < ApplicationController
     school = @academic_process.school
     expired_only = params[:scope] == 'expired'
 
-    enrollment_days = EnrollmentDay.where(academic_process_id: school.academic_process_ids)
+    enrollment_days = EnrollmentDay.where(academic_process_id: school.academic_processes.select(:id))
 
-    if expired_only
-      today = Time.current.beginning_of_day
-      total_days = enrollment_days.expired.delete_all
-      total_grades = school.grades.with_appointment_time.where('appointment_time < ?', today).update_all(appointment_time: nil, duration_slot_time: nil)
-      scope_label = 'vencidas'
-    else
-      total_days = enrollment_days.delete_all
-      total_grades = school.grades.with_appointment_time.update_all(appointment_time: nil, duration_slot_time: nil)
-      scope_label = 'todas'
+    ActiveRecord::Base.transaction do
+      if expired_only
+        today = Time.current.beginning_of_day
+        total_days = enrollment_days.expired.delete_all
+        total_grades = school.grades.with_appointment_time.where('appointment_time < ?', today).update_all(appointment_time: nil, duration_slot_time: nil)
+        scope_label = 'vencidas'
+      else
+        total_days = enrollment_days.delete_all
+        total_grades = school.grades.with_appointment_time.update_all(appointment_time: nil, duration_slot_time: nil)
+        scope_label = 'todas'
+      end
     end
 
     if total_days == 0 && total_grades == 0
