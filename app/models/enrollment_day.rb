@@ -56,18 +56,30 @@ class EnrollmentDay < ApplicationRecord
   end
 
   def own_grades_to_csv
+    grades = own_grades_sort_by_appointment
+    ap_id = academic_process.id
+
+    if by_before_process && academic_process.process_before
+      eap_data = EnrollAcademicProcess.where(academic_process_id: academic_process.process_before_id, grade_id: grades.map(&:id)).index_by(&:grade_id)
+    end
+
+    eap_statuses = EnrollAcademicProcess.where(academic_process_id: ap_id, grade_id: grades.map(&:id)).index_by(&:grade_id)
 
     CSV.generate do |csv|
-      csv << ['Cédula', 'Apellido y Nombre', 'Correo', 'Sede', 'Desde', 'Hasta', 'Eficiencia', 'Promedio', 'Ponderado']
-      own_grades_sort_by_appointment.each do |grade|
-        user = grade.user
-        if self.by_before_process
-          obj = grade.enroll_academic_processes.joins(:period).order(['periods.year': :desc, 'periods.period_type_id': :desc]).first
-        else
-          obj = grade
+      csv << ['Estado Insc', 'Sede', 'Cédula', 'Apellidos y Nombres', 'Correo', 'Est. Permanencia', 'Desde', 'Hasta', 'Eficiencia', 'Promedio', 'Ponderado']
+
+      slot_number = 0
+      grades.group_by(&:appointment_time).each do |appointment_time, slot_grades|
+        slot_number += 1
+        csv << ["Franja #{slot_number}: #{slot_grades.first.appointment_from} - #{slot_grades.first.appointment_to} (#{slot_grades.size} estudiantes)"]
+
+        slot_grades.each do |grade|
+          user = grade.user
+          obj = (by_before_process && eap_data) ? (eap_data[grade.id] || grade) : grade
+          estado = eap_statuses[grade.id]&.enroll_status&.titleize || 'Sin Inscripción'
+
+          csv << [estado, grade.student.sede, user.ci, user.reverse_name, user.email, grade.current_permanence_status&.titleize, grade.appointment_from, grade.appointment_to, obj.efficiency, obj.simple_average, obj.weighted_average]
         end
-        
-        csv << [user.ci, user.reverse_name, user.email, grade.student.sede, grade.appointment_from, grade.appointment_to, obj.efficiency_desc, obj.simple_average_desc, obj.weighted_average_desc]
       end
     end
   end
