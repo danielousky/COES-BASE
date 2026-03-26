@@ -257,6 +257,18 @@ module RailsAdmin
         scope = scope.eager_load(*assoc_filters) if assoc_filters.any?
       end
 
+      # Agregar JOINs para tablas referenciadas en sort_by (evita missing FROM-clause en ORDER BY)
+      sort_columns = model_config.list.sort_by
+      if sort_columns.present?
+        sort_tables = Array.wrap(sort_columns).select { |c| c.to_s.include?('.') }.map { |c| c.to_s.split('.').first }
+        if sort_tables.any?
+          model = model_config.abstract_model.model
+          assocs = model.reflect_on_all_associations
+          sort_assoc_names = sort_tables.filter_map { |table| assocs.detect { |a| a.klass.table_name == table }&.name }
+          scope = scope.eager_load(*sort_assoc_names) if sort_assoc_names.any?
+        end
+      end
+
       model_config.abstract_model.all(options, scope)
     end
 
