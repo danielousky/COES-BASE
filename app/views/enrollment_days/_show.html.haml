@@ -1,37 +1,54 @@
 %br
-%br
-.overflow-scroll
-  %table.table.table-striped.table-sm.table-hover.table-bordered.table-responsive.tableDataMia
+- if day.by_before_process && academic_process.process_before
+  - eap_data = EnrollAcademicProcess.where(academic_process_id: academic_process.process_before_id, grade_id: grades.map { |g| g.id }).index_by(&:grade_id)
+.enrollment-day-table-wrapper
+  %table.table.table-sm.table-hover.table-bordered.mb-0
     %thead
       %tr
-        %th.text-center= "Estado Insc #{academic_process.process_name}"
-        %th.text-center Sede
-        %th Cédula
-        %th.col-4{width: '350px'} Apellidos, Nombres
-        %th.col-4.text-center Desde
-        %th.col-4.text-center Hasta
-        %th.text-center.align-middle Est. Permanencia
-        %th.text-center{width: '50px'}= "Eficiencia #{academic_process.process_before.process_name if day.by_before_process}"
-        %th.col-1.text-center= "Promedio #{academic_process.process_before.process_name if day.by_before_process}" 
-        %th.col-1.text-center= "Ponderado #{academic_process.process_before.process_name if day.by_before_process}" 
+        %th.col-status Estado Insc
+        %th.col-sede Sede
+        %th.col-ci Cédula
+        %th.col-name Apellidos, Nombres
+        %th.col-permanence Est. Permanencia
+        %th.col-numeric
+          Eficiencia
+          - if day.by_before_process
+            %br
+            = academic_process.process_before.process_name
+        %th.col-numeric
+          Promedio
+          - if day.by_before_process
+            %br
+            = academic_process.process_before.process_name
+        %th.col-numeric
+          Ponderado
+          - if day.by_before_process
+            %br
+            = academic_process.process_before.process_name
     %tbody
-      - grades.each do |grade, i|
-        - student = grade.student
-        - reverse_name = student.user.reverse_name
-        - if day.by_before_process
-          - obj = grade.enroll_academic_processes.joins(:period).order(['periods.year': :desc, 'periods.period_type_id': :desc]).first
-        - else
-          - obj = grade
-        %tr
-          %td.text-center= grade.label_status_enroll_academic_process(academic_process.id)
-          %td= student.sede 
-          %td= student.user_ci
-          %td{'data-bs-toggle': :tooltip, title: reverse_name}= link_to reverse_name, "/admin/student/#{grade.student_id}", target: '_black'
-          %td.text-center= grade.appointment_from 
-          %td.text-center= grade.appointment_to
-          %td.text-center.align-middle{style: 'white-space:nowrap'}
-            = grade.label_permanence_status
-            = grade.label_enabled_enroll_process
-          %td= obj.efficiency
-          %td= obj.simple_average
-          %td= obj.weighted_average
+      - slot_number = 0
+      - grades.group_by(&:appointment_time).each do |appointment_time, slot_grades|
+        - slot_number += 1
+        %tr.table-secondary.slot-header
+          %td.fw-bold.py-2{colspan: 8, style: 'border-top: 3px solid #6c757d'}
+            %i.fa.fa-clock.me-2
+            Franja #{slot_number}: #{slot_grades.first.appointment_from} - #{slot_grades.first.appointment_to}
+            %span.badge.bg-dark.ms-2= "#{slot_grades.size} estudiante(s)"
+        - slot_grades.each do |grade|
+          - student = grade.student
+          - reverse_name = student.user.reverse_name
+          - if day.by_before_process
+            - obj = eap_data[grade.id] || grade
+          - else
+            - obj = grade
+          %tr
+            %td.col-status= grade.label_status_enroll_academic_process(academic_process.id)
+            %td.col-sede= student.sede
+            %td.col-ci= student.user_ci
+            %td.col-name{'data-bs-toggle': :tooltip, title: reverse_name}= link_to reverse_name, "/admin/student/#{grade.student_id}", target: '_blank'
+            %td.col-permanence
+              = grade.label_permanence_status
+              = grade.label_enabled_enroll_process
+            %td.col-numeric= obj.efficiency
+            %td.col-numeric= obj.simple_average
+            %td.col-numeric= obj.weighted_average
