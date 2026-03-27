@@ -147,9 +147,9 @@ include AcademicProcessable
   end
 
   def values_for_report
-    # ['#', 'CI', 'NOMBRES', 'APELLIDOS','ESCUELA','PERIODO','ESTADO INSCRIP','ESTADO PERMANENCIA','REPORTE PAGO']
+    # ['#', 'CI', 'NOMBRES', 'APELLIDOS','ESCUELA', 'NIVEL', 'PERIODO','ESTADO INSCRIP','ESTADO PERMANENCIA','REPORTE PAGO']
     user_aux = user
-    [user_aux.ci, user_aux.first_name, user_aux.last_name, school.name, academic_process.process_name, enroll_status&.titleize, permanence_status&.titleize, resume_payment_reports]
+    [user_aux.ci, user_aux.first_name, user_aux.last_name, school.name, grade&.admission_type&.name, academic_process.process_name, enroll_status&.titleize, permanence_status&.titleize, resume_payment_reports.join(' | ')]
   end
 
   def overlapped? timetable
