@@ -648,53 +648,12 @@ class AcademicProcess < ApplicationRecord
     end    
 
     show do
-      field :name do
-        label 'Descripción'
-        pretty_value do
-          bindings[:view].render(partial: "/academic_processes/desc_table", locals: {academic_process: bindings[:object]})
-        end
-      end
-
-      # EVALUAR SI INCLUIR
-      field :active_enroll do
-        label 'Inscripción'
+      field :dashboard do
+        label ''
         formatted_value do
-          current_user = bindings[:view]._current_user
-          bindings[:view].render(partial: "/academic_processes/enroll_state", locals: {academic_process: bindings[:object]})
+          bindings[:view].render(partial: "/academic_processes/process_dashboard", locals: {academic_process: bindings[:object]})
         end
       end
-
-      field :enroll_instructions
-
-      # field :courses do
-      #   visible do
-      #     user = bindings[:view]._current_user
-      #     (user and user.admin and user.admin.authorized_manage? 'AcademicProcess')
-      #   end
-      #   label "Programación"
-      #   pretty_value do
-      #     bindings[:view].render(partial: "/academic_processes/programation", locals: {academic_process: bindings[:object]})
-      #   end
-      # end
-
-      # field :enrollment_days do
-      #   visible do
-      #     user = bindings[:view]._current_user
-      #     (user and user.admin and user.admin.authorized_manage? 'AcademicProcess')
-      #   end
-      #   pretty_value do
-      #     if bindings[:object].process_before
-      #       enrollment_days = bindings[:object].enrollment_days
-      #       grades_without_appointment = bindings[:object].readys_to_enrollment_day
-
-      #       bindings[:view].render(partial: "/enrollment_days/index", locals: {enrollment_days: enrollment_days, grades_without_appointment: grades_without_appointment, academic_process: bindings[:object]})
-
-      #     else
-      #       bindings[:view].content_tag(:p, 'Sin proceso academico anterio vinculado. Para habilitar el sistema de Cita Horaria en este proceso académico, por favor edítelo y agregue un proceso anteriór', {class: 'alert alert-warning'})
-      #     end
-      #   end
-
-      # end
     end
 
     export do

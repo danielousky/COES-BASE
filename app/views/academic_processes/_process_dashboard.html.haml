@@ -1,0 +1,468 @@
+- ap = academic_process
+- admin = current_user&.admin
+- can_manage_ap = admin&.authorized_manage?('AcademicProcess')
+- can_read_section = admin&.authorized_read?('Section')
+- can_read_eap = admin&.authorized_read?('EnrollAcademicProcess')
+- can_read_ar = admin&.authorized_read?('AcademicRecord')
+- can_read_teacher = admin&.authorized_read?('Teacher')
+- can_manage_section = admin&.authorized_manage?('Section')
+
+/-- Datos agregados (queries eficientes) --/
+- eaps = ap.enroll_academic_processes
+- total_enrolled = eaps.count
+- status_counts = eaps.group(:enroll_status).count
+- confirmados = status_counts['confirmado'] || 0
+- preinscritos = status_counts['preinscrito'] || 0
+- reservados = status_counts['reservado'] || 0
+- with_payment = eaps.with_payment_report.count
+- without_payment = total_enrolled - with_payment
+- pending_confirmation = eaps.not_confirmado.joins(:payment_reports).count
+
+- sections = ap.sections
+- total_sections = sections.count
+- total_courses = ap.courses.count
+- sections_qualified = sections.qualified.count
+- sections_no_teacher = sections.without_teacher_assigned.count
+- total_capacity = sections.sum(:capacity)
+- total_sec_enrolled = sections.sum(:academic_records_count)
+
+- total_records = ap.academic_records.count
+- record_statuses = ap.academic_records.group(:status).count
+
+/-- HEADER: Identidad + Estado --/
+.card.shadow-sm.mb-4
+  .card-body
+    .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+      %div
+        .d-flex.align-items-center.gap-2.mb-2
+          %h4.fw-bold.mb-0
+            %i.fa-solid.fa-calendar.me-2.text-primary
+            = ap.school.short_name
+          %span.badge.bg-primary.rounded-pill.fs-6= ap.process_name
+          %span.badge.bg-info= ap.modality.titleize
+        .d-flex.gap-4.text-muted{style: 'font-size: 0.85rem'}
+          %span
+            %i.fa-solid.fa-graduation-cap.me-1
+            Max: #{ap.max_credits} cred. / #{ap.max_subjects} asig.
+          - if ap.process_before
+            %span
+              %i.fa-solid.fa-arrow-left.me-1
+              Anterior:
+              %a.text-decoration-none{href: "/admin/academic_process/#{ap.process_before.id}"}= ap.process_before.process_name
+
+      .d-flex.align-items-center.gap-2
+        - if can_manage_ap
+          %a.btn.btn-sm.btn-outline-secondary{href: "/admin/academic_process/#{ap.id}/edit"}
+            %i.fa-solid.fa-pen.me-1
+            Editar
+        %a.btn.btn-sm.btn-outline-secondary{href: "/admin/academic_process"}
+          %i.fa-solid.fa-arrow-left.me-1
+          Volver
+
+    /-- Toggles de estado --/
+    - if can_manage_ap
+      %hr.my-3
+      .d-flex.flex-wrap.gap-4.align-items-center
+        .d-flex.align-items-center.gap-2
+          %small.text-muted.fw-semibold Activo
+          = render partial: '/academic_processes/active_process_toggle', locals: { academic_process: ap, mode: 'active' }
+        .d-flex.align-items-center.gap-2
+          %small.text-muted.fw-semibold Inscripcion
+          = render partial: '/academic_processes/active_process_toggle', locals: { academic_process: ap, mode: 'enroll' }
+        .d-flex.align-items-center.gap-2
+          %small.text-muted.fw-semibold Pagos
+          = render partial: '/academic_processes/active_process_toggle', locals: { academic_process: ap, mode: 'payments_active' }
+        - if GeneralSetup.enabled_post_qualification?
+          .d-flex.align-items-center.gap-2
+            %small.text-muted.fw-semibold Cal. Posterior
+            = render partial: '/academic_processes/active_process_toggle', locals: { academic_process: ap, mode: 'post_qualification' }
+    - else
+      %hr.my-3
+      .d-flex.flex-wrap.gap-3.align-items-center
+        %span.d-flex.align-items-center.gap-1
+          %small.text-muted Activo:
+          = ap.label_active.html_safe
+        %span.d-flex.align-items-center.gap-1
+          %small.text-muted Inscripcion:
+          = ap.label_enroll.html_safe
+        %span.d-flex.align-items-center.gap-1
+          %small.text-muted Pagos:
+          = ap.label_payment_actives.html_safe
+        - if GeneralSetup.enabled_post_qualification?
+          %span.d-flex.align-items-center.gap-1
+            %small.text-muted Cal. Posterior:
+            = ap.label_post_q.html_safe
+
+/-- KPI CARDS --/
+.row.g-3.mb-4
+  /-- Card 1: Inscritos --/
+  .col-md-6.col-lg-3
+    .card.border-start.border-4.border-primary.h-100.shadow-sm
+      .card-body.pb-2
+        .d-flex.justify-content-between.align-items-start.mb-2
+          %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+            %i.fa-solid.fa-user-graduate.me-1
+            Inscritos
+          - if ap.enroll?
+            %span.badge.rounded-pill.bg-success.bg-opacity-25.text-success En inscripcion
+        %h2.fw-bold.mb-1= total_enrolled
+        .d-flex.gap-2.mb-2{style: 'font-size: 0.8rem'}
+          %span.text-success
+            %i.fa-solid.fa-circle-check.me-1
+            = confirmados
+            conf.
+          %span.text-primary
+            = preinscritos
+            pre.
+          %span.text-warning
+            = reservados
+            res.
+        - if total_enrolled > 0
+          - pct_conf = (confirmados.to_f / total_enrolled * 100).round(0)
+          - pct_pre = (preinscritos.to_f / total_enrolled * 100).round(0)
+          .progress{style: 'height: 6px'}
+            .progress-bar.bg-success{style: "width: #{pct_conf}%", 'data-bs-toggle': 'tooltip', title: "#{pct_conf}% confirmados"}
+            .progress-bar.bg-primary{style: "width: #{pct_pre}%", 'data-bs-toggle': 'tooltip', title: "#{pct_pre}% preinscritos"}
+            .progress-bar.bg-warning{style: "width: #{100 - pct_conf - pct_pre}%"}
+
+  /-- Card 2: Secciones --/
+  .col-md-6.col-lg-3
+    .card.border-start.border-4.border-info.h-100.shadow-sm
+      .card-body.pb-2
+        %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+          %i.fa-solid.fa-chalkboard.me-1
+          Secciones
+        %h2.fw-bold.mb-1
+          = total_sections
+          %small.text-muted.fw-normal{style: 'font-size: 0.9rem'}= " en #{total_courses} cursos"
+        - if ap.enroll?
+          - occupancy = total_capacity > 0 ? (total_sec_enrolled.to_f / total_capacity * 100).round(0) : 0
+          .d-flex.justify-content-between.mb-2{style: 'font-size: 0.8rem'}
+            %span.text-primary
+              %i.fa-solid.fa-users.me-1
+              = total_sec_enrolled
+              inscritos
+            %span.text-muted
+              de #{total_capacity} cupos
+          .progress.mb-2{style: 'height: 6px'}
+            - bar_class = occupancy >= 90 ? 'bg-danger' : occupancy >= 70 ? 'bg-warning' : 'bg-info'
+            .progress-bar{class: bar_class, style: "width: #{occupancy}%", 'data-bs-toggle': 'tooltip', title: "#{occupancy}% ocupacion"}
+        - elsif ap.active?
+          .d-flex.justify-content-between.mb-2{style: 'font-size: 0.8rem'}
+            %span.text-success
+              %i.fa-solid.fa-check.me-1
+              = sections_qualified
+              calificadas
+            %span.text-muted
+              #{total_sections > 0 ? (sections_qualified.to_f / total_sections * 100).round(0) : 0}%
+          - pct_q = total_sections > 0 ? (sections_qualified.to_f / total_sections * 100).round(0) : 0
+          .progress.mb-2{style: 'height: 6px'}
+            .progress-bar.bg-success{style: "width: #{pct_q}%"}
+        - if sections_no_teacher > 0
+          %a.badge.bg-warning.text-dark.text-decoration-none{href: '/admin/section?scope=sin_profesor_asignado'}
+            %i.fa-solid.fa-exclamation-triangle.me-1
+            = "#{sections_no_teacher} sin profesor"
+
+  /-- Card 3: Registros Academicos --/
+  .col-md-6.col-lg-3
+    .card.border-start.border-4.border-success.h-100.shadow-sm
+      .card-body.pb-2
+        %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+          %i.fa-solid.fa-book.me-1
+          Registros Acad.
+        %h2.fw-bold.mb-1= total_records
+        - aprobados = record_statuses['aprobado'] || 0
+        - aplazados = record_statuses['aplazado'] || 0
+        - sin_calif = record_statuses['sin_calificar'] || 0
+        - pi_count = record_statuses['perdida_por_inasistencia'] || 0
+        - retirados = record_statuses['retirado'] || 0
+        - coursed = aprobados + aplazados + pi_count
+        - approval_rate = coursed > 0 ? (aprobados.to_f / coursed * 100).round(0) : 0
+        .d-flex.flex-wrap.gap-2.mb-2{style: 'font-size: 0.8rem'}
+          - if aprobados > 0
+            %span.text-success= "#{aprobados} apr."
+          - if aplazados > 0
+            %span.text-danger= "#{aplazados} apl."
+          - if sin_calif > 0
+            %span.text-secondary= "#{sin_calif} s/c"
+          - if pi_count > 0
+            %span.text-dark= "#{pi_count} PI"
+          - if retirados > 0
+            %span.text-muted= "#{retirados} ret."
+        - if coursed > 0
+          .progress{style: 'height: 6px'}
+            .progress-bar.bg-success{style: "width: #{approval_rate}%", 'data-bs-toggle': 'tooltip', title: "#{approval_rate}% aprobacion"}
+            .progress-bar.bg-danger{style: "width: #{100 - approval_rate}%"}
+
+  /-- Card 4: Pagos --/
+  .col-md-6.col-lg-3
+    .card.border-start.border-4.border-warning.h-100.shadow-sm
+      .card-body.pb-2
+        .d-flex.justify-content-between.align-items-start.mb-2
+          %span.text-muted.text-uppercase.fw-semibold{style: 'font-size: 0.75rem; letter-spacing: 0.5px'}
+            %i.fa-solid.fa-receipt.me-1
+            Pagos
+          - if pending_confirmation > 0
+            %span.badge.rounded-pill.bg-danger= "#{pending_confirmation} por confirmar"
+        - if total_enrolled > 0
+          - pct_payment = (with_payment.to_f / total_enrolled * 100).round(0)
+          %h2.fw-bold.mb-1= with_payment
+          .d-flex.justify-content-between.mb-2{style: 'font-size: 0.8rem'}
+            %span.text-success
+              %i.fa-solid.fa-circle-check.me-1
+              con reporte
+            %span.text-muted
+              = without_payment
+              sin reporte
+          .progress{style: 'height: 6px'}
+            .progress-bar.bg-success{style: "width: #{pct_payment}%", 'data-bs-toggle': 'tooltip', title: "#{pct_payment}% con reporte"}
+            .progress-bar.bg-secondary{style: "width: #{100 - pct_payment}%"}
+        - else
+          %h2.fw-bold.mb-1.text-muted 0
+          %p.text-muted.mb-0{style: 'font-size: 0.8rem'} Sin inscritos aun
+
+/-- ACCIONES RAPIDAS --/
+.card.shadow-sm.mb-4
+  .card-header.bg-white.border-bottom.py-3
+    %h6.card-title.mb-0
+      %i.fa-solid.fa-bolt.me-1.text-warning
+      Acciones Rapidas
+  .card-body
+    .d-flex.flex-wrap.gap-2
+
+      /-- CSV Inscritos por Periodo --/
+      - if can_read_eap && total_enrolled > 0
+        %a.btn.btn-sm.btn-outline-primary{href: "/export_csv/enroll_academic_processes/#{ap.id}?model_name=AcademicProcess", 'data-bs-toggle': 'tooltip', title: "Descargar #{total_enrolled} inscritos en CSV"}
+          %i.fa-solid.fa-file-csv.me-1
+          CSV Inscritos por Periodo
+
+      /-- CSV Registros Academicos --/
+      - if can_read_ar && total_records > 0
+        %a.btn.btn-sm.btn-outline-primary{href: "/export_csv/academic_records/#{ap.id}?model_name=AcademicProcess", 'data-bs-toggle': 'tooltip', title: "Descargar #{total_records} registros academicos en CSV"}
+          %i.fa-solid.fa-file-csv.me-1
+          CSV Registros Academicos
+
+      /-- Generar Actas --/
+      - if can_read_section && ap.active?
+        - if sections_qualified > 0
+          - if sections_qualified < 50
+            %a.btn.btn-sm.btn-outline-success{href: "/academic_processes/#{ap.id}/massive_actas_generation", target: '_blank', 'data-bs-toggle': 'tooltip', title: "Generar actas de #{sections_qualified} secciones calificadas", 'data-confirm': "Se generaran las actas de #{sections_qualified} secciones calificadas. Continuar?"}
+              %i.fa-solid.fa-file-pdf.me-1
+              Generar Actas (#{sections_qualified})
+          - else
+            %a.btn.btn-sm.btn-outline-success{href: "/academic_processes/#{ap.id}/massive_actas_generation_async", 'data-bs-toggle': 'tooltip', title: "Generar actas de #{sections_qualified} secciones (asincrono, se enviara por correo)", 'data-confirm': "Debido a la gran cantidad de actas (#{sections_qualified}), se compilaran y enviaran a su correo. De acuerdo?"}
+              %i.fa-solid.fa-file-pdf.me-1
+              Generar Actas Async (#{sections_qualified})
+        - else
+          %span{'data-bs-toggle': 'tooltip', title: 'Aun no hay secciones calificadas'}
+            %a.btn.btn-sm.btn-outline-secondary.disabled{href: '#', 'aria-disabled': true}
+              %i.fa-solid.fa-file-pdf.me-1
+              Generar Actas
+
+      /-- Confirmar Masivo --/
+      - if can_manage_ap && pending_confirmation > 0
+        %a.btn.btn-sm.btn-success{href: "/academic_processes/#{ap.id}/massive_confirmation", 'data-method': 'post', 'data-confirm': "Se confirmaran #{pending_confirmation} estudiantes (preinscritos o reservados) con reporte de pago. Esta completamente seguro?", 'data-bs-toggle': 'tooltip', title: 'Confirmar preinscritos y reservados con reporte de pago'}
+          %i.fa-solid.fa-list-check.me-1
+          Confirmar #{pending_confirmation} con Pago
+
+      /-- Ver Secciones --/
+      - if can_read_section && total_sections > 0
+        %a.btn.btn-sm.btn-outline-info{href: "/admin/section?f%5Bschool%5D%5B1%5D%5Bo%5D=like&f%5Bschool%5D%5B1%5D%5Bv%5D=#{ap.school.short_name}&query=#{ap.process_name}"}
+          %i.fa-solid.fa-list.me-1
+          Ver Secciones
+
+      /-- Citas Horarias --/
+      - if can_manage_ap
+        - if ap.process_before
+          %a.btn.btn-sm.btn-outline-info{href: "/admin/academic_process/#{ap.id}/enrollment_day"}
+            %i.fa-solid.fa-clock.me-1
+            Citas Horarias
+        - else
+          %span{'data-bs-toggle': 'tooltip', title: 'Requiere proceso anterior vinculado. Edite el proceso para agregar uno.'}
+            %a.btn.btn-sm.btn-outline-secondary.disabled{href: '#', 'aria-disabled': true}
+              %i.fa-solid.fa-clock.me-1
+              Citas Horarias
+
+      /-- Exportar Secciones --/
+      - if can_read_section && total_sections > 0
+        %a.btn.btn-sm.btn-outline-primary{href: "/admin/section/export?all=true&f%5Bschool%5D%5B1%5D%5Bo%5D=like&f%5Bschool%5D%5B1%5D%5Bv%5D=#{ap.school.short_name}", 'data-bs-toggle': 'tooltip', title: 'Exportar secciones desde Rails Admin'}
+          %i.fa-solid.fa-download.me-1
+          Exportar Secciones
+
+/-- DETALLE: Dos columnas --/
+.row.g-3.mb-4
+  /-- Columna izquierda: Inscripciones por Estado --/
+  - if can_read_eap && total_enrolled > 0
+    .col-lg-7
+      .card.shadow-sm.h-100
+        .card-header.bg-white.border-bottom.py-3
+          %h6.card-title.mb-0
+            %i.fa-solid.fa-chart-bar.me-1.text-primary
+            Inscripciones por Estado
+        .card-body.p-0
+          %table.table.table-sm.table-hover.mb-0
+            %thead
+              %tr
+                %th.border-0.ps-3 Estado
+                %th.border-0.text-center Cantidad
+                %th.border-0.text-center %
+                %th.border-0{style: 'width: 120px'}
+                %th.border-0
+            %tbody
+              - link_base = "/admin/enroll_academic_process?query=#{ap.process_name}"
+              - enroll_rows = [['Confirmados', confirmados, 'success', 'confirmado'], ['Preinscritos', preinscritos, 'primary', 'preinscrito'], ['Reservados', reservados, 'warning', 'reservado']]
+              - enroll_rows.each do |label, count, color, scope_name|
+                - pct = total_enrolled > 0 ? (count.to_f / total_enrolled * 100).round(1) : 0
+                %tr
+                  %td.ps-3
+                    %span.badge{class: "bg-#{color}"}= label
+                  %td.text-center.fw-semibold= count
+                  %td.text-center.text-muted= "#{pct}%"
+                  %td
+                    .progress{style: 'height: 6px'}
+                      .progress-bar{class: "bg-#{color}", style: "width: #{pct}%"}
+                  %td.text-end.pe-3
+                    %a.text-decoration-none{href: "#{link_base}&scope=#{scope_name}", 'data-bs-toggle': 'tooltip', title: "Ver #{label.downcase}"}
+                      %i.fa-solid.fa-arrow-right.text-muted
+              %tr.border-top
+                %td.ps-3
+                  %span.text-success
+                    %i.fa-solid.fa-circle-check.me-1
+                    Con reporte de pago
+                %td.text-center.fw-semibold= with_payment
+                %td.text-center.text-muted= "#{total_enrolled > 0 ? (with_payment.to_f / total_enrolled * 100).round(1) : 0}%"
+                %td
+                %td.text-end.pe-3
+                  %a.text-decoration-none{href: "#{link_base}&scope=con_reporte_de_pago", 'data-bs-toggle': 'tooltip', title: 'Ver inscritos con reporte de pago'}
+                    %i.fa-solid.fa-arrow-right.text-muted
+              %tr
+                %td.ps-3
+                  %span.text-warning
+                    %i.fa-solid.fa-exclamation-circle.me-1
+                    Sin reporte de pago
+                %td.text-center.fw-semibold= without_payment
+                %td.text-center.text-muted= "#{total_enrolled > 0 ? (without_payment.to_f / total_enrolled * 100).round(1) : 0}%"
+                %td
+                %td.text-end.pe-3
+                  %a.text-decoration-none{href: "#{link_base}&scope=sin_reporte_de_pago", 'data-bs-toggle': 'tooltip', title: 'Ver inscritos sin reporte de pago'}
+                    %i.fa-solid.fa-arrow-right.text-muted
+
+  /-- Columna derecha: Profesores en el Periodo --/
+  - if can_read_teacher && total_sections > 0
+    - teachers_data = Section.where(id: sections.select(:id)).where.not(teacher_id: nil).joins(teacher: :user).group('teachers.user_id', 'users.last_name', 'users.first_name').order(Arel.sql('COUNT(sections.id) DESC')).pluck(Arel.sql('teachers.user_id'), Arel.sql('users.last_name'), Arel.sql('users.first_name'), Arel.sql('COUNT(sections.id)'))
+    .col-lg-5
+      .card.shadow-sm.h-100
+        .card-header.bg-white.border-bottom.py-3
+          .d-flex.justify-content-between.align-items-center
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-chalkboard-user.me-1.text-info
+              Profesores
+            %span.badge.bg-info.rounded-pill= teachers_data.size
+        .card-body.p-0
+          - if sections_no_teacher > 0
+            .alert.alert-warning.mb-0.rounded-0.py-2.px-3{style: 'font-size: 0.82rem'}
+              %i.fa-solid.fa-exclamation-triangle.me-1
+              = "#{sections_no_teacher} #{'seccion'.pluralize(sections_no_teacher)} sin profesor asignado"
+          .list-group.list-group-flush
+            - teachers_data.first(15).each do |teacher_id, last_name, first_name, sec_count|
+              .list-group-item.px-3.py-2.d-flex.justify-content-between.align-items-center
+                %span{style: 'font-size: 0.85rem'}
+                  %a.text-decoration-none{href: "/admin/teacher/#{teacher_id}"}= "#{last_name}, #{first_name}"
+                %span.badge.bg-info.rounded-pill{'data-bs-toggle': 'tooltip', title: "#{sec_count} #{'seccion'.pluralize(sec_count)}"}= sec_count
+            - if teachers_data.size > 15
+              .list-group-item.text-center.py-2
+                %a.text-decoration-none.text-muted{href: "/admin/section?f%5Bschool%5D%5B1%5D%5Bo%5D=like&f%5Bschool%5D%5B1%5D%5Bv%5D=#{ap.school.short_name}", style: 'font-size: 0.82rem'}
+                  = "Ver los #{teachers_data.size} profesores"
+                  %i.fa-solid.fa-arrow-right.ms-1
+
+/-- Calificaciones + Instrucciones --/
+.row.g-3.mb-4
+  /-- Calificaciones por Estado --/
+  - if can_read_ar && total_records > 0 && ap.active?
+    - qual_rows = [['Aprobado', aprobados, 'success'], ['Aplazado', aplazados, 'danger'], ['Sin Calificar', sin_calif, 'secondary'], ['PI', pi_count, 'dark'], ['Retirado', retirados, 'muted']]
+    .col-lg-7
+      .card.shadow-sm.h-100
+        .card-header.bg-white.border-bottom.py-3
+          .d-flex.justify-content-between.align-items-center
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-chart-pie.me-1.text-success
+              Calificaciones por Estado
+            - if coursed > 0
+              %span.badge{class: approval_rate >= 70 ? 'bg-success' : approval_rate >= 50 ? 'bg-warning text-dark' : 'bg-danger'}= "#{approval_rate}% aprobacion"
+        .card-body.p-0
+          %table.table.table-sm.table-hover.mb-0
+            %thead
+              %tr
+                %th.border-0.ps-3 Estado
+                %th.border-0.text-center Cantidad
+                %th.border-0.text-center %
+                %th.border-0{style: 'width: 120px'}
+            %tbody
+              - qual_rows.each do |label, count, color|
+                - next if count == 0 && %w[dark muted].include?(color)
+                - pct = total_records > 0 ? (count.to_f / total_records * 100).round(1) : 0
+                %tr
+                  %td.ps-3
+                    %span.badge{class: "bg-#{color}"}= label
+                  %td.text-center.fw-semibold= count
+                  %td.text-center.text-muted= "#{pct}%"
+                  %td
+                    .progress{style: 'height: 6px'}
+                      .progress-bar{class: "bg-#{color}", style: "width: #{pct}%"}
+
+  /-- Instrucciones de Inscripcion --/
+  - has_instructions = ap.enroll_instructions.present? && ap.enroll_instructions.body.present?
+  - if has_instructions || can_manage_ap
+    .col-lg-5
+      .card.shadow-sm.h-100
+        .card-header.bg-white.border-bottom.py-3
+          .d-flex.justify-content-between.align-items-center
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-info-circle.me-1.text-secondary
+              Instrucciones de Inscripcion
+            - if can_manage_ap
+              %a.btn.btn-sm.btn-outline-secondary{href: "/admin/academic_process/#{ap.id}/edit"}
+                %i.fa-solid.fa-pen.me-1
+                Editar
+        .card-body
+          - if has_instructions
+            .trix-content{style: 'font-size: 0.9rem'}
+              = ap.enroll_instructions
+          - else
+            .text-center.py-3
+              %i.fa-solid.fa-info-circle.fa-2x.text-muted.mb-2
+              %p.text-muted.mb-0 Sin instrucciones configuradas
+
+/-- Script para toggles AJAX --/
+- if can_manage_ap
+  :javascript
+    function updateElem(url, attrs){
+      $.ajax({
+        url: url,
+        type: 'PUT',
+        data: JSON.parse(attrs),
+        dataType: 'json',
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+        },
+        success: function(json) {
+          toastr.success(json.data);
+        },
+        error: function(json) {
+          toastr.error(json.data);
+        }
+      });
+    }
+
+/-- Estado vacio: proceso sin secciones --/
+- if total_sections == 0 && total_enrolled == 0
+  .card.shadow-sm.mb-4
+    .card-body.text-center.py-5
+      %i.fa-solid.fa-folder-open.fa-3x.text-muted.mb-3
+      %h5.text-muted Este proceso esta vacio
+      %p.text-muted.mb-3 Comience clonando la programacion de un periodo anterior o agregando cursos manualmente.
+      - if can_manage_ap
+        .d-flex.justify-content-center.gap-2
+          %a.btn.btn-outline-primary{href: "/admin/academic_process/#{ap.id}/edit"}
+            %i.fa-solid.fa-pen.me-1
+            Editar Proceso

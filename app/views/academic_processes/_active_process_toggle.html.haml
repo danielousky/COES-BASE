@@ -1,0 +1,15 @@
+- case mode
+- when 'enroll'
+  - title = 'Activar o desactivar Inscripcion'
+- when 'active'
+  - title = 'Activar o desactivar Periodo'
+- when 'post_qualification'
+  - title = 'Activar o desactivar Calificaciones Posteriores'
+- when 'payments_active'
+  - title = 'Activar o desactivar Reporte de Pagos'
+- else
+  - title = ''
+
+.form-check.form-switch.mb-0
+  - url = "/academic_processes/#{academic_process.id}"
+  = check_box_tag "#{mode}#{academic_process.id}", academic_process.id, academic_process.attributes[mode], 'data-bs-toggle': :tooltip, class: "form-check-input switch", onclick: 'updateElem(`'+url+'`, `{"academic_process":{"'+mode+'":${this.checked}}}`);', title: title
