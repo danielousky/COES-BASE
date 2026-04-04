@@ -431,7 +431,7 @@ end
       field :academic_processes do
         label 'Último Periodo'
         pretty_value do
-          bindings[:object].academic_processes.map(&:period_desc_and_modality).last
+          bindings[:object].academic_processes.joins(:period).order('periods.year DESC, periods.name DESC').first&.period_desc_and_modality
         end
       end
 

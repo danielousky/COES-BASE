@@ -121,6 +121,31 @@ module RailsAdmin
 
       @page_name = wording_for(:title)
 
+      # Cuando se busca un Usuario y hay un solo resultado con un único rol,
+      # redirigir directamente al detalle del rol (Admin, Student, Teacher).
+      if @abstract_model&.to_s == 'User' && @action.key == :index && params[:query].present? && !params[:associated_collection]
+        model_config = @model_config
+        scope = model_config.scope
+        auth_scope = @authorization_adapter&.query(:index, model_config.abstract_model)
+        scope = scope.merge(auth_scope) if auth_scope
+
+        result = get_collection(model_config, scope, false)
+
+        total = result.respond_to?(:total_count) ? result.total_count : result.size
+        if total == 1
+          user = result.first
+          if user.how_many_roles? == 1
+            if user.admin?
+              redirect_to show_path(model_name: :admin, id: user.admin.id) and return
+            elsif user.student?
+              redirect_to show_path(model_name: :student, id: user.student.id) and return
+            elsif user.teacher?
+              redirect_to show_path(model_name: :teacher, id: user.teacher.id) and return
+            end
+          end
+        end
+      end
+
       instance_eval(&@action.controller)
     end
 
