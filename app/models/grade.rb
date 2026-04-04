@@ -627,21 +627,23 @@ class Grade < ApplicationRecord
     subjects = self.school.subjects
     subject_ids = subjects.pluck(:id)
 
-    # Cargar todas las dependencias en una sola consulta
-    dependencies_by_subject = SubjectLink.where(depend_subject_id: subject_ids)
-                                         .pluck(:depend_subject_id, :prelate_subject_id)
-                                         .group_by(&:first)
-                                         .transform_values { |pairs| pairs.map(&:last) }
+    # Cargar todas las prelaciones (prerrequisitos) en una sola consulta
+    # En SubjectLink: depend_subject_id = prerrequisito, prelate_subject_id = asignatura que viene después
+    # Para saber los prerrequisitos de una asignatura, buscamos donde ella es la prelate_subject_id
+    prerrequisitos_por_asignatura = SubjectLink.where(prelate_subject_id: subject_ids)
+                                               .pluck(:prelate_subject_id, :depend_subject_id)
+                                               .group_by(&:first)
+                                               .transform_values { |pairs| pairs.map(&:last) }
 
-    # Filtrar asignaturas que no estén aprobadas y que todas sus dependencias estén aprobadas
+    # Filtrar asignaturas que no estén aprobadas y que todos sus prerrequisitos estén aprobados
     ofertables_ids = subjects.select do |subject|
       next false if aprobadas_ids.include?(subject.id) # Ya aprobada, no ofertar
 
-      # Obtener las IDs de las asignaturas de las que depende la actual
-      dependencias = dependencies_by_subject[subject.id] || []
+      # Obtener las IDs de los prerrequisitos de la asignatura actual
+      prereqs = prerrequisitos_por_asignatura[subject.id] || []
 
-      # Si no tiene dependencias, o todas están aprobadas
-      dependencias.empty? || dependencias.all? { |dep_id| aprobadas_ids.include?(dep_id) }
+      # Si no tiene prerrequisitos, o todos están aprobados
+      prereqs.empty? || prereqs.all? { |prereq_id| aprobadas_ids.include?(prereq_id) }
     end.map(&:id)
 
     Subject.where(id: ofertables_ids)
