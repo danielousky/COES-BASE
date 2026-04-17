@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   # before_action :set_current_process
   before_action :set_paper_trail_whodunnit
+  before_action :set_paper_trail_request_info
   before_action :force_password_change!
 
 
@@ -12,6 +13,21 @@ class ApplicationController < ActionController::Base
 
   def user_for_paper_trail
     current_user ? current_user.id : 'Sistema, consola o no_loggin'  # or whatever
+  end
+
+  def info_for_paper_trail
+    { ip: request.remote_ip, user_agent: request.user_agent }
+  end
+
+  def set_paper_trail_request_info
+    return unless PaperTrail::Version.table_exists?
+    cols = PaperTrail::Version.column_names
+    info = {}
+    info[:ip]         = request.remote_ip  if cols.include?('ip')
+    info[:user_agent] = request.user_agent if cols.include?('user_agent')
+    PaperTrail.request.controller_info = info
+  rescue StandardError
+    PaperTrail.request.controller_info = {}
   end
 
   def set_current_process

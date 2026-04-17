@@ -1,0 +1,44 @@
+[  748579ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[  773490ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[  777019ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/admin/academic_process/459:0
+[  997866ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1037126ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1069330ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/section?f%5Bschool%5D%5B1%5D%5Bo%5D=like&f%5Bschool%5D%5B1%5D%5Bv%5D=ARTES:1:1)
+[ 1074800ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1076906ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/459:152:302)
+[ 1087980ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/459:159:288)
+[ 1089250ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/459:159:288)
+[ 1165249ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1167376ms] TypeError: Cannot convert undefined or null to object
+    at Object.values (<anonymous>)
+    at Kr._isWithActiveTrigger (http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:71426)
+    at http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:67264
+    at Oi (http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:24707)
+    at HTMLDivElement.r (http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:25083)
+    at Ci (http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:23313)
+    at http://localhost:3000/assets/rails_admin-dbb7088d26f32165eb7bb4079a49f82102be8722ba5f2ca6b439d3540a5c3c73.js:25:25136
+[ 1168747ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1170764ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1181989ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1184842ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1196408ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1200083ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1201622ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1202241ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0
+[ 1203637ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1204708ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:166:320)
+[ 1207744ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:159:306)
+[ 1208522ms] ReferenceError: updateElem is not defined
+    at HTMLInputElement.onclick (http://localhost:3000/admin/academic_process/461:159:306)
+[ 1271253ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBOEltQVE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--d9b939a902335cf4a906a891090d0deb3499f447/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RkhKbGMybDZaVjkwYjE5c2FXMXBkRnNIYVdscGFRPT0iLCJleHAiOm51bGwsInB1ciI6InZhcmlhdGlvbiJ9fQ==--c7e14d377fd28810b27effd7052c34a56c88dd8f/Foto%20perfl.png:0

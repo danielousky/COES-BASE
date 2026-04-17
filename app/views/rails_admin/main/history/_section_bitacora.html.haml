@@ -1,0 +1,125 @@
+-# Bitácora enriquecida para una Sección (RailsAdmin 3.1.2 — accion :history_show)
+-# locals: section, bitacora, tab, tab_counts, focused_student, total_count
+
+- section_code       = section.try(:code) || "##{section.id}"
+- subject_label      = section.try(:subject)&.try(:desc) || section.try(:subject)&.try(:name)
+- process_label      = section.try(:academic_process)&.try(:process_name) || section.try(:period_name)
+- teacher_label      = section.try(:teacher_desc) || 'Sin profesor asignado'
+- total_academic     = section.try(:academic_records_count) || section.try(:total_students) || section.academic_records.count
+- qualified_count    = (section.academic_records.where.not(status: 0).count rescue 0)
+- pending_count      = total_academic.to_i - qualified_count.to_i
+
+.row
+  .col-12
+    .card.border-0.shadow-sm
+      .card-header.bg-success.text-white.py-2.d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+        %div
+          %h6.mb-0.fw-semibold
+            %i.fa-solid.fa-clipboard-list.me-2
+            Bitácora de Sección
+            %strong.ms-1= section_code
+            - if subject_label.present?
+              %small.ms-2.text-white-50= subject_label
+          - if process_label.present?
+            %div.small.text-white-50.mt-1
+              %i.fa-solid.fa-calendar.me-1
+              = process_label
+        %div.text-end
+          %div.small
+            %i.fa-solid.fa-chalkboard-user.me-1
+            = teacher_label
+          %div.mt-1
+            %span.badge.bg-light.text-dark.me-1
+              %i.fa-solid.fa-check.me-1
+              Calificadas: #{qualified_count}
+            %span.badge.bg-warning.text-dark.me-1
+              %i.fa-solid.fa-hourglass-half.me-1
+              Faltan: #{pending_count}
+            %span.badge.bg-info.text-dark
+              %i.fa-solid.fa-users.me-1
+              Inscritos: #{total_academic}
+
+      .card-body
+        %ul.nav.nav-tabs.mb-3
+          %li.nav-item
+            = link_to url_for(action: :history_show, tab: 'general', only_path: true), class: "nav-link #{'active' if tab == 'general'}" do
+              %i.fa-solid.fa-clipboard.me-1
+              General
+              %span.badge.bg-secondary.ms-1= tab_counts['general']
+          %li.nav-item
+            = link_to url_for(action: :history_show, tab: 'students', only_path: true), class: "nav-link #{'active' if tab == 'students'}" do
+              %i.fa-solid.fa-user-graduate.me-1
+              Estudiantes
+              %span.badge.bg-secondary.ms-1= tab_counts['students']
+
+        - if tab == 'students' && focused_student.present?
+          .alert.alert-info.d-flex.align-items-center.justify-content-between
+            %div
+              %i.fa-solid.fa-filter.me-2
+              Filtrando por estudiante:
+              %strong.ms-1
+                = focused_student.try(:ci_fullname) || focused_student.try(:reverse_name) || focused_student.try(:name)
+            = link_to url_for(action: :history_show, tab: tab, only_path: true), class: 'btn btn-sm btn-outline-secondary' do
+              %i.fa-solid.fa-xmark.me-1
+              Quitar filtro
+
+        - if bitacora.any?
+          .table-responsive
+            %table.table.table-striped.table-hover.align-middle
+              %thead
+                %tr
+                  %th.col-2.text-nowrap Fecha
+                  - if tab == 'students'
+                    %th.col-4 Estudiante
+                  %th.col-4 Resumen
+                  %th.col-3 Usuario
+                  %th Dispositivo
+              %tbody
+                - bitacora.each do |entry|
+                  %tr
+                    %td.small.text-nowrap
+                      = entry.created_at&.in_time_zone&.strftime('%d/%m/%Y %H:%M:%S')
+                    - if tab == 'students'
+                      %td.small
+                        - s_label = entry.student_ci_fullname
+                        - s_ci    = entry.student_ci
+                        - if s_label.present?
+                          - if s_ci.present? && (focused_student.blank? || focused_student.try(:ci) != s_ci)
+                            = link_to s_label, url_for(action: :history_show, tab: 'students', student_ci: s_ci, only_path: true), class: 'text-decoration-none'
+                          - else
+                            = s_label
+                        - else
+                          %span.text-muted --
+                    %td
+                      = entry.summary_title
+                      - detail = entry.summary_detail
+                      - if detail.present?
+                        %div.small.text-muted.mt-1= detail
+                    %td.small
+                      - u = entry.user
+                      - if u
+                        = entry.user_label
+                      - else
+                        %span.text-muted= entry.user_label
+                    %td.small{style: 'overflow-x: scroll;'}
+                      - device = entry.device_label
+                      - ip = entry.ip
+                      - if device.present? || ip.present?
+                        %div{title: entry.user_agent, data: { 'bs-toggle': 'tooltip' }}
+                          - if device.present?
+                            %div.text-body= device
+                          - if ip.present?
+                            %div.text-muted.font-monospace.small= ip
+                      - else
+                        %span.text-muted --
+
+          - if bitacora.respond_to?(:current_page)
+            .d-flex.justify-content-center.mt-3
+              = paginate bitacora, param_name: :page, params: { tab: tab, student_ci: params[:student_ci] }
+
+          .text-muted.small.text-center.mt-2
+            Total de eventos: #{total_count}
+        - else
+          .alert.alert-info.text-center
+            %i.fa-solid.fa-info-circle.me-2
+            No hay eventos registrados para esta vista.

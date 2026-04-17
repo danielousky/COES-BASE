@@ -220,3 +220,34 @@ RailsAdmin.config do |config|
 
   config.parent_controller = 'EnhancedController'
 end
+
+Rails.application.config.to_prepare do
+  RailsAdmin::MainController.class_eval do
+    prepend(Module.new do
+      def history_show
+        action = RailsAdmin::Config::Actions.find(:history_show)
+        get_model unless action.root?
+        get_object if action.member?
+        @authorization_adapter.try(:authorize, action.authorization_key, @abstract_model, @object)
+        @action = action.with(controller: self, abstract_model: @abstract_model, object: @object)
+        raise(RailsAdmin::ActionNotAllowed) unless @action.enabled?
+        @page_name = wording_for(:title)
+
+        if @abstract_model&.model == Section && @object.present?
+          @general = false
+          @bitacora = Section::BitacoraQuery.new(
+            @object, params.slice(:tab, :student_ci, :all, :page, :per_page)
+          )
+          @history = @bitacora.call
+          @bitacora_total_count = @history.respond_to?(:total_count) ? @history.total_count : @history.size
+          @bitacora_focused_student = @bitacora.focused_student
+          @bitacora_tab = @bitacora.tab
+          @bitacora_tab_counts = @bitacora.tab_counts
+          render @action.template_name
+        else
+          instance_eval(&@action.controller)
+        end
+      end
+    end)
+  end
+end

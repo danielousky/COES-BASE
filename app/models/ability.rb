@@ -66,6 +66,7 @@ class Ability
 
         end
 
+        cannot :history, Section
 
         # cannot :manage, [User, Admin, Student, Teacher, Area, Subject, School, Bank, BankAccount, PaymentReport, Course, Grade, AcademicProcess, EnrollAcademicProcess, AcademicRecord, Section, AdmissionType, PeriodType, Address]
       end
