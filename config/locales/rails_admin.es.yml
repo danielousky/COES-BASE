@@ -85,6 +85,13 @@ es:
         menu: "Mover Registros Académicos"
         description: "Mover Registros Académicos de un curso a otro"
 
+      graduacion:
+        title: "Proceso Graduación"
+        link: "Proceso Graduación"
+        breadcrumb: "Proceso Graduación"
+        menu: "Proceso Graduación"
+        description: "Gestión del proceso de graduación: Tesista, Posible Graduando, Graduando y Graduado"
+
       history_show:
         title: "Bitácora %{model_label}"
         menu: "Bitácora"

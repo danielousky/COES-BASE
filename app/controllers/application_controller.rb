@@ -5,6 +5,11 @@ class ApplicationController < ActionController::Base
   before_action :set_paper_trail_request_info
   before_action :force_password_change!
 
+  rescue_from CanCan::AccessDenied do |_exception|
+    flash[:warning] = "No tiene permiso para acceder a esa sección. Si cree que es un error, contacte al administrador."
+    redirect_back fallback_location: root_path
+  end
+
 
   # around_action :set_session_data
 

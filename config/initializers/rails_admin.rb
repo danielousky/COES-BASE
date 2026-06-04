@@ -170,7 +170,13 @@ RailsAdmin.config do |config|
     require_relative '../../lib/rails_admin/config/actions/move_academic_records'
     move_academic_records do
       i18n_key :move_academic_records
-    end    
+    end
+
+    # Acción personalizada: Proceso Graduación (Tesista → Posible → Graduando → Graduado)
+    require_relative '../../lib/rails_admin/config/actions/graduacion'
+    graduacion do
+      i18n_key :graduacion
+    end
 
 
   end

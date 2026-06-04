@@ -1,4 +1,64 @@
 module ApplicationHelper
+	# Enlaces extra inyectados en el sidebar de RailsAdmin (custom actions root)
+	# dentro de un grupo de navegación existente, por label de grupo.
+	#   { 'NavLabel' => [{ label:, url:, icon:, badge_count: -> {…}, visible_if: ->(user){…} }] }
+	SIDEBAR_EXTRA_LINKS = {
+		'Reportes' => [
+			{
+				label: 'Proceso Graduación',
+				url:   '/admin/graduacion',
+				icon:  'fa-solid fa-user-graduate',
+				# Cacheado: se renderiza en cada página de admin. Invalidado en Grade after_commit.
+				badge_count: -> { Rails.cache.fetch('sidebar/posible_graduando_count', expires_in: 5.minutes) { Grade.posible_graduando.count } },
+				visible_if:  ->(user) { user&.admin && Ability.new(user).can?(:read, :graduacion) }
+			}
+		]
+	}.freeze
+
+	# Variante de RailsAdmin::ApplicationHelper#main_navigation que inyecta los
+	# SIDEBAR_EXTRA_LINKS dentro de su grupo de navegación. Se llama desde
+	# layouts/rails_admin/_sidebar_navigation.html.haml en lugar de main_navigation.
+	def main_navigation_with_extras
+		nodes_stack = RailsAdmin::Config.visible_models(controller: controller)
+		node_model_names = nodes_stack.collect { |c| c.abstract_model.model_name }
+		parent_groups = nodes_stack.group_by { |n| n.parent&.to_s }
+
+		nodes_stack.group_by(&:navigation_label).collect do |navigation_label, nodes|
+			nodes = nodes.select { |n| n.parent.nil? || !n.parent.to_s.in?(node_model_names) }
+			li_stack = navigation(parent_groups, nodes) || ''.html_safe
+			label = navigation_label || t('admin.misc.navigation')
+
+			extras = SIDEBAR_EXTRA_LINKS[label]
+			if extras
+				extras.each do |link|
+					next if link[:visible_if] && !link[:visible_if].call(current_user)
+					count = link[:badge_count]&.call
+					li_stack += content_tag(:li) do
+						link_to link[:url], class: 'nav-link fw-semibold', data: { turbo: 'false' } do
+							icon  = content_tag(:i, '', class: "#{link[:icon]} me-2 text-primary")
+							label_html = content_tag(:span, link[:label])
+							badge = (count.to_i > 0) ? content_tag(:span, count, class: 'badge bg-warning text-dark ms-2') : ''.html_safe
+							icon + label_html + badge
+						end
+					end
+				end
+			end
+
+			collapsible_stack(label, 'main', li_stack)
+		end.join.html_safe
+	end
+
+	# Header de tabla clickeable para sort server-side. Renderiza un link con
+	# flecha ▲▼ del estado actual; al click invierte la dirección.
+	def sortable_column_link(label, col, current_sort, current_dir, url_opts = {})
+		active = (current_sort == col)
+		new_dir = (active && current_dir == 'asc') ? 'desc' : 'asc'
+		arrow = active ? (current_dir == 'asc' ? ' ▲' : ' ▼') : ''
+		link_to "#{label}#{arrow}".html_safe,
+			url_for(url_opts.merge(sort: col, direction: new_dir)),
+			class: 'text-decoration-none text-dark'
+	end
+
 	def render_haml(haml, locals = {})
 		Haml::Engine.new(haml.strip_heredoc, format: :html5).render(locals)
 	end

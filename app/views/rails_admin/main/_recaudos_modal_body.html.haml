@@ -1,0 +1,123 @@
+- user = @grade.student.user
+- next_status = Grade::TAB_NEXT_PROMOTION[@current_tab]
+- can_promote = can?(:manage, :graduacion)
+- approved = @approved || []
+- approved_credits = approved.sum { |ar| ar.subject.unit_credits.to_f }
+- tesis = (@current_tab == 'tesistas') ? @grade.tesis_activa : nil
+- student_url = url_for(action: :show, controller: 'rails_admin/main', model_name: 'student', id: @grade.student.user_id)
+
+.modal-header
+  %h5.modal-title
+    Recaudos —
+    %strong= "#{user.last_name}, #{user.first_name}"
+  %button.btn-close{"aria-label": "Cerrar", "data-bs-dismiss": "modal", type: "button"}
+.modal-body
+  %dl.row.mb-2
+    %dt.col-sm-3 Cédula
+    %dd.col-sm-9= user.ci
+    %dt.col-sm-3 Plan
+    %dd.col-sm-9= "#{@grade.study_plan.code} — #{@grade.study_plan.name}"
+    %dt.col-sm-3 Estado
+    %dd.col-sm-9
+      - perm = @grade.current_permanence_status.to_s
+      - perm_class = (perm == 'regular') ? 'text-bg-success' : 'bg-warning text-dark'
+      - estado_label = (@current_tab == 'tesistas') ? 'Tesista' : @grade.graduate_status.titleize
+      %span.badge.bg-secondary= estado_label
+      %span.badge.ms-1{class: perm_class, title: 'current_permanence_status'}
+        Permanencia:
+        %strong= perm.titleize
+
+  - if tesis
+    .alert.alert-info.d-flex.align-items-center.py-2.mb-3
+      %i.fa-solid.fa-book-open.me-2
+      %div
+        %strong= "#{tesis.subject.code} #{tesis.subject.name}"
+        - sec = tesis.section
+        - if sec
+          %span.text-muted.ms-1= "· Sección #{sec.code}"
+        %span.badge.bg-light.text-dark.ms-2= tesis.status.titleize
+
+  / Resumen del récord
+  .row.g-2.mb-4
+    .col-3
+      .border.rounded.p-2.text-center.bg-light
+        .small.text-muted Créditos aprob.
+        .fw-bold.fs-5= approved_credits.to_i
+    .col-3
+      .border.rounded.p-2.text-center.bg-light
+        .small.text-muted Promedio simple
+        .fw-bold.fs-5= @grade.simple_average ? @grade.simple_average.round(2) : '—'
+    .col-3
+      .border.rounded.p-2.text-center.bg-light
+        .small.text-muted Promedio ponderado
+        .fw-bold.fs-5= @grade.weighted_average ? @grade.weighted_average.round(2) : '—'
+    .col-3
+      .border.rounded.p-2.text-center.bg-light
+        .small.text-muted Eficiencia
+        .fw-bold.fs-5= @grade.efficiency ? @grade.efficiency.round(2) : '—'
+
+  .d-flex.justify-content-between.align-items-center.mb-2
+    %h6.text-uppercase.text-muted.small.mb-0= "Asignaturas aprobadas (#{approved.size})"
+    - if approved.any?
+      = link_to url_for(action: :graduacion, controller: 'rails_admin/main', recaudos_for: @grade.id, download: 'xlsx'), class: 'btn btn-sm btn-outline-success', title: 'Descargar asignaturas en Excel' do
+        %i.fa-solid.fa-file-excel.me-1
+        Descargar
+  - if approved.any?
+    .border.rounded{style: 'max-height: 240px; overflow-y: auto'}
+      %table.table.table-sm.table-hover.mb-0{data: { controller: 'sortable-table', 'sortable-table-default-key-value': 'code' }}
+        %thead.table-light.position-sticky.top-0
+          %tr
+            %th{style: 'width: 90px; cursor: pointer; user-select: none', data: { action: 'click->sortable-table#sort', 'sort-key': 'period' }}
+              Período
+              %span{data: { 'sort-arrow': 'period' }}
+            %th{style: 'cursor: pointer; user-select: none', data: { action: 'click->sortable-table#sort', 'sort-key': 'code' }}
+              Asignatura
+              %span{data: { 'sort-arrow': 'code' }}
+            %th.text-center{style: 'width: 60px; cursor: pointer; user-select: none', data: { action: 'click->sortable-table#sort', 'sort-key': 'credits' }}
+              Créd.
+              %span{data: { 'sort-arrow': 'credits' }}
+            %th.text-end{style: 'width: 80px; cursor: pointer; user-select: none', data: { action: 'click->sortable-table#sort', 'sort-key': 'grade' }}
+              Nota
+              %span{data: { 'sort-arrow': 'grade' }}
+        %tbody{data: { 'sortable-table-target': 'body' }}
+          - approved.each do |ar|
+            - period_name = ar.enroll_academic_process&.academic_process&.period&.name || '—'
+            %tr
+              %td.small{data: { 'sort-value-period': period_name }}= period_name
+              %td.small{data: { 'sort-value-code': ar.subject.code }}
+                %strong= ar.subject.code
+                = " #{ar.subject.name}"
+              %td.text-center.small{data: { 'sort-value-credits': ar.subject.unit_credits }}= ar.subject.unit_credits
+              %td.text-end.small.fw-bold{data: { 'sort-value-grade': ar.get_value_by_status }}= ar.get_value_by_status
+  - else
+    .text-muted.small.fst-italic Sin asignaturas aprobadas.
+
+.modal-footer
+  = link_to student_url, class: 'btn btn-outline-secondary me-auto', "data-bs-toggle": 'tooltip', "data-bs-title": 'Abrir la ficha completa del estudiante' do
+    %i.fa-solid.fa-id-card.me-1
+    Más detalle del estudiante
+  %button.btn.btn-outline-secondary{"data-bs-dismiss": "modal", type: "button"}
+    %i.fa-solid.fa-xmark.me-1
+    Cerrar
+  - if can_promote && Grade::REVERSE_GRADUATE_TRANSITIONS.key?(@grade.graduate_status)
+    - prev_status = Grade::REVERSE_GRADUATE_TRANSITIONS[@grade.graduate_status]
+    = form_tag url_for(action: :graduacion, controller: 'rails_admin/main'), method: :post, class: 'd-inline' do
+      = hidden_field_tag :grade_id, @grade.id
+      = hidden_field_tag :revert, '1'
+      = hidden_field_tag :current_tab, @current_tab
+      %button.btn.btn-outline-warning{type: 'submit', "data-bs-toggle": 'tooltip', "data-bs-title": "Revertir promoción — corrige errores", data: { confirm: "¿Confirma devolver a #{prev_status.titleize}?" }}
+        %i.fa-solid.fa-rotate-left.me-1
+        = "Devolver a #{prev_status.titleize}"
+  - if next_status && can_promote
+    - is_graduate = (@current_tab == 'graduandos')
+    - btn_icon = is_graduate ? 'fa-graduation-cap' : 'fa-circle-arrow-up'
+    - btn_label = is_graduate ? 'Promover a Graduado' : "Promover a #{next_status.titleize}"
+    - btn_class = is_graduate ? 'btn-success' : 'btn-primary'
+    - tip = is_graduate ? 'Marcar como Egresado y cerrar el proceso' : 'Avanzar al siguiente paso del proceso'
+    = form_tag url_for(action: :graduacion, controller: 'rails_admin/main'), method: :post, class: 'd-inline' do
+      = hidden_field_tag :grade_id, @grade.id
+      = hidden_field_tag :promote_to, next_status
+      = hidden_field_tag :current_tab, @current_tab
+      %button.btn{class: btn_class, type: 'submit', "data-bs-toggle": 'tooltip', "data-bs-title": tip, data: { confirm: '¿Confirma la promoción?' }}
+        %i.fa-solid.me-1{class: btn_icon}
+        = btn_label

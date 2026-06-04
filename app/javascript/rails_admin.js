@@ -2,6 +2,7 @@ import "rails_admin/src/rails_admin/base";
 import "./rails_admin/custom/ui";
 import "flatpickr/dist/l10n/es";
 import "./rails_admin/custom/dashboard";
+import "./controllers";
 
 // import Trix from "trix"
 

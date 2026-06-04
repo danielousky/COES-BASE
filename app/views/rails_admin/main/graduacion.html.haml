@@ -1,0 +1,128 @@
+- can_promote = can?(:manage, :graduacion)
+- next_status = Grade::TAB_NEXT_PROMOTION
+- sort_opts = { action: :graduacion, controller: 'rails_admin/main', tab: @tab, q: @search }
+- download_url = url_for(sort_opts.merge(sort: @sort, direction: @direction, download: 'xlsx'))
+- current_page = @grades.respond_to?(:current_page) ? @grades.current_page : nil
+- tabs = [['tesistas', 'Tesistas', 'bg-primary'], ['posibles', 'Posibles graduandos', 'bg-warning text-dark'], ['graduandos', 'Graduandos', 'bg-info text-dark'], ['graduados', 'Graduados', 'bg-secondary']]
+
+%h5.text-primary.fw-bold.mb-3
+  %i.fa-solid.fa-user-graduate.me-2
+  Proceso Graduación
+
+- if flash[:success] || flash[:error]
+  .alert.alert-dismissible.fade.show{class: (flash[:error] ? 'alert-danger' : 'alert-success'), role: 'alert'}
+    = flash[:error] || flash[:success]
+    %button.btn-close{type: 'button', "data-bs-dismiss": 'alert', "aria-label": 'Cerrar'}
+
+%ul.nav.nav-tabs.mb-3.align-items-center
+  - tabs.each_with_index do |(key, label, badge_class), i|
+    %li.nav-item
+      = link_to url_for(action: :graduacion, controller: 'rails_admin/main', tab: key), class: "nav-link #{'active' if @tab == key}" do
+        %span.badge.rounded-pill.bg-light.text-dark.border.me-1= i + 1
+        = label
+        %span.badge.ms-1{class: badge_class}= @counts[key.to_sym]
+    - unless i == tabs.size - 1
+      %li.text-muted.px-1{'aria-hidden': true}
+        %i.fa-solid.fa-chevron-right
+
+= form_tag url_for(action: :graduacion, controller: 'rails_admin/main'), method: :get, class: 'row g-2 mb-3' do
+  = hidden_field_tag :tab, @tab
+  .col-md-6
+    = text_field_tag :q, @search, class: 'form-control', placeholder: "Buscar por cédula o nombre en #{@tab.titleize}…", autofocus: @search.blank?
+  .col-md-2
+    = submit_tag 'Buscar', class: 'btn btn-outline-primary w-100'
+  - if @search
+    .col-md-2
+      = link_to 'Limpiar', url_for(action: :graduacion, controller: 'rails_admin/main', tab: @tab), class: 'btn btn-outline-secondary w-100'
+  .col-md-2.ms-auto
+    = link_to download_url, class: 'btn btn-outline-success w-100', title: 'Descargar Excel' do
+      %i.fa-solid.fa-file-excel.me-1
+      Descargar
+
+%div{"data-controller": "recaudos", "data-recaudos-url-value": url_for(action: :graduacion, controller: 'rails_admin/main')}
+  - if @grades.empty?
+    - if @search.present?
+      .alert.alert-light.text-center.text-muted= "Sin resultados para «#{@search}» en #{@tab.titleize}."
+    - else
+      .alert.alert-light.text-center.text-muted= "No hay estudiantes en #{@tab.titleize} por ahora."
+  - else
+    .table-responsive
+      %table.table.table-hover.align-middle
+        %thead.table-light
+          %tr
+            %th{style: 'cursor: pointer'}= sortable_column_link('Cédula', 'ci', @sort, @direction, sort_opts)
+            %th{style: 'cursor: pointer'}= sortable_column_link('Apellidos, Nombre', 'name', @sort, @direction, sort_opts)
+            %th{style: 'cursor: pointer'}= sortable_column_link('Plan', 'plan', @sort, @direction, sort_opts)
+            %th.text-end Acciones
+        %tbody
+          - @grades.each do |g|
+            - user = g.student.user
+            %tr
+              %td= user.ci
+              %td
+                %strong= user.last_name
+                = ", #{user.first_name}"
+              %td= g.study_plan.code
+              %td.text-end.text-nowrap
+                %button.btn.btn-sm.btn-outline-primary{type: 'button', "data-action": "recaudos#open", "data-recaudos-grade-id-param": g.id, "data-recaudos-tab-param": @tab}
+                  %i.fa-solid.fa-eye.me-1
+                  Revisar
+                - if next_status[@tab] && can_promote
+                  - is_graduate = (@tab == 'graduandos')
+                  - btn_icon = is_graduate ? 'fa-graduation-cap' : 'fa-circle-arrow-right'
+                  - btn_label = is_graduate ? 'Graduar' : 'Promover'
+                  - btn_class = is_graduate ? 'btn-success' : 'btn-primary'
+                  - tip = is_graduate ? 'Marcar como Graduado (Egresado)' : "Promover a #{next_status[@tab].titleize}"
+                  - confirm_msg = is_graduate ? "Vas a marcar a #{user.last_name}, #{user.first_name} como GRADUADO (Egresado). Esto cambia su permanencia. ¿Continuar?" : "¿Confirma promover a #{next_status[@tab].titleize} a #{user.last_name}, #{user.first_name}?"
+                  = form_tag url_for(action: :graduacion, controller: 'rails_admin/main'), method: :post, class: 'd-inline ms-1' do
+                    = hidden_field_tag :grade_id, g.id
+                    = hidden_field_tag :promote_to, next_status[@tab]
+                    = hidden_field_tag :current_tab, @tab
+                    = hidden_field_tag :current_q, @search
+                    = hidden_field_tag :current_sort, @sort
+                    = hidden_field_tag :current_direction, @direction
+                    = hidden_field_tag :current_page, current_page
+                    %button.btn.btn-sm{class: btn_class, type: 'submit', "data-bs-toggle": 'tooltip', "data-bs-title": tip, data: { confirm: confirm_msg }}
+                      %i.fa-solid.me-1{class: btn_icon}
+                      = btn_label
+                - if can_promote && Grade::REVERSE_GRADUATE_TRANSITIONS.key?(g.graduate_status)
+                  - prev_status = Grade::REVERSE_GRADUATE_TRANSITIONS[g.graduate_status]
+                  = form_tag url_for(action: :graduacion, controller: 'rails_admin/main'), method: :post, class: 'd-inline ms-1' do
+                    = hidden_field_tag :grade_id, g.id
+                    = hidden_field_tag :revert, '1'
+                    = hidden_field_tag :current_tab, @tab
+                    = hidden_field_tag :current_q, @search
+                    = hidden_field_tag :current_sort, @sort
+                    = hidden_field_tag :current_direction, @direction
+                    = hidden_field_tag :current_page, current_page
+                    %button.btn.btn-sm.btn-outline-secondary{type: 'submit', "aria-label": "Devolver a #{prev_status.titleize}", "data-bs-toggle": 'tooltip', "data-bs-title": "Devolver a #{prev_status.titleize}", data: { confirm: "¿Confirma devolver a #{user.last_name}, #{user.first_name} de #{g.graduate_status.titleize} a #{prev_status.titleize}?" }}
+                      %i.fa-solid.fa-rotate-left
+
+    - if @grades.respond_to?(:total_pages) && @grades.total_pages > 1
+      - cp = @grades.current_page
+      - tp = @grades.total_pages
+      - visible_pages = ([1, tp] + ((cp - 2)..(cp + 2)).to_a).uniq.select { |p| p.between?(1, tp) }.sort
+      %nav.mt-3{'aria-label': 'Paginación'}
+        %ul.pagination.justify-content-center
+          %li.page-item{class: ('disabled' if cp <= 1)}
+            = link_to '«', url_for(request.query_parameters.merge(page: cp - 1)), class: 'page-link'
+          - prev_page = nil
+          - visible_pages.each do |p|
+            - if prev_page && p - prev_page > 1
+              %li.page-item.disabled
+                %span.page-link …
+            %li.page-item{class: ('active' if p == cp)}
+              = link_to p, url_for(request.query_parameters.merge(page: p)), class: 'page-link'
+            - prev_page = p
+          %li.page-item{class: ('disabled' if cp >= tp)}
+            = link_to '»', url_for(request.query_parameters.merge(page: cp + 1)), class: 'page-link'
+          %li.ms-3.text-muted.small.align-self-center
+            = "#{@grades.total_count} resultados"
+
+  / Modal único: el contenido se carga vía Stimulus AJAX al hacer click en "Revisar"
+  .modal.fade#recaudosModal{"data-recaudos-target": "modal", tabindex: -1, 'aria-hidden': true}
+    .modal-dialog.modal-lg
+      .modal-content{"data-recaudos-target": "content"}
+        .modal-body.text-center.py-5
+          %div.spinner-border.text-primary{role: 'status'}
+            %span.visually-hidden Cargando…

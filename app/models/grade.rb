@@ -155,6 +155,97 @@ class Grade < ApplicationRecord
 
   scope :custom_search, -> (keyword) { joins(:user, :school).where("users.ci ILIKE :kw OR schools.name ILIKE :kw", kw: "%#{keyword}%") }
 
+  # =========================================================================
+  # PROCESO DE GRADUACIÓN
+  # Flujo (verificado contra COES v1): Tesista → Posible Graduando → Graduando → Graduado.
+  #
+  # "Tesista" NO es un graduate_status almacenado: es DERIVADO — un Grade cursante (o el
+  # valor legacy :tesista) que tiene una asignatura de tesis (SubjectType.code 'P') inscrita
+  # en un proceso académico activo. La promoción es un flip de graduate_status; la
+  # CALIFICACIÓN de la tesis pertenece al flujo académico normal y NO se toca acá.
+  # =========================================================================
+
+  # Error de dominio para transiciones inválidas (distinto de bugs de programación).
+  class TransicionGraduacionInvalida < StandardError; end
+
+  THESIS_SUBJECT_TYPE_CODE = 'P'.freeze
+
+  # Transiciones forward permitidas: estado_destino => [estados_origen_válidos].
+  # Claves y valores como String para comparar directo contra graduate_status (enum → String).
+  GRADUATE_STATUS_TRANSITIONS = {
+    'posible_graduando' => %w[cursante tesista],
+    'graduando'         => %w[posible_graduando],
+    'graduado'          => %w[graduando]
+  }.freeze
+
+  # Reversiones (botón "Devolver"): estado_actual => estado_anterior.
+  REVERSE_GRADUATE_TRANSITIONS = {
+    'graduado'          => 'graduando',
+    'graduando'         => 'posible_graduando',
+    'posible_graduando' => 'cursante'
+  }.freeze
+
+  # Mapea el tab del módulo al estado al que promueve su botón principal.
+  TAB_NEXT_PROMOTION = {
+    'tesistas'   => 'posible_graduando',
+    'posibles'   => 'graduando',
+    'graduandos' => 'graduado'
+  }.freeze
+
+  # Scoping por escuela parametrizado (el modelo no conoce al usuario actual).
+  scope :of_schools, ->(school_ids) { joins(:study_plan).where('study_plans.school_id': school_ids) }
+
+  # Tesistas: cursantes (o legacy :tesista) con tesis activa sin promover aún.
+  scope :tesistas, lambda {
+    where(graduate_status: %i[cursante tesista])
+      .where(id: AcademicRecord.tesis_en_proceso_activo.select('enroll_academic_processes.grade_id'))
+  }
+
+  # AcademicRecord de tesis del proceso activo (para mostrar en la fila/modal del tab Tesistas).
+  def tesis_activa
+    academic_records.tesis_en_proceso_activo.first
+  end
+
+  # Promueve graduate_status validando la transición. Atómico y a prueba de doble-submit
+  # (with_lock = transacción + SELECT FOR UPDATE; revalida sobre el estado recargado).
+  def promover_graduacion!(nuevo_estado)
+    nuevo_estado = nuevo_estado.to_s
+    origenes = GRADUATE_STATUS_TRANSITIONS[nuevo_estado]
+    raise TransicionGraduacionInvalida, "Estado destino inválido: #{nuevo_estado.inspect}" unless origenes
+
+    with_lock do
+      unless origenes.include?(graduate_status.to_s)
+        raise TransicionGraduacionInvalida, "Transición no permitida: #{graduate_status} → #{nuevo_estado}"
+      end
+      cambios = { graduate_status: nuevo_estado }
+      # Sync graduado → egresado.
+      if nuevo_estado == 'graduado' && !%w[egresado egresado_doble_titulo].include?(current_permanence_status.to_s)
+        cambios[:current_permanence_status] = :egresado
+      end
+      update!(cambios)
+    end
+  end
+
+  # Devuelve al estado anterior del flujo. Decisión de negocio EXPLÍCITA: des-graduar
+  # restaura la permanencia a :regular (si se requiriera el estado previo real, leerlo
+  # de PaperTrail). update! para conservar auditoría (nunca update_column).
+  def revertir_graduacion!
+    destino = REVERSE_GRADUATE_TRANSITIONS[graduate_status.to_s]
+    raise TransicionGraduacionInvalida, "No se puede devolver desde #{graduate_status.inspect}" unless destino
+
+    with_lock do
+      cambios = { graduate_status: destino }
+      if graduate_status.to_s == 'graduado' && %w[egresado egresado_doble_titulo].include?(current_permanence_status.to_s)
+        cambios[:current_permanence_status] = :regular
+      end
+      update!(cambios)
+    end
+  end
+
+  # Invalida el badge del sidebar cuando cambia el estado de graduación.
+  after_commit -> { Rails.cache.delete('sidebar/posible_graduando_count') },
+               if: -> { saved_change_to_graduate_status? || destroyed? }
+
   # FUNCTIONS:
 
   def departament2

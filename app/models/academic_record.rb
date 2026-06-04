@@ -189,6 +189,15 @@ class AcademicRecord < ApplicationRecord
   scope :by_subject_types, -> (tipo){joins(:subject_type).where('subject_types.code': tipo)}
   # scope :perdidos, -> {perdida_por_inasistencia}
 
+  # Registros de tesis (asignatura tipo proyecto, code 'P') no retirados, inscritos en un
+  # proceso académico activo. Base del tab "Tesistas" del módulo de Proceso Graduación.
+  scope :tesis_en_proceso_activo, lambda {
+    not_retirado
+      .by_subject_types(Grade::THESIS_SUBJECT_TYPE_CODE)
+      .joins(:enroll_academic_process)
+      .where('enroll_academic_processes.academic_process_id': AcademicProcess.actives.select(:id))
+  }
+
   scope :sort_by_user_name, -> {joins(:user).order('users.last_name asc, users.first_name asc')}
 
 

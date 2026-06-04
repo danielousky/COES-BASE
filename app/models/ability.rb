@@ -25,7 +25,8 @@ class Ability
         can :import, Authorizable::IMPORTABLES
         can :manage, [Admin, Student, Teacher, Area, Departament, Subject, SubjectType, Course, Grade, AcademicProcess, AcademicRecord, Section, AdmissionType, PeriodType, Address, StudyPlan, Period, SubjectLink, Schedule, EnrollmentDay, Billboard, User, EnrollAcademicProcess, PaymentReport, Bank, BankAccount, Mention, EnvAuth]
         can :ru, [School, Language]
-        can :organization_chart, [School] 
+        can :organization_chart, [School]
+        can :manage, :graduacion
       else
         can :manage, [User]
         user.admin.authorizeds.each do |authd|
@@ -54,7 +55,13 @@ class Ability
             end
             if authd.authorizable.klazz.eql? 'AcademicRecord' and authd.can_manage?
                 can :read, [Section, EnrollAcademicProcess]
-            end            
+            end
+            # Proceso Graduación: opera sobre Grade. Lectura habilita ver el módulo;
+            # actualización habilita promover/devolver.
+            if authd.authorizable.klazz.eql? 'Grade' and authd.can_read?
+                can :read, :graduacion
+                can :manage, :graduacion if authd.can_update?
+            end
 
             can :read, authd.authorizable_klazz_constantenize if authd.can_read?
             can :create, authd.authorizable_klazz_constantenize if authd.can_create?
