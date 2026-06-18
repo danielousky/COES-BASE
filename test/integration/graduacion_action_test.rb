@@ -20,6 +20,13 @@ class GraduacionActionTest < ActionDispatch::IntegrationTest
     assert_select "ul.nav-tabs"
   end
 
+  test "el sidebar incluye el enlace al módulo (grupo Reportes)" do
+    get "/admin/graduacion"
+    assert_response :success
+    assert_select "a.nav-link[href='/admin/graduacion']", { minimum: 1 },
+                  "El sidebar debe incluir el enlace a Proceso Graduación"
+  end
+
   test "cada tab del proceso renderiza sin error" do
     %w[tesistas posibles graduandos graduados].each do |tab|
       get "/admin/graduacion", params: { tab: tab }

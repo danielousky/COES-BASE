@@ -3,7 +3,7 @@ module ApplicationHelper
 	# dentro de un grupo de navegación existente, por label de grupo.
 	#   { 'NavLabel' => [{ label:, url:, icon:, badge_count: -> {…}, visible_if: ->(user){…} }] }
 	SIDEBAR_EXTRA_LINKS = {
-		'Reportes' => [
+		'Planif. Periódica' => [
 			{
 				label: 'Proceso Graduación',
 				url:   '/admin/graduacion',
@@ -16,36 +16,53 @@ module ApplicationHelper
 	}.freeze
 
 	# Variante de RailsAdmin::ApplicationHelper#main_navigation que inyecta los
-	# SIDEBAR_EXTRA_LINKS dentro de su grupo de navegación. Se llama desde
+	# SIDEBAR_EXTRA_LINKS en el sidebar. Se llama desde
 	# layouts/rails_admin/_sidebar_navigation.html.haml en lugar de main_navigation.
+	# Si el label del enlace coincide con un grupo de modelos existente, se inyecta
+	# ahí; si no (ej. "Reportes"), se renderiza como grupo propio al final.
 	def main_navigation_with_extras
 		nodes_stack = RailsAdmin::Config.visible_models(controller: controller)
 		node_model_names = nodes_stack.collect { |c| c.abstract_model.model_name }
 		parent_groups = nodes_stack.group_by { |n| n.parent&.to_s }
 
-		nodes_stack.group_by(&:navigation_label).collect do |navigation_label, nodes|
+		rendered_labels = []
+		groups = nodes_stack.group_by(&:navigation_label).collect do |navigation_label, nodes|
 			nodes = nodes.select { |n| n.parent.nil? || !n.parent.to_s.in?(node_model_names) }
 			li_stack = navigation(parent_groups, nodes) || ''.html_safe
 			label = navigation_label || t('admin.misc.navigation')
+			rendered_labels << label
 
 			extras = SIDEBAR_EXTRA_LINKS[label]
-			if extras
-				extras.each do |link|
-					next if link[:visible_if] && !link[:visible_if].call(current_user)
-					count = link[:badge_count]&.call
-					li_stack += content_tag(:li) do
-						link_to link[:url], class: 'nav-link fw-semibold', data: { turbo: 'false' } do
-							icon  = content_tag(:i, '', class: "#{link[:icon]} me-2 text-primary")
-							label_html = content_tag(:span, link[:label])
-							badge = (count.to_i > 0) ? content_tag(:span, count, class: 'badge bg-warning text-dark ms-2') : ''.html_safe
-							icon + label_html + badge
-						end
-					end
-				end
-			end
+			li_stack += sidebar_extra_links_stack(extras) if extras
 
 			collapsible_stack(label, 'main', li_stack)
-		end.join.html_safe
+		end
+
+		# Grupos extra cuyo label no corresponde a ningún grupo de modelos (ej. "Reportes").
+		SIDEBAR_EXTRA_LINKS.each do |label, links|
+			next if rendered_labels.include?(label)
+			li_stack = sidebar_extra_links_stack(links)
+			groups << collapsible_stack(label, 'main', li_stack) if li_stack.present?
+		end
+
+		groups.join.html_safe
+	end
+
+	# Renderiza los <li> de un conjunto de enlaces extra del sidebar (respeta
+	# visible_if y badge_count). Devuelve html_safe (vacío si ninguno es visible).
+	def sidebar_extra_links_stack(links)
+		Array(links).each_with_object(''.html_safe) do |link, stack|
+			next if link[:visible_if] && !link[:visible_if].call(current_user)
+			count = link[:badge_count]&.call
+			stack << content_tag(:li) do
+				link_to link[:url], class: 'nav-link fw-semibold', data: { turbo: 'false' } do
+					icon = content_tag(:i, '', class: "#{link[:icon]} me-2 text-primary")
+					label_html = content_tag(:span, link[:label])
+					badge = (count.to_i > 0) ? content_tag(:span, count, class: 'badge bg-warning text-dark ms-2') : ''.html_safe
+					icon + label_html + badge
+				end
+			end
+		end
 	end
 
 	# Header de tabla clickeable para sort server-side. Renderiza un link con

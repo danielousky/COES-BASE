@@ -123,7 +123,9 @@ module RailsAdmin
               @direction = (params[:direction] == 'desc') ? 'desc' : 'asc'
               order_sql = Arel.sql("#{SORT_COLUMNS[@sort]} #{@direction.upcase}")
 
-              school_ids = current_user.admin.schools_auh.pluck(:id)
+              # Filtrado por entorno: cada admin solo ve las escuelas de su env_auth
+              # (desarrollador => todas). Mismo mecanismo que admin.academic_processes/periods.
+              school_ids = current_user.admin.schools_auh&.pluck(:id) || []
 
               base = Grade.joins(:study_plan, :user)
                           .includes(:study_plan, student: :user)
