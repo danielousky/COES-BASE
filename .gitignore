@@ -43,3 +43,6 @@
 /config/credentials/production.key
 .vs
 .qodo
+
+# Claude Code: settings.json es compartido (plugins del equipo); settings.local.json es personal
+.claude/settings.local.json
