@@ -43,8 +43,7 @@ class AcademicRecordsController < ApplicationController
           # Calificación es "todo o nada". Si cualquier paso falla, ningún
           # registro queda persistido (atomicidad + consistencia).
           con_calificacion = false
-          begin
-            ActiveRecord::Base.transaction do
+          res = Transaccionable.transaccion_atomica(contexto: "academic_records#create") do
               course = Course.find_or_create_by!(subject_id: subject.id, academic_process_id: academic_process.id)
 
               section = Section.find_or_initialize_by(course_id: course.id, code: params[:section_code])
@@ -64,19 +63,17 @@ class AcademicRecordsController < ApplicationController
                 qa.save!
                 con_calificacion = true
               end
-            end
-            # Flash fuera de la transacción: solo se setea tras un commit exitoso.
+          end
+          # Flash fuera de la transacción: solo se setea tras un commit exitoso.
+          if res.ok?
             if con_calificacion
               flash[:success] = 'Se guardó el historial. ¡Calificación cargada!'
             else
               flash[:success] = 'Se guardó el historial.'
               flash[:warning] = 'No se especificó la calificación'
             end
-          rescue ActiveRecord::RecordInvalid => e
-            flash[:danger] = "No se pudo completar el registro académico (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
-          rescue StandardError => e
-            Rails.logger.error("academic_records#create: #{e.class} #{e.message}")
-            flash[:danger] = "No se pudo completar el registro académico (transacción revertida)."
+          else
+            flash[:danger] = "No se pudo completar el registro académico #{res.error}"
           end
 
         else

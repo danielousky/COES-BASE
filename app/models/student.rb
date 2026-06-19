@@ -517,8 +517,7 @@ class Student < ApplicationRecord
     # (y AcademicProcess si aplica) se persisten bajo el principio "todo o
     # nada". Si cualquier paso falla, ningún registro queda creado y la fila
     # se reporta como no registrada (atomicidad + consistencia).
-    begin
-      ActiveRecord::Base.transaction do
+    res = Transaccionable.transaccion_atomica(contexto: "Student.import (ci: #{row[0]})") do
         usuario.save!(validate: false)
         estudiante = Student.find_or_initialize_by(user_id: usuario.id)
 
@@ -579,12 +578,10 @@ class Student < ApplicationRecord
           total_updated = 1
         end
       end
-    rescue StandardError => e
-      # Cualquier fallo revierte la transacción: no quedan User/Student/Grade
-      # huérfanos. Se loguea para poder diagnosticar la fila (dato malo vs bug).
-      Rails.logger.warn("Student.import: fila no registrada (ci: #{row[0]}): #{e.class} #{e.message}")
-      no_registred = row
-    end
+    # Cualquier fallo revierte la transacción (no quedan User/Student/Grade
+    # huérfanos) y la fila se reporta como no registrada. El logging lo hace
+    # el concern Transaccionable.
+    no_registred = row unless res.ok?
 
     [total_newed, total_updated, no_registred]
   end

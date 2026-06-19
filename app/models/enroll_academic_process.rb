@@ -143,10 +143,9 @@ include AcademicProcessable
     estado  = nil
     mensaje = nil
 
-    begin
-      transaction do
-        # LIBERAR cupo previo del curso (cambio o liberación de sección).
-        previo = AcademicRecord.joins(:course, :grade)
+    res = Transaccionable.transaccion_atomica(contexto: "EnrollAcademicProcess.reservar_cupo") do
+      # LIBERAR cupo previo del curso (cambio o liberación de sección).
+      previo = AcademicRecord.joins(:course, :grade)
                                .where('courses.id': course_id, 'grades.id': grade_id).first
         if previo
           if previo.destroy
@@ -200,14 +199,12 @@ include AcademicProcessable
             estado = 'success'; mensaje = 'Cupo reservado'
           end
         end
-      end
-    rescue ActiveRecord::RecordInvalid => e
-      estado = 'error'
-      mensaje = "Error (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
-    rescue StandardError => e
-      Rails.logger.error("reservar_cupo: #{e.class} #{e.message}")
-      estado = 'error'
-      mensaje = "No se pudo completar la operación (transacción revertida). Por favor, intente nuevamente."
+    end
+
+    # Si una EXCEPCIÓN (no una regla de negocio) revirtió la transacción.
+    unless res.ok?
+      estado  = 'error'
+      mensaje = "Error #{res.error}"
     end
 
     # Nunca devolver estado/mensaje nil (p.ej. liberar un cupo ya liberado por un
