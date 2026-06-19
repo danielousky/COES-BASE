@@ -59,89 +59,95 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   def reserve_space
+    section = nil
+    msg = nil
+    estado = nil
+
+    # Transacción ACID para la selección de sección de asignatura ofertada.
+    # Liberar cupo previo + reservar cupo nuevo se ejecuta como una sola
+    # unidad: si una validación de negocio falla (solapamiento, créditos,
+    # asignaturas, capacidad) o si alguno de los save/update falla, todo
+    # se revierte y el estudiante conserva su reserva anterior intacta.
     begin
-      # BUSCAR REGISTRO
-      academic_record = AcademicRecord.joins(:course, :grade).where('courses.id': params[:course_id],'grades.id': params[:grade_id]).first
+      ActiveRecord::Base.transaction do
+        # BUSCAR REGISTRO
+        academic_record = AcademicRecord.joins(:course, :grade).where('courses.id': params[:course_id],'grades.id': params[:grade_id]).first
 
-      # LIBERAR CUPO
-      if academic_record
-        if academic_record&.destroy
-          msg = "Cupo liberado"
-          estado = 'success'
-        else
-          msg = "Sin Inscripción"
-          estado = 'error'
-        end
-      end
-
-      if (params[:section_id] and !params[:section_id].blank?)
-        # INSCRIBIR EN SECCIÓN
-        section = Section.find params[:section_id]
-        
-        
-        # grade = Grade.find params[:grade_id]
-        course = section.course
-        academic_process = AcademicProcess.where(id: params[:academic_process_id]).first
-
-        limit_credits = academic_process.max_credits
-        limit_subjects = academic_process.max_subjects
-
-        # BUSCAR INSCRIPCIÓN:
-        enroll_academic_process = EnrollAcademicProcess.find_or_initialize_by(academic_process_id: academic_process.id, grade_id: params[:grade_id])
-
-        if enroll_academic_process.new_record?
-          enroll_academic_process.permanence_status = :regular
-          enroll_academic_process.enroll_status = :reservado 
-          enroll_academic_process.save!
-        end
-
-        if enroll_academic_process
-          # INTENTO POR TOTAL DE CREDITOS Y ASIGNATURAS: 
-          credits_attemp = enroll_academic_process.total_credits_not_retired+course.subject.unit_credits
-          subjects_attemp = enroll_academic_process.total_subjects_not_retired+1
-
-          if enroll_academic_process.overlapped?(section.timetable)            
-            # SOLAPAMIENTO DE HORARIOS
-            estado = 'error'
-            msg = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
-          elsif credits_attemp > limit_credits
-            # EXCESO DE CRÉDITOS
-            estado = 'error'
-            msg = "Supera el límite de créditos permitidos para este proceso de inscripción. Por favor, corrija su selección de créditos e inténtelo de nuevo. (#{credits_attemp} / #{limit_credits})"
-          
-          elsif subjects_attemp > limit_subjects
-            # EXCESO DE ASIGNATURAS
-            estado = 'error'
-            msg = "Supera el límite de asignaturas permitidas para este proceso de inscripción. Por favor, corrija su selección de asignaturas e inténtelo de nuevo. (#{credits_attemp} / #{limit_credits})"
-
-          elsif !(section.has_capacity?)
-            # SIN CUPOS
-            msg = "Sin cupos disponibles para: #{sec.descripcion} en el período #{sec.periodo.id}"
-            estado = 'error'
+        # LIBERAR CUPO
+        if academic_record
+          if academic_record&.destroy
+            msg = "Cupo liberado"
+            estado = 'success'
           else
-            # VÁLIDA PARA INSCRIBIR
-            academic_record = AcademicRecord.new(section_id: section.id, enroll_academic_process_id: enroll_academic_process.id, status: :sin_calificar)
+            msg = "Sin Inscripción"
+            estado = 'error'
+          end
+        end
 
-            if academic_record.save
+        if (params[:section_id] and !params[:section_id].blank?)
+          # INSCRIBIR EN SECCIÓN
+          section = Section.find params[:section_id]
 
-              if enroll_academic_process.update(enroll_status: :reservado)
-                msg = "Cupo reservado"
-                estado = 'success'
-              else
-                estado = 'error'
-                msg = "Error: #{enroll_academic_process.errors.full_messages.to_sentence}"
-              end
-            else
+
+          # grade = Grade.find params[:grade_id]
+          course = section.course
+          academic_process = AcademicProcess.where(id: params[:academic_process_id]).first
+
+          limit_credits = academic_process.max_credits
+          limit_subjects = academic_process.max_subjects
+
+          # BUSCAR INSCRIPCIÓN:
+          enroll_academic_process = EnrollAcademicProcess.find_or_initialize_by(academic_process_id: academic_process.id, grade_id: params[:grade_id])
+
+          if enroll_academic_process.new_record?
+            enroll_academic_process.permanence_status = :regular
+            enroll_academic_process.enroll_status = :reservado
+            enroll_academic_process.save!
+          end
+
+          if enroll_academic_process
+            # INTENTO POR TOTAL DE CREDITOS Y ASIGNATURAS:
+            credits_attemp = enroll_academic_process.total_credits_not_retired+course.subject.unit_credits
+            subjects_attemp = enroll_academic_process.total_subjects_not_retired+1
+
+            if enroll_academic_process.overlapped?(section.timetable)
+              # SOLAPAMIENTO DE HORARIOS
               estado = 'error'
-              msg = "Error: #{academic_record.errors.full_messages.to_sentence}"
+              msg = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
+              raise ActiveRecord::Rollback
+            elsif credits_attemp > limit_credits
+              # EXCESO DE CRÉDITOS
+              estado = 'error'
+              msg = "Supera el límite de créditos permitidos para este proceso de inscripción. Por favor, corrija su selección de créditos e inténtelo de nuevo. (#{credits_attemp} / #{limit_credits})"
+              raise ActiveRecord::Rollback
+            elsif subjects_attemp > limit_subjects
+              # EXCESO DE ASIGNATURAS
+              estado = 'error'
+              msg = "Supera el límite de asignaturas permitidas para este proceso de inscripción. Por favor, corrija su selección de asignaturas e inténtelo de nuevo. (#{credits_attemp} / #{limit_credits})"
+              raise ActiveRecord::Rollback
+            elsif !(section.has_capacity?)
+              # SIN CUPOS
+              msg = "Sin cupos disponibles para: #{section.description_with_quotes} en el período #{academic_process.period&.name}"
+              estado = 'error'
+              raise ActiveRecord::Rollback
+            else
+              # VÁLIDA PARA INSCRIBIR — atomicidad garantizada por la transacción
+              academic_record = AcademicRecord.new(section_id: section.id, enroll_academic_process_id: enroll_academic_process.id, status: :sin_calificar)
+              academic_record.save!
+              enroll_academic_process.update!(enroll_status: :reservado)
+              msg = "Cupo reservado"
+              estado = 'success'
             end
           end
         end
       end
 
+    rescue ActiveRecord::RecordInvalid => e
+      estado = 'error'
+      msg = "Error (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
     rescue StandardError => e
       estado = 'error'
-      msg = "Error: #{e}"       
+      msg = "Error: #{e}"
     end
 
     cupo = section ? section.description_with_quotes : 'Seleccione sección o libere cupo'

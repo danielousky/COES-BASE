@@ -37,41 +37,43 @@ class AcademicRecordsController < ApplicationController
     if enroll_academic_process = @academic_record.enroll_academic_process
       if subject = Subject.find(params[:course][:subject_id])
         if academic_process = @academic_record.academic_process
-          course = Course.find_or_create_by(subject_id: subject.id, academic_process_id: academic_process.id)
           params[:section_type] = params[:section_type].delete(" ").underscore.to_sym
-          
 
-          section = Section.find_or_initialize_by(course_id: course.id, code: params[:section_code])
-          # section.modalities: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3}
-          
-          section.modality = params[:section_type]
-          section.capacity = 30 if section.new_record?
+          # Transacción ACID: el alta de Curso, Sección, Histórico Académico y
+          # Calificación es "todo o nada". Si cualquier paso falla, ningún
+          # registro queda persistido (atomicidad + consistencia).
+          begin
+            ActiveRecord::Base.transaction do
+              course = Course.find_or_create_by!(subject_id: subject.id, academic_process_id: academic_process.id)
 
-          if section.save 
-            @academic_record.section = section
+              section = Section.find_or_initialize_by(course_id: course.id, code: params[:section_code])
+              # section.modalities: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3}
+              section.modality = params[:section_type]
+              section.capacity = 30 if section.new_record?
+              section.save!
 
-            @academic_record.status = :sin_calificar if @academic_record.status.eql? 'calificar'
-            if @academic_record.save
-              flash[:success] = 'Se guardó el historial ' 
+              @academic_record.section = section
+              @academic_record.status = :sin_calificar if @academic_record.status.eql? 'calificar'
+              @academic_record.save!
+
+              flash[:success] = 'Se guardó el historial '
+
               if subject.numerica? and !@academic_record.pi? and !@academic_record.rt? and params[:qualifications] and !params[:qualifications][:value].blank?
                 qa = @academic_record.qualifications.new
                 qa.type_q = params[:qualifications][:type_q].delete(" ").underscore.to_sym
-
                 qa.value = params[:qualifications][:value]
-                if qa.save
-                  flash[:success] += '¡Calificación cargada!'
-                else
-                  flash[:danger] = "Error al intentar guardar la calificación: #{qa.errors.full_messages.to_sentence}"
-                end
+                qa.save!
+                flash[:success] += '¡Calificación cargada!'
               else
                 flash[:warning] = 'No se especificó la calificación'
               end
-            else
-              flash[:danger] = "Error al intentar guardar el histórico: #{@academic_record.errors.full_messages.to_sentence}"
             end
-
-          else
-            flash[:danger] = 'Error al intentar guardar la sección. No se pudo completar el proceso:'+ section.errors.full_messages.to_sentence
+          rescue ActiveRecord::RecordInvalid => e
+            flash.delete(:success)
+            flash[:danger] = "No se pudo completar el registro académico (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
+          rescue StandardError => e
+            flash.delete(:success)
+            flash[:danger] = "No se pudo completar el registro académico (transacción revertida): #{e.message}"
           end
 
         else

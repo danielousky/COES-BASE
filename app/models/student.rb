@@ -513,32 +513,39 @@ class Student < ApplicationRecord
     usuario.password = usuario.ci if usuario.password.blank?
     usuario.password_confirmation = usuario.ci if usuario.password_confirmation.blank?
 
-    if usuario.save!(validate: false)
-      estudiante = Student.find_or_initialize_by(user_id: usuario.id)
+    # Transacción ACID para el alta de un estudiante: User + Student + Grade
+    # (y AcademicProcess si aplica) se persisten bajo el principio "todo o
+    # nada". Si cualquier paso falla, ningún registro queda creado y la fila
+    # se reporta como no registrada (atomicidad + consistencia).
+    begin
+      ActiveRecord::Base.transaction do
+        usuario.save!(validate: false)
+        estudiante = Student.find_or_initialize_by(user_id: usuario.id)
 
-      # estudiante.birth_date = row[8] if row[8]
-      # p "    Estudiante: #{estudiante.attributes.to_a.to_sentence}    ".center(600, "E")
+        # estudiante.birth_date = row[8] if row[8]
+        # p "    Estudiante: #{estudiante.attributes.to_a.to_sentence}    ".center(600, "E")
 
-      new_grade = !estudiante.grades.where(study_plan_id: fields[:study_plan_id]).any?
-      grado = estudiante.grades.find_or_initialize_by(study_plan_id: fields[:study_plan_id])
-      grado.admission_type_id = fields[:admission_type_id]
+        new_grade = !estudiante.grades.where(study_plan_id: fields[:study_plan_id]).any?
+        grado = estudiante.grades.find_or_initialize_by(study_plan_id: fields[:study_plan_id])
+        grado.admission_type_id = fields[:admission_type_id]
 
-      grado.region = fields[:region].to_sym if fields[:region]
+        grado.region = fields[:region].to_sym if fields[:region]
 
-      if estudiante.save!
+        estudiante.save!
+
         # grado = Grade.find_or_initialize_by(student_id: estudiante.id, study_plan_id: fields[:study_plan_id])
         if row[6]
           # Proceso Academico de Ingreso
           year, type = row[6].split('-')
           period_type = PeriodType.find_by_code(type[0..1])
           modality = type[2]
-          period = Period.find_or_create_by(year: year, period_type_id: period_type.id)
+          period = Period.find_or_create_by!(year: year, period_type_id: period_type.id)
 
           modality = AcademicProcess.letter_to_modality modality
           academic_process = AcademicProcess.where(period_id: period.id, modality: modality, school_id: grado.school.id).first
 
           if academic_process.nil?
-            academic_process = AcademicProcess.create(period_id: period.id, modality: modality, school_id: grado.school.id, max_credits: 24, max_subjects: 5)
+            academic_process = AcademicProcess.create!(period_id: period.id, modality: modality, school_id: grado.school.id, max_credits: 24, max_subjects: 5)
           end
 
           grado.start_process_id = academic_process&.id
@@ -557,26 +564,23 @@ class Student < ApplicationRecord
         else
           grado.admission_type_id = AdmissionType.first.id
         end
-        
+
         # Año de Admisión
 
         grado.admission_year = row[8] ? row[8] : fields[:admission_year]
 
         # print "AT: <#{grado.admission_type_id}>"
 
-        if grado.save
-          if new_grade
-            total_newed = 1
-          else
-            total_updated = 1
-          end
+        grado.save!
+
+        if new_grade
+          total_newed = 1
         else
-          no_registred = row
+          total_updated = 1
         end
-      else
-        no_registred = row
       end
-    else
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, StandardError => e
+      # Cualquier fallo revierte la transacción: no quedan User/Student/Grade huérfanos.
       no_registred = row
     end
 
