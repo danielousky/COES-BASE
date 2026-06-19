@@ -1,6 +1,7 @@
 // Entry point for the build script in your package.json
 
 import "@hotwired/turbo-rails";
+import "./controllers"; // Stimulus (controllers compartidos: enrollment, etc.)
 
 import jquery from 'jquery';
 window.jQuery = jquery;

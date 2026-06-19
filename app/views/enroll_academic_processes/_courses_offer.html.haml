@@ -17,7 +17,7 @@
         %th.headers{style: 'width: 56%', scope: :col}
           .input-group.input-group-sm{style: 'width: 100%;'}
             %span.badge.bg-dark.align-middle{'data-bs-toggle': :tooltip, title: 'Total asignaturas disponibles'}= courses.count
-            %input.form-control{"aria-describedby": "inputGroup-sizing-sm", "aria-label": "", type: "text", onkeyup: "filterSections(this, '#{idTable}');", placeholder: 'Buscar Asignatura', autofocus: true, id: "filter#{idTable}", name: "filter#{idTable}"}
+            %input.form-control{"aria-describedby": "inputGroup-sizing-sm", "aria-label": "", type: "text", placeholder: 'Buscar Asignatura', autofocus: true, id: "filter#{idTable}", name: "filter#{idTable}", data: {action: 'keyup->enrollment#filter'}}
 
         %th.headers{style: 'width: 5%', scope: :col} Tipo
         %th.headers{style: 'width: 5%', scope: :col} (Sem/Año)
@@ -64,7 +64,7 @@
                   - sections = sections.select{|s| s.has_capacity? or s.has_academic_record? @grade.student_id or s.id.eql? section_id}
                   - disable_promt = ''
                   - if sections.any?
-                    = collection_select("sections", nil, sections, :id, :description_with_quotes, {selected: section_id, include_blank: 'Seleccione sección o libere cupo'}, {class: "form-control selectInscripcion", style: 'width: 100%', titulo: subject.desc_to_select, credits: subject.unit_credits, gradeId: @grade.id, courseId: course.id, academicProcessId: academic_process_id, pci: pcis, onchange: "selected(this);", name: "sections_course_id_#{course.id}", id: "sections_course_id_#{course.id}"})
+                    = collection_select("sections", nil, sections, :id, :description_with_quotes, {selected: section_id, include_blank: 'Seleccione sección o libere cupo'}, {class: "form-control", style: 'width: 100%', name: "sections_course_id_#{course.id}", id: "sections_course_id_#{course.id}", data: {enrollment_target: 'select', action: 'change->enrollment#reserve', titulo: subject.desc_to_select, credits: subject.unit_credits, grade_id: @grade.id, course_id: course.id, academic_process_id: academic_process_id, pci: pcis}})
                   - else
                     - disable_promt = 'Sin cupos'
                     %b.pl-3.text-muted

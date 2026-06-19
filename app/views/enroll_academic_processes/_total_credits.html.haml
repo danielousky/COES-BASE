@@ -1,5 +1,5 @@
-= hidden_field_tag 'total_credits', totalCreditsReserved
-= hidden_field_tag 'total_subjects', totalSubjectsReserved
+= hidden_field_tag 'total_credits', totalCreditsReserved, data: {enrollment_target: 'creditsField'}
+= hidden_field_tag 'total_subjects', totalSubjectsReserved, data: {enrollment_target: 'subjectsField'}
 - tableColor = (totalCreditsReserved > limitCredits or totalSubjectsReserved > limitSubjects) ? 'table-danger' : 'table-success'
 
 %table.table.table-sm.responsive-table{style: 'height: auto;'}
@@ -7,10 +7,10 @@
     %tr{class: tableColor, style: 'height: 10px;'}
       %td{style: 'width: 66%;text-align:right;'} Total Créditos Seleccionados:
       %td
-        %b.text-right#totalNumberOfCredits= totalCreditsReserved
+        %b.text-right#totalNumberOfCredits{data: {enrollment_target: 'creditsCount'}}= totalCreditsReserved
         = "de #{limitCredits} permitidos."
     %tr{class: tableColor}
       %td{style: 'width: 66%;text-align:right;height: 10px;'} Total Asignaturas Seleccionadas:
       %td
-        %b.text-right#totalNumberOfSubjects= totalSubjectsReserved
+        %b.text-right#totalNumberOfSubjects{data: {enrollment_target: 'subjectsCount'}}= totalSubjectsReserved
         = "de #{limitSubjects} permitidas."

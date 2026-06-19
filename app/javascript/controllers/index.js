@@ -12,3 +12,6 @@ application.register("recaudos", RecaudosController)
 
 import SortableTableController from "./sortable_table_controller"
 application.register("sortable-table", SortableTableController)
+
+import EnrollmentController from "./enrollment_controller"
+application.register("enrollment", EnrollmentController)
