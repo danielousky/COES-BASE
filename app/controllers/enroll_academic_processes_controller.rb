@@ -158,9 +158,14 @@ class EnrollAcademicProcessesController < ApplicationController
       msg = "No se pudo completar la operación (transacción revertida). Por favor, intente nuevamente."
     end
 
+    # Nunca devolver status/data nil: si no hubo cambios (p.ej. liberar un cupo
+    # ya liberado por un doble-disparo del evento), la respuesta sería neutra y
+    # evita que el front muestre un toast de error vacío.
+    estado ||= 'success'
+    msg    ||= 'Sin cambios'
     cupo = section ? section.description_with_quotes : 'Seleccione sección o libere cupo'
     respond_to do |format|
-      format.json do 
+      format.json do
         render json: {data: msg, status: estado, cupo: cupo}
       end
 

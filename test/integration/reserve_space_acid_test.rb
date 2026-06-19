@@ -234,6 +234,27 @@ class ReserveSpaceAcidTest < ActionDispatch::IntegrationTest
   end
 
   # ---------------------------------------------------------------------
+  # Liberar sin reserva previa (p.ej. doble-disparo del evento): la respuesta
+  # NO debe traer status/data nil (eso hacía que el front mostrara un toast de
+  # error vacío). Debe devolver un estado neutro.
+  # ---------------------------------------------------------------------
+
+  test "liberar sin AR previo devuelve respuesta neutra (no nil)" do
+    assert_no_difference -> { AcademicRecord.count } do
+      post reserve_space_enroll_academic_processes_path(format: :json), params: {
+        course_id:           @course.id,
+        grade_id:            @grade.id,
+        academic_process_id: @academic_process.id
+        # sin section_id y sin AR existente -> no hay nada que liberar
+      }
+    end
+
+    body = JSON.parse(response.body)
+    assert_not_nil body["status"], "El status no debe ser nil"
+    assert_not_nil body["data"],   "El mensaje no debe ser nil (evita toast de error vacío)"
+  end
+
+  # ---------------------------------------------------------------------
   # Guard: academic_process inexistente -> error y rollback (no nil-deref).
   # ---------------------------------------------------------------------
 

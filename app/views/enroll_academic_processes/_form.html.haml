@@ -165,7 +165,6 @@
 
 
   function totalizar() {
-    console.log('Totalizando...');
     let selecteds = $(".selectInscripcion option:selected");
 
     let totalCredSel = 0;
@@ -180,12 +179,9 @@
       }
     });
 
-    console.log("Total Créditos Seleccionados: "+totalCredSel);
-
     totalCred.text(totalCredSel);
     totalSubj.text(totalSubjSel);
 
-    console.log("Total Créditos Set: "+totalCred.text());
     $('#total_credits').val(totalCred.text());
     $('#total_subjects').val(totalSubj.text());
     let limiteCreditos = Number(#{limitCredits})
