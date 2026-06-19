@@ -200,4 +200,55 @@ class ReserveSpaceAcidTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_equal "success", body["status"]
   end
+
+  # ---------------------------------------------------------------------
+  # Capacidad: una sección llena rechaza la reserva (gate has_capacity? bajo
+  # section.lock!) sin crear ningún AcademicRecord.
+  # ---------------------------------------------------------------------
+
+  test "sin cupos: sección llena rechaza la reserva sin crear registro" do
+    seccion_llena = Section.create!(
+      course: @course, code: "SLL", capacity: 1, modality: :nota_final, qualified: false
+    )
+    # Ocupa el único cupo con OTRO estudiante.
+    otro_user  = User.create!(ci: "OC#{@uid}#{rand(10**6)}", email: "oc#{@uid}@test.com",
+                              first_name: "Otro", last_name: "Cupo", password: "password123", updated_password: true)
+    otro_grade = Grade.create!(student: Student.create!(user: otro_user),
+                               study_plan: @study_plan, admission_type: @admission_type, current_permanence_status: :regular)
+    otro_eap   = EnrollAcademicProcess.create!(grade: otro_grade, academic_process: @academic_process,
+                                               enroll_status: :reservado, permanence_status: :regular)
+    AcademicRecord.create!(section: seccion_llena, enroll_academic_process: otro_eap, status: :sin_calificar)
+
+    assert_no_difference -> { AcademicRecord.count } do
+      post reserve_space_enroll_academic_processes_path(format: :json), params: {
+        course_id:           @course.id,
+        section_id:          seccion_llena.id,
+        grade_id:            @grade.id,
+        academic_process_id: @academic_process.id
+      }
+    end
+
+    body = JSON.parse(response.body)
+    assert_equal "error", body["status"]
+    assert_match(/cupos/i, body["data"])
+  end
+
+  # ---------------------------------------------------------------------
+  # Guard: academic_process inexistente -> error y rollback (no nil-deref).
+  # ---------------------------------------------------------------------
+
+  test "proceso académico inexistente: error sin crear registros" do
+    assert_no_difference [-> { EnrollAcademicProcess.count }, -> { AcademicRecord.count }] do
+      post reserve_space_enroll_academic_processes_path(format: :json), params: {
+        course_id:           @course.id,
+        section_id:          @section.id,
+        grade_id:            @grade.id,
+        academic_process_id: 0
+      }
+    end
+
+    body = JSON.parse(response.body)
+    assert_equal "error", body["status"]
+    assert_match(/proceso/i, body["data"])
+  end
 end

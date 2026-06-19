@@ -579,8 +579,10 @@ class Student < ApplicationRecord
           total_updated = 1
         end
       end
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved, StandardError => e
-      # Cualquier fallo revierte la transacción: no quedan User/Student/Grade huérfanos.
+    rescue StandardError => e
+      # Cualquier fallo revierte la transacción: no quedan User/Student/Grade
+      # huérfanos. Se loguea para poder diagnosticar la fila (dato malo vs bug).
+      Rails.logger.warn("Student.import: fila no registrada (ci: #{row[0]}): #{e.class} #{e.message}")
       no_registred = row
     end
 

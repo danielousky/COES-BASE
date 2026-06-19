@@ -87,11 +87,18 @@ class EnrollAcademicProcessesController < ApplicationController
         if (params[:section_id] and !params[:section_id].blank?)
           # INSCRIBIR EN SECCIÓN
           section = Section.find params[:section_id]
+          # Lock pesimista (SELECT ... FOR UPDATE) sobre la sección: serializa las
+          # reservas concurrentes a la misma sección, de modo que el chequeo de
+          # capacidad y el alta del cupo sean atómicos y no se sobrevenda el cupo.
+          section.lock!
 
-
-          # grade = Grade.find params[:grade_id]
           course = section.course
           academic_process = AcademicProcess.where(id: params[:academic_process_id]).first
+          if academic_process.nil?
+            estado = 'error'
+            msg = "Proceso académico no encontrado."
+            raise ActiveRecord::Rollback
+          end
 
           limit_credits = academic_process.max_credits
           limit_subjects = academic_process.max_subjects
@@ -146,8 +153,9 @@ class EnrollAcademicProcessesController < ApplicationController
       estado = 'error'
       msg = "Error (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
     rescue StandardError => e
+      Rails.logger.error("reserve_space: #{e.class} #{e.message}")
       estado = 'error'
-      msg = "Error: #{e}"
+      msg = "No se pudo completar la operación (transacción revertida). Por favor, intente nuevamente."
     end
 
     cupo = section ? section.description_with_quotes : 'Seleccione sección o libere cupo'

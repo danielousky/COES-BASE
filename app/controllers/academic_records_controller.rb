@@ -42,6 +42,7 @@ class AcademicRecordsController < ApplicationController
           # Transacción ACID: el alta de Curso, Sección, Histórico Académico y
           # Calificación es "todo o nada". Si cualquier paso falla, ningún
           # registro queda persistido (atomicidad + consistencia).
+          con_calificacion = false
           begin
             ActiveRecord::Base.transaction do
               course = Course.find_or_create_by!(subject_id: subject.id, academic_process_id: academic_process.id)
@@ -56,24 +57,26 @@ class AcademicRecordsController < ApplicationController
               @academic_record.status = :sin_calificar if @academic_record.status.eql? 'calificar'
               @academic_record.save!
 
-              flash[:success] = 'Se guardó el historial '
-
               if subject.numerica? and !@academic_record.pi? and !@academic_record.rt? and params[:qualifications] and !params[:qualifications][:value].blank?
                 qa = @academic_record.qualifications.new
                 qa.type_q = params[:qualifications][:type_q].delete(" ").underscore.to_sym
                 qa.value = params[:qualifications][:value]
                 qa.save!
-                flash[:success] += '¡Calificación cargada!'
-              else
-                flash[:warning] = 'No se especificó la calificación'
+                con_calificacion = true
               end
             end
+            # Flash fuera de la transacción: solo se setea tras un commit exitoso.
+            if con_calificacion
+              flash[:success] = 'Se guardó el historial. ¡Calificación cargada!'
+            else
+              flash[:success] = 'Se guardó el historial.'
+              flash[:warning] = 'No se especificó la calificación'
+            end
           rescue ActiveRecord::RecordInvalid => e
-            flash.delete(:success)
             flash[:danger] = "No se pudo completar el registro académico (transacción revertida): #{e.record.errors.full_messages.to_sentence}"
           rescue StandardError => e
-            flash.delete(:success)
-            flash[:danger] = "No se pudo completar el registro académico (transacción revertida): #{e.message}"
+            Rails.logger.error("academic_records#create: #{e.class} #{e.message}")
+            flash[:danger] = "No se pudo completar el registro académico (transacción revertida)."
           end
 
         else
