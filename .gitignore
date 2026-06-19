@@ -46,3 +46,6 @@
 
 # Claude Code: settings.json es compartido (plugins del equipo); settings.local.json es personal
 .claude/settings.local.json
+
+# Artefactos de Playwright MCP (snapshots/console de pruebas en navegador)
+.playwright-mcp/
