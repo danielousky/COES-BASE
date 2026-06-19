@@ -46,6 +46,12 @@ export default class extends Controller {
           select.selectedIndex = 0
         }
         if (option) option.text = data.cupo
+        // Refrescar el conteo de la sección cuyo cupo se devolvió (al liberar o
+        // al cambiar de sección): su opción sigue en el select, sin estar seleccionada.
+        if (data.liberada_id) {
+          const liberada = select.querySelector(`option[value="${data.liberada_id}"]`)
+          if (liberada) liberada.text = data.liberada_cupo
+        }
       })
       .catch(() => this.notify("error", "No se pudo completar la operación. Por favor, intente nuevamente."))
   }

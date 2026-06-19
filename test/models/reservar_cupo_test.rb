@@ -75,6 +75,7 @@ class ReservarCupoTest < ActiveSupport::TestCase
     end
     assert_equal "success", res.estado
     assert_match(/liberado/i, res.mensaje)
+    assert_equal @section, res.liberada, "Debe devolver la sección liberada para refrescar su cupo en el front"
   end
 
   test "sin cambios (liberar sin reserva previa) devuelve estado neutro, no nil" do

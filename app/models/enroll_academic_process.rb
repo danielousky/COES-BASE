@@ -129,8 +129,10 @@ include AcademicProcessable
       .having('COUNT(academic_records.id) = COUNT(CASE WHEN academic_records.status = 3 THEN 1 END)')
   }
 
-  # Resultado de una operación de reserva/liberación de cupo.
-  ReservaCupoResultado = Struct.new(:estado, :mensaje, :section, keyword_init: true)
+  # Resultado de una operación de reserva/liberación de cupo. `section` es la
+  # sección reservada (si la hubo) y `liberada` la sección cuyo cupo se devolvió,
+  # para que el front pueda refrescar el conteo de ambas opciones.
+  ReservaCupoResultado = Struct.new(:estado, :mensaje, :section, :liberada, keyword_init: true)
 
   # Libera el cupo previo del curso y, si se indica una sección, reserva el cupo
   # nuevo aplicando las reglas de negocio (solapamiento, créditos, asignaturas,
@@ -139,9 +141,10 @@ include AcademicProcessable
   # concurrente. No lanza por reglas de negocio: las traduce a estado 'error' +
   # mensaje. Devuelve un ReservaCupoResultado(estado, mensaje, section).
   def self.reservar_cupo(grade_id:, academic_process_id:, section_id:, course_id:)
-    section = nil
-    estado  = nil
-    mensaje = nil
+    section  = nil
+    liberada = nil
+    estado   = nil
+    mensaje  = nil
 
     res = Transaccionable.transaccion_atomica(contexto: "EnrollAcademicProcess.reservar_cupo") do
       # LIBERAR cupo previo del curso (cambio o liberación de sección).
@@ -150,6 +153,7 @@ include AcademicProcessable
       if previo
         if previo.destroy
           estado = 'success'; mensaje = 'Cupo liberado'
+          liberada = previo.section
         else
           estado = 'error';   mensaje = 'Sin Inscripción'
         end
@@ -211,7 +215,10 @@ include AcademicProcessable
     # doble-disparo del evento): respuesta neutra para no romper el front.
     estado  ||= 'success'
     mensaje ||= 'Sin cambios'
-    ReservaCupoResultado.new(estado: estado, mensaje: mensaje, section: section)
+    # Solo reportar la liberación si la transacción quedó en éxito: si una regla
+    # de negocio la revirtió, el cupo previo se restauró y NO debe decrementarse.
+    liberada = nil unless estado == 'success'
+    ReservaCupoResultado.new(estado: estado, mensaje: mensaje, section: section, liberada: liberada)
   end
 
   def total_retire?
