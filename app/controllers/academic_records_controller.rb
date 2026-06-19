@@ -44,25 +44,25 @@ class AcademicRecordsController < ApplicationController
           # registro queda persistido (atomicidad + consistencia).
           con_calificacion = false
           res = Transaccionable.transaccion_atomica(contexto: "academic_records#create") do
-              course = Course.find_or_create_by!(subject_id: subject.id, academic_process_id: academic_process.id)
+            course = Course.find_or_create_by!(subject_id: subject.id, academic_process_id: academic_process.id)
 
-              section = Section.find_or_initialize_by(course_id: course.id, code: params[:section_code])
-              # section.modalities: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3}
-              section.modality = params[:section_type]
-              section.capacity = 30 if section.new_record?
-              section.save!
+            section = Section.find_or_initialize_by(course_id: course.id, code: params[:section_code])
+            # section.modalities: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3}
+            section.modality = params[:section_type]
+            section.capacity = 30 if section.new_record?
+            section.save!
 
-              @academic_record.section = section
-              @academic_record.status = :sin_calificar if @academic_record.status.eql? 'calificar'
-              @academic_record.save!
+            @academic_record.section = section
+            @academic_record.status = :sin_calificar if @academic_record.status.eql? 'calificar'
+            @academic_record.save!
 
-              if subject.numerica? and !@academic_record.pi? and !@academic_record.rt? and params[:qualifications] and !params[:qualifications][:value].blank?
-                qa = @academic_record.qualifications.new
-                qa.type_q = params[:qualifications][:type_q].delete(" ").underscore.to_sym
-                qa.value = params[:qualifications][:value]
-                qa.save!
-                con_calificacion = true
-              end
+            if subject.numerica? and !@academic_record.pi? and !@academic_record.rt? and params[:qualifications] and !params[:qualifications][:value].blank?
+              qa = @academic_record.qualifications.new
+              qa.type_q = params[:qualifications][:type_q].delete(" ").underscore.to_sym
+              qa.value = params[:qualifications][:value]
+              qa.save!
+              con_calificacion = true
+            end
           end
           # Flash fuera de la transacción: solo se setea tras un commit exitoso.
           if res.ok?

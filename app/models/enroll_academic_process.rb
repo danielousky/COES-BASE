@@ -147,58 +147,58 @@ include AcademicProcessable
       # LIBERAR cupo previo del curso (cambio o liberación de sección).
       previo = AcademicRecord.joins(:course, :grade)
                                .where('courses.id': course_id, 'grades.id': grade_id).first
-        if previo
-          if previo.destroy
-            estado = 'success'; mensaje = 'Cupo liberado'
-          else
-            estado = 'error';   mensaje = 'Sin Inscripción'
-          end
+      if previo
+        if previo.destroy
+          estado = 'success'; mensaje = 'Cupo liberado'
+        else
+          estado = 'error';   mensaje = 'Sin Inscripción'
+        end
+      end
+
+      if section_id.present?
+        section = Section.find(section_id)
+        # Lock pesimista: serializa reservas concurrentes a la misma sección.
+        section.lock!
+        course = section.course
+
+        academic_process = AcademicProcess.find_by(id: academic_process_id)
+        if academic_process.nil?
+          estado = 'error'; mensaje = 'Proceso académico no encontrado.'
+          raise ActiveRecord::Rollback
         end
 
-        if section_id.present?
-          section = Section.find(section_id)
-          # Lock pesimista: serializa reservas concurrentes a la misma sección.
-          section.lock!
-          course = section.course
-
-          academic_process = AcademicProcess.find_by(id: academic_process_id)
-          if academic_process.nil?
-            estado = 'error'; mensaje = 'Proceso académico no encontrado.'
-            raise ActiveRecord::Rollback
-          end
-
-          eap = find_or_initialize_by(academic_process_id: academic_process.id, grade_id: grade_id)
-          if eap.new_record?
-            eap.permanence_status = :regular
-            eap.enroll_status     = :reservado
-            eap.save!
-          end
-
-          creditos_intento    = eap.total_credits_not_retired + course.subject.unit_credits
-          asignaturas_intento = eap.total_subjects_not_retired + 1
-
-          if eap.overlapped?(section.timetable)
-            estado = 'error'
-            mensaje = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
-            raise ActiveRecord::Rollback
-          elsif creditos_intento > academic_process.max_credits
-            estado = 'error'
-            mensaje = "Supera el límite de créditos permitidos para este proceso de inscripción. Por favor, corrija su selección de créditos e inténtelo de nuevo. (#{creditos_intento} / #{academic_process.max_credits})"
-            raise ActiveRecord::Rollback
-          elsif asignaturas_intento > academic_process.max_subjects
-            estado = 'error'
-            mensaje = "Supera el límite de asignaturas permitidas para este proceso de inscripción. Por favor, corrija su selección de asignaturas e inténtelo de nuevo. (#{creditos_intento} / #{academic_process.max_credits})"
-            raise ActiveRecord::Rollback
-          elsif !section.has_capacity?
-            estado = 'error'
-            mensaje = "Sin cupos disponibles para: #{section.description_with_quotes} en el período #{academic_process.period&.name}"
-            raise ActiveRecord::Rollback
-          else
-            AcademicRecord.create!(section_id: section.id, enroll_academic_process_id: eap.id, status: :sin_calificar)
-            eap.update!(enroll_status: :reservado)
-            estado = 'success'; mensaje = 'Cupo reservado'
-          end
+        eap = find_or_initialize_by(academic_process_id: academic_process.id, grade_id: grade_id)
+        if eap.new_record?
+          eap.permanence_status = :regular
+          eap.enroll_status     = :reservado
+          eap.save!
         end
+
+        creditos_intento    = eap.total_credits_not_retired + course.subject.unit_credits
+        asignaturas_intento = eap.total_subjects_not_retired + 1
+
+        if eap.overlapped?(section.timetable)
+          estado = 'error'
+          mensaje = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
+          raise ActiveRecord::Rollback
+        elsif creditos_intento > academic_process.max_credits
+          estado = 'error'
+          mensaje = "Supera el límite de créditos permitidos para este proceso de inscripción. Por favor, corrija su selección de créditos e inténtelo de nuevo. (#{creditos_intento} / #{academic_process.max_credits})"
+          raise ActiveRecord::Rollback
+        elsif asignaturas_intento > academic_process.max_subjects
+          estado = 'error'
+          mensaje = "Supera el límite de asignaturas permitidas para este proceso de inscripción. Por favor, corrija su selección de asignaturas e inténtelo de nuevo. (#{creditos_intento} / #{academic_process.max_credits})"
+          raise ActiveRecord::Rollback
+        elsif !section.has_capacity?
+          estado = 'error'
+          mensaje = "Sin cupos disponibles para: #{section.description_with_quotes} en el período #{academic_process.period&.name}"
+          raise ActiveRecord::Rollback
+        else
+          AcademicRecord.create!(section_id: section.id, enroll_academic_process_id: eap.id, status: :sin_calificar)
+          eap.update!(enroll_status: :reservado)
+          estado = 'success'; mensaje = 'Cupo reservado'
+        end
+      end
     end
 
     # Si una EXCEPCIÓN (no una regla de negocio) revirtió la transacción.
