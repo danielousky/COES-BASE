@@ -47,6 +47,8 @@ module RailsAdmin
         end
 
         register_instance_option :controller do
+          # Se sale del proc con `next`, nunca con `return`: RailsAdmin lo instance_eval'a
+          # fuera del método donde se definió y `return` levanta LocalJumpError.
           proc do
             if request.post?
               # --- Promoción / reversión de estado ---
@@ -57,7 +59,8 @@ module RailsAdmin
                        page: params[:current_page].presence }
               unless current_ability.can?(:manage, :graduacion)
                 flash[:error] = "No tiene permiso para modificar el estado de graduación."
-                redirect_to(url_for(back)) and return
+                redirect_to url_for(back)
+                next
               end
               grade = Grade.find(params[:grade_id])
               begin
@@ -108,7 +111,7 @@ module RailsAdmin
                 send_data io.string,
                   filename: "asignaturas_#{user.ci}_#{Date.today}.xlsx",
                   type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                return
+                next
               end
 
               @approved = approved.to_a
@@ -158,7 +161,7 @@ module RailsAdmin
                 send_data io.string,
                   filename: "graduacion_#{@tab}_#{Date.today}.xlsx",
                   type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                return
+                next
               end
 
               @grades = scoped.page(params[:page]).per(25)

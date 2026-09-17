@@ -21,6 +21,8 @@ module RailsAdmin
         end
 
         register_instance_option :controller do
+          # Se sale del proc con `next`, nunca con `return`: RailsAdmin lo instance_eval'a
+          # fuera del método donde se definió y `return` levanta LocalJumpError.
           proc do
             if @object.is_a?(Course)
               @course = @object
@@ -34,18 +36,21 @@ module RailsAdmin
 
                 unless dest_id
                   flash[:error] = 'Debe seleccionar un curso destino.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 dest = Course.find_by(id: dest_id)
                 unless dest
                   flash[:error] = 'Curso destino no encontrado.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 if dest.id == @course.id
                   flash[:error] = 'El curso destino no puede ser el mismo.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 moved = 0
@@ -117,18 +122,21 @@ module RailsAdmin
 
                 unless dest_id
                   flash[:error] = 'Debe seleccionar una sección destino.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 dest = Section.find_by(id: dest_id)
                 unless dest
                   flash[:error] = 'Sección destino no encontrada.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 if dest.id == @section.id
                   flash[:error] = 'La sección destino no puede ser la misma.'
-                  redirect_to back_or_index and return
+                  redirect_to back_or_index
+                  next
                 end
 
                 moved = 0

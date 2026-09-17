@@ -40,7 +40,19 @@ class GraduacionActionTest < ActionDispatch::IntegrationTest
   end
 
   test "descarga xlsx responde con content-type de spreadsheet" do
-    get "/admin/graduacion", params: { tab: "graduados", download: "xlsx" }
+    assert_accion_sin_excepcion do
+      get "/admin/graduacion", params: { tab: "graduados", download: "xlsx" }
+    end
+    assert_response :success
+    assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                 response.media_type
+  end
+
+  test "descarga xlsx de asignaturas desde el modal de recaudos" do
+    grade = build_grade(:graduando)
+    assert_accion_sin_excepcion do
+      get "/admin/graduacion", params: { recaudos_for: grade.id, download: "xlsx" }
+    end
     assert_response :success
     assert_equal "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                  response.media_type
@@ -61,6 +73,17 @@ class GraduacionActionTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  # RailsAdmin cuelga de un controller con ActionController::Live: si la acción
+  # revienta después de send_data/redirect_to (p. ej. un `return` dentro del proc,
+  # LocalJumpError), el cliente igual recibe 200/302. La excepción solo aparece en
+  # la instrumentación, que es de donde sale el "Completed 500" del log.
+  def assert_accion_sin_excepcion(&block)
+    excepciones = []
+    registrar = ->(*, payload) { excepciones << payload[:exception_object] if payload[:exception_object] }
+    ActiveSupport::Notifications.subscribed(registrar, "process_action.action_controller", &block)
+    assert_empty excepciones, "La acción levantó: #{excepciones.map(&:inspect).join(', ')}"
+  end
 
   def build_grade(graduate_status)
     uid     = SecureRandom.hex(4)
