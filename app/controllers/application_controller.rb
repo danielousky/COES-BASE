@@ -10,6 +10,16 @@ class ApplicationController < ActionController::Base
     redirect_back fallback_location: root_path
   end
 
+  # Los controllers con ActionController::Live (Schools, ExportCsv, AcademicProcesses)
+  # corren la acción en otro hilo: el `throw :warden` de Devise al vencer la sesión
+  # no alcanza el catch de Warden y sale como UncaughtThrowError (500).
+  rescue_from UncaughtThrowError do |exception|
+    raise exception unless exception.tag == :warden
+
+    reset_session
+    flash[:warning] = "Su sesión ha expirado por inactividad. Por favor, ingrese nuevamente."
+    redirect_to main_app.new_user_session_path
+  end
 
   # around_action :set_session_data
 
