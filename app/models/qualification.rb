@@ -62,6 +62,8 @@ class Qualification < ApplicationRecord
   end
 
   def update_academic_record_status    
+    academic_record.qualifications.reload
+    normalize_definitive!
     definitive_q_value = self.academic_record.definitive_q_value
     if definitive_q_value and !self.academic_record.pi?
       status = (definitive_q_value >= 10) ? :aprobado : :aplazado
@@ -127,6 +129,21 @@ class Qualification < ApplicationRecord
   end
 
   private
+
+  # Garantiza que exactamente UNA calificación quede como definitiva: la posterior
+  # (diferido/reparación) si existe; si no, la final. Sin esto, una final cargada DESPUÉS
+  # de la reparación quedaba también como definitiva y los promedios la contaban dos veces.
+  # Mismo método que COES-FAU (0a44d18). update_columns para no re-disparar callbacks.
+  def normalize_definitive!
+    post  = academic_record.qualifications.post.first
+    final = academic_record.qualifications.final.first
+    if post
+      post.update_columns(definitive: true) unless post.definitive
+      final.update_columns(definitive: false) if final&.definitive
+    elsif final
+      final.update_columns(definitive: true) unless final.definitive
+    end
+  end
 
   def update_status
 
