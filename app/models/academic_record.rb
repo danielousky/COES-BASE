@@ -62,7 +62,7 @@ class AcademicRecord < ApplicationRecord
   validates_with SameSubjectInPeriodValidator, field_name: false, if: :new_record?
   
   # Se comentan los siguientes validadores para efectos de la migración
-  validates_with ApprovedAndEnrollingValidator, field_name: false
+  validates_with ApprovedAndEnrollingValidator, field_name: false, if: :new_record?
   
   # Se comentan los siguientes validadores para efectos de la migración
   # validates :qualifications, presence: true, if: lambda{ |object| (object.subject.present? and object.subject.numerica? and (object.aprobado? or object.aplazado? or object.equivalencia? ))}
