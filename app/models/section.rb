@@ -100,6 +100,7 @@ class Section < ApplicationRecord
   validates :course, presence: true
   validates :modality, presence: true
   validates :qualified, inclusion: { in: [ true, false ] }
+  validate :no_pasar_a_equivalencia_con_calificaciones, on: :update
 
   #CALLBACKS
   before_save :set_code_to_02i
@@ -658,7 +659,10 @@ class Section < ApplicationRecord
         end
       end
 
-      field :modality
+      field :modality do
+        read_only true
+        help 'El tipo de sección no se cambia al editar'
+      end
 
       field :teacher do
         label 'Profesor Principal'
@@ -816,6 +820,14 @@ class Section < ApplicationRecord
   end
   
   private
+
+    # Pasar a equivalencia aprueba a todos y borra sus notas (update_academic_records)
+    def no_pasar_a_equivalencia_con_calificaciones
+      return unless will_save_change_to_modality? and any_equivalencia?
+      return unless Qualification.joins(:academic_record).where('academic_records.section_id': id).exists?
+
+      errors.add(:modality, 'no puede cambiarse a equivalencia: la sección ya tiene calificaciones cargadas')
+    end
 
     def paper_trail_update
       object = I18n.t("activerecord.models.#{self.model_name.param_key}.one")
