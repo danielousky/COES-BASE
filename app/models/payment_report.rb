@@ -91,7 +91,8 @@ class PaymentReport < ApplicationRecord
   validates :voucher, presence: true
 
   # Enum:
-  enum transaction_type: {transferencia: 0, deposito: 1}
+  enum transaction_type: {transferencia: 0, deposito: 1, punto_de_venta: 2, pago_movil: 3}
+  TRANSACTION_TYPE_LABELS = {'transferencia' => 'Transferencia', 'deposito' => 'Depósito', 'punto_de_venta' => 'Punto de venta (débito)', 'pago_movil' => 'Pago móvil'}.freeze
   enum status: [:Pendiente, :Validado, :Invalidado]
 
   # SPECIALS FUNCTIONS OF POLYMORPHIC:
@@ -118,6 +119,10 @@ class PaymentReport < ApplicationRecord
   # BASIC FUNCTIONS:
   def name
     "#{transaction_id} - #{amount_to_bs}"
+  end
+
+  def transaction_type_label
+    TRANSACTION_TYPE_LABELS[transaction_type] || transaction_type&.titleize
   end
 
   def amount_to_bs
@@ -285,7 +290,13 @@ class PaymentReport < ApplicationRecord
     end
 
     export do
-      fields :school, :id, :created_at, :amount, :transaction_id, :transaction_type, :transaction_date, :origin_bank, :origin_bank, :owner_account_ci, :owner_account_name
+      fields :school, :id, :created_at, :amount, :status, :transaction_id
+      field :transaction_type do
+        formatted_value do
+          bindings[:object].transaction_type_label
+        end
+      end
+      fields :transaction_date, :origin_bank, :receiving_bank_account, :owner_account_ci, :owner_account_name
       field :payable_type do
         label 'Tipo'
       end
@@ -318,6 +329,13 @@ class PaymentReport < ApplicationRecord
         label 'Ci Usuario'
         formatted_value do
           bindings[:object].user.ci
+        end
+      end
+
+      field :user_email do
+        label 'Correo Usuario'
+        formatted_value do
+          bindings[:object].user.email
         end
       end
     end
