@@ -70,6 +70,11 @@ class Subject < ApplicationRecord
       # accepts_nested_attributes_for :dependent_links, allow_destroy: true
 
 
+  # Se marca en el formulario para guardar prelaciones que COES advierte como posiblemente al revés
+  attribute :confirmar_prelaciones, :boolean, default: false
+  validate :prerrequisitos_pendientes_validos
+  after_save :aplicar_prerrequisitos_pendientes
+
   # ENUMS:
   enum qualification_type: {numerica: 0, absoluta: 1}
 
@@ -154,7 +159,13 @@ class Subject < ApplicationRecord
           begin
             subject_link = SubjectLink.new(prelate_subject_id: prelate_subject.id, depend_subject_id: dependen_subject.id)
             # p SubjectLink.create!(prelate_subject_id: prelate_subject.id, depend_subject_id: dependen_subject.id, validate: false)
-            p "√" if subject_link.save(validate: false)
+            if subject_link.save
+              p "√"
+              aviso = subject_link.advertencia
+              file.puts "Fila #{i}: REVISAR (cargada, parece al revés) #{aviso}" if aviso
+            else
+              file.puts "Fila #{i}: No cargada #{asignatura_id} -> #{asignatura_dependiente_id}: #{subject_link.errors.full_messages.to_sentence}"
+            end
 
           rescue Exception => e
 
@@ -256,6 +267,35 @@ end
   end
 
   # DEPENDENCIES FUNCTIONS:
+
+  # Los prerrequisitos elegidos en el formulario se validan y se guardan junto con la materia,
+  # en lugar de escribirse al asignarlos como haría la asociación.
+  def depend_subject_ids=(ids)
+    @prerrequisitos_pendientes = Array(ids).reject(&:blank?).map(&:to_i).uniq
+  end
+
+  def depend_subject_ids
+    @prerrequisitos_pendientes || super
+  end
+
+  # Mientras la selección no se guarde (p. ej. el formulario volvió con un aviso), se muestra ella
+  def depend_subjects
+    @prerrequisitos_pendientes ? Subject.where(id: @prerrequisitos_pendientes) : super
+  end
+
+  def prerrequisitos_asignados?
+    !@prerrequisitos_pendientes.nil?
+  end
+
+  # Prerrequisitos nuevos que parecen al revés (se guardan sólo si se confirman)
+  def advertencias_prelaciones
+    @advertencias_prelaciones || []
+  end
+
+  # Prerrequisitos ya guardados que parecen al revés
+  def prerrequisitos_sospechosos
+    depend_links.includes(:prelate_subject, :depend_subject).map(&:advertencia).compact
+  end
 
   def full_dependency_tree_ids
     aux = []
@@ -505,7 +545,9 @@ end
         end        
         pretty_value do
           if bindings[:object].depend_subjects.any?
-            bindings[:view].render(partial: "/subject_links/index", locals: {subject: bindings[:object], adelante: true})
+            sospechosas = bindings[:object].prerrequisitos_sospechosos
+            aviso = sospechosas.any? ? "<div class='alert alert-danger p-2 m-2'><b>Revise: parece(n) al revés</b><ul class='mb-0'>#{sospechosas.map { |a| "<li>#{ERB::Util.h(a)}</li>" }.join}</ul></div>" : ''
+            aviso.html_safe + bindings[:view].render(partial: "/subject_links/index", locals: {subject: bindings[:object], adelante: true})
 
           else
             "<span class='alert alert-success'>Sin prelaciones: No hay otras asignaturas que sean requisito para cursar #{bindings[:object].name}.</span>".html_safe
@@ -629,17 +671,28 @@ end
       #   # partial 'subject/custom_prelate_subject_ids_field'#, locals: {subjects: bindings[:object].school.subjects} 
       # end
 
-      field :prelate_subjects do
+      field :depend_subjects do
         inline_add false
         inline_edit false
         label do
-          "Asignatura(s) que dependen de #{bindings[:object].name}"
+          "Para cursar #{bindings[:object].name} hay que aprobar"
         end
-        
         help do
-          "Sí el estudiante aprueba #{bindings[:object].name} puede cursar la(s) asignatura(s) indicadas(s) arriba."
-        end        
-        
+          "Seleccione las asignaturas que el estudiante debe tener aprobadas ANTES de inscribir #{bindings[:object].name}. Si alguna parece al revés (por ejemplo, de un semestre posterior), COES le pedirá confirmar."
+        end
+      end
+
+      field :confirmar_prelaciones, :boolean do
+        label 'Confirmo estas prelaciones'
+        help do
+          bindings[:object].advertencias_prelaciones.join('. ')
+        end
+        # RailsAdmin descarta los parámetros de campos no visibles: al recibir el envío (aún sin
+        # prerrequisitos asignados) debe estar visible para que llegue la confirmación
+        visible do
+          materia = bindings[:object]
+          materia.advertencias_prelaciones.any? or (bindings[:controller]&.request&.put? and !materia.prerrequisitos_asignados?)
+        end
       end
     end
 
@@ -650,7 +703,33 @@ end
   end
 
   private
-  
+
+  def prerrequisitos_pendientes_validos
+    return unless @prerrequisitos_pendientes
+
+    nuevos = Subject.where(id: @prerrequisitos_pendientes - depend_links.pluck(:depend_subject_id)).to_a
+    nuevos.each do |previa|
+      next unless previa.id == id or (persisted? and SubjectLink.prerrequisitos_transitivos_ids(previa.id).include?(id))
+      errors.add(:depend_subjects, "no puede incluir #{previa.name}: ya exige, directa o indirectamente, #{name} y la prelación sería circular")
+    end
+
+    @advertencias_prelaciones = nuevos.map { |previa| SubjectLink.advertencia(self, previa) }.compact
+    return if @advertencias_prelaciones.empty? or confirmar_prelaciones
+    errors.add(:depend_subjects, "parece(n) al revés: #{@advertencias_prelaciones.join('; ')}. Si es correcto, marque «Confirmo estas prelaciones» y guarde de nuevo")
+  end
+
+  def aplicar_prerrequisitos_pendientes
+    return unless @prerrequisitos_pendientes
+
+    ids = @prerrequisitos_pendientes
+    @prerrequisitos_pendientes = nil
+    self.confirmar_prelaciones = false
+    depend_links.where.not(depend_subject_id: ids).destroy_all
+    (ids - depend_links.pluck(:depend_subject_id)).each { |previa_id| depend_links.create!(depend_subject_id: previa_id) }
+    depend_links.reset
+    depend_subjects.reset
+  end
+
   def self.import row, fields
     total_newed = total_updated = 0
     no_registred = nil

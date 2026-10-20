@@ -900,8 +900,9 @@ es:
         area: 'Cátedra'
         departament: 'Departamento'
         modality: Modalidad
-        prelate_subjects: Prelaciones
-        depend_subjects: Asignaturas que prela
+        prelate_subjects: Asignaturas que prela
+        depend_subjects: Prerrequisitos
+        confirmar_prelaciones: Confirmo estas prelaciones
         created_at: 'Fecha de Registro'
         updated_at: 'Fecha de Actualización'
         subject_type: Tipo de Asignatura
