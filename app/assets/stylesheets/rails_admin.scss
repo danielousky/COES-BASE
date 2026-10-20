@@ -5,6 +5,7 @@ $fa-font-path: ".";
 @import "config/bootstrap_variables";
 @import "rails_admin/src/rails_admin/styles/base";
 @import "custom_style";
+@import "components/mapa_prelaciones";
 @import "toastr/toastr";
 
 .label-default {

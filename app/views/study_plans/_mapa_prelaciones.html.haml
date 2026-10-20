@@ -1,0 +1,43 @@
+-# Mapa de prelaciones de la escuela del plan. Lo dibuja mapa_prelaciones_controller.js.
+- school = study_plan.school
+- puede_editar = current_user.admin&.authorized_to('update', 'Subject')
+.mapa-prelaciones{data: {controller: 'mapa-prelaciones',
+  mapa_prelaciones_datos_value: MapaPrelaciones.new(school).datos.to_json,
+  mapa_prelaciones_puede_editar_value: puede_editar.to_s,
+  mapa_prelaciones_por_dependencia_value: study_plan.por_dependencia?.to_s,
+  mapa_prelaciones_oferta_url_value: main_app.oferta_estudiante_study_plan_path(study_plan, format: :json)}}
+  .mp-head
+    %div
+      .mp-eyebrow= "#{school.name} · #{study_plan.code} #{study_plan.name}"
+      %h4.mp-title Mapa de prelaciones
+    .mp-bar
+      .mp-seg{role: :group, 'aria-label': 'Modo'}
+        %button{type: :button, data: {mapa_prelaciones_target: 'vistaPlan', action: 'mapa-prelaciones#verPlan'}} Revisar el plan
+        %button{type: :button, data: {mapa_prelaciones_target: 'vistaEstudiante', action: 'mapa-prelaciones#verEstudiante'}} Ver como estudiante
+      %label.mp-chk
+        %input{type: :checkbox, checked: true, data: {mapa_prelaciones_target: 'solo', action: 'mapa-prelaciones#cambiarSolo'}}
+        Solo materias con prelaciones
+      %input.mp-buscar{type: :search, placeholder: 'Buscar materia o código', 'aria-label': 'Buscar materia o código',
+        data: {mapa_prelaciones_target: 'buscar', action: 'input->mapa-prelaciones#filtrar'}}
+
+  .mp-banner{data: {mapa_prelaciones_target: 'banner'}}
+
+  .mp-main
+    .mp-boardbox
+      .mp-board{data: {mapa_prelaciones_target: 'board', action: 'click->mapa-prelaciones#tocar keydown->mapa-prelaciones#teclear'}}
+        %svg.mp-arrows{'aria-hidden': 'true', data: {mapa_prelaciones_target: 'svg'}}
+    %aside.mp-panel{'aria-live': 'polite', data: {mapa_prelaciones_target: 'panel'}}
+
+  .mp-legend
+    %span
+      %i.mp-l-linea
+      prelación: va del prerrequisito (izquierda) a la materia que lo exige
+    %span
+      %i.mp-l-bad
+      parece al revés
+    %span
+      %i.mp-l-need
+      lo que hay que aprobar antes
+    %span
+      %i.mp-l-opens
+      lo que se abre después

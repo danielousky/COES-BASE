@@ -15,3 +15,6 @@ application.register("sortable-table", SortableTableController)
 
 import EnrollmentController from "./enrollment_controller"
 application.register("enrollment", EnrollmentController)
+
+import MapaPrelacionesController from "./mapa_prelaciones_controller"
+application.register("mapa-prelaciones", MapaPrelacionesController)

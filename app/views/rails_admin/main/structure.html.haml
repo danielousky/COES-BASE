@@ -1,9 +1,11 @@
-
 - if (current_user&.admin&.authorized_manage? 'StudyPlan')
   %h5.p-2.text-center.bg-success.text-dark= "Estructura: #{@object.structure.titleize}"
-  - school = @object.school  
+  - school = @object.school
+  = render partial: '/study_plans/mapa_prelaciones', locals: {study_plan: @object}
   - if @object.por_dependencia?
-    = render partial: '/schools/subjects_organization_by_depen', locals: {school: school}
+    %details.mt-4
+      %summary.btn.btn-sm.btn-outline-secondary Vista anterior: árbol de asignaturas por cátedra
+      = render partial: '/schools/subjects_organization_by_depen', locals: {school: school}
   - elsif @object.por_nivel?
     - subjects = school.subjects.order(:ordinal)
     = form_tag("/study_plans/#{@object.id}/save_requirement_by_level", class: 'form-horizontal') do

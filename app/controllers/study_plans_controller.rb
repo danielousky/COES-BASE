@@ -1,5 +1,18 @@
 class StudyPlansController < ApplicationController
-  before_action :set_study_plan, only: %i[ show edit update destroy save_requirement_by_level]
+  before_action :set_study_plan, only: %i[ show edit update destroy save_requirement_by_level oferta_estudiante]
+
+  # GET /study_plans/1/oferta_estudiante.json?ci=  (mapa de prelaciones, modo "Ver como estudiante")
+  def oferta_estudiante
+    unless logged_as_admin? and current_admin.schools_auh&.exists?(id: @study_plan.school_id)
+      return render json: {error: 'No autorizado'}, status: :forbidden
+    end
+
+    ci = params[:ci].to_s.strip
+    grade = Grade.joins(:study_plan, student: :user).where('study_plans.school_id': @study_plan.school_id, 'users.ci': ci).order(id: :desc).first
+    return render json: {error: "No hay un estudiante con cédula #{ci} en esta escuela"}, status: :not_found unless grade
+
+    render json: MapaPrelaciones.new(@study_plan.school).oferta(grade)
+  end
 
   # GET /study_plans or /study_plans.json
   def save_requirement_by_level

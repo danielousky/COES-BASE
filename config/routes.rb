@@ -29,7 +29,9 @@ Rails.application.routes.draw do
   resources :timetables, only: [:show]
   get 'timetables/:type/:id', to: 'timetables#show', as: 'specific_timetable'
 
-  resources :subject_links, only: :destroy
+  resources :subject_links, only: [:create, :destroy] do
+    patch :invertir, on: :member
+  end
   resources :page, only: :show
   resources :qualifications, only: :update
   resources :partial_qualifications
@@ -139,6 +141,7 @@ Rails.application.routes.draw do
   resources :study_plans do
     member do
       post 'save_requirement_by_level'
+      get :oferta_estudiante
     end
   end
 

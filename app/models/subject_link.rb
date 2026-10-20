@@ -88,4 +88,8 @@ class SubjectLink < ApplicationRecord
     SubjectLink.advertencia(prelate_subject, depend_subject) if prelate_subject and depend_subject
   end
 
+  def datos_mapa
+    {id: id, materia: prelate_subject_id, previa: depend_subject_id, advertencia: advertencia}
+  end
+
 end
