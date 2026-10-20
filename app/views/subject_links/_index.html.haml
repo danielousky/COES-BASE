@@ -1,4 +1,11 @@
 - links = adelante ? subject.depend_links.joins(:depend_subject).order('subjects.ordinal': :asc) : subject.prelate_links.joins(:prelate_subject).order('subjects.ordinal': :asc)
+- sospechosas = adelante ? subject.prerrequisitos_sospechosos : []
+- if sospechosas.any?
+  .alert.alert-danger.p-2.m-2
+    %b Revise: parece(n) al revés
+    %ul.mb-0
+      - sospechosas.each do |aviso|
+        %li= aviso
 .alert.alert-warning.p-1.m-2
   - if !adelante
     = "Luego de aprobar #{subject.name}, el estudiante podrá cursar #{'la'.pluralize(links&.count)} #{'siguiente'.pluralize(links&.count)} #{'asignatura'.pluralize(links&.count)}:"

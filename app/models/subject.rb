@@ -545,9 +545,7 @@ end
         end        
         pretty_value do
           if bindings[:object].depend_subjects.any?
-            sospechosas = bindings[:object].prerrequisitos_sospechosos
-            aviso = sospechosas.any? ? "<div class='alert alert-danger p-2 m-2'><b>Revise: parece(n) al revés</b><ul class='mb-0'>#{sospechosas.map { |a| "<li>#{ERB::Util.h(a)}</li>" }.join}</ul></div>" : ''
-            aviso.html_safe + bindings[:view].render(partial: "/subject_links/index", locals: {subject: bindings[:object], adelante: true})
+            bindings[:view].render(partial: "/subject_links/index", locals: {subject: bindings[:object], adelante: true})
 
           else
             "<span class='alert alert-success'>Sin prelaciones: No hay otras asignaturas que sean requisito para cursar #{bindings[:object].name}.</span>".html_safe
