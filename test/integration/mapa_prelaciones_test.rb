@@ -65,6 +65,17 @@ class MapaPrelacionesTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "el árbol anterior sólo se arma cuando lo piden" do
+    entrar_como_admin
+
+    get "/admin/study_plan/#{@plan.id}/structure"
+    assert_select '#arbol a[href="?arbol=1#arbol"]'
+    assert_select '#filterTable', 0
+
+    get "/admin/study_plan/#{@plan.id}/structure", params: {arbol: 1}
+    assert_select '#arbol #filterTable'
+  end
+
   test "crear una prelación hacia adelante la guarda" do
     entrar_como_admin
     crear(@dos, @uno)
@@ -161,5 +172,21 @@ class MapaPrelacionesTest < ActionDispatch::IntegrationTest
 
     get oferta_estudiante_study_plan_path(@plan, format: :json), params: {ci: 'no-existe'}
     assert_response :not_found
+    assert_equal 'No hay un estudiante con cédula no-existe', json['error']
+  end
+
+  test "si la cédula es de otra escuela dice de cuál" do
+    otra = School.create!(name: "Otra #{@uid}", code: "OT#{@uid}", faculty: @school.faculty)
+    plan_otra = StudyPlan.create!(code: "SPO#{@uid}", name: "Plan Otra #{@uid}", school: otra)
+    user = User.create!(ci: "O#{@uid}", email: "o#{@uid}@test.com", first_name: 'Luis', last_name: 'Gómez',
+                        password: 'password123', updated_password: true)
+    Grade.create!(student: Student.create!(user: user), study_plan: plan_otra,
+                  admission_type: AdmissionType.create!(name: "Adm #{@uid}", code: "AD#{@uid}"))
+    entrar_como_admin
+
+    get oferta_estudiante_study_plan_path(@plan, format: :json), params: {ci: user.ci}
+    assert_response :not_found
+    assert_equal "#{user.reload.reverse_name} (#{user.ci}) es de #{otra.reload.name}, plan #{plan_otra.reload.code}: " \
+                 'búscalo en el mapa de ese plan', json['error']
   end
 end

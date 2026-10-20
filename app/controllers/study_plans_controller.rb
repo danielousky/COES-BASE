@@ -9,7 +9,7 @@ class StudyPlansController < ApplicationController
 
     ci = params[:ci].to_s.strip
     grade = Grade.joins(:study_plan, student: :user).where('study_plans.school_id': @study_plan.school_id, 'users.ci': ci).order(id: :desc).first
-    return render json: {error: "No hay un estudiante con cédula #{ci} en esta escuela"}, status: :not_found unless grade
+    return render json: {error: estudiante_fuera_del_plan(ci)}, status: :not_found unless grade
 
     render json: MapaPrelaciones.new(@study_plan.school).oferta(grade)
   end
@@ -90,6 +90,15 @@ class StudyPlansController < ApplicationController
   end
 
   private
+    # Si la cédula es de otra escuela, se dice cuál; el nombre sólo si el admin también administra esa escuela
+    def estudiante_fuera_del_plan(ci)
+      otro = Grade.joins(student: :user).where('users.ci': ci).order(id: :desc).first
+      return "No hay un estudiante con cédula #{ci}" unless otro
+
+      quien = current_admin.schools_auh.exists?(id: otro.school.id) ? "#{otro.student.user.reverse_name} (#{ci})" : "La cédula #{ci}"
+      "#{quien} es de #{otro.school.name}, plan #{otro.study_plan.code}: búscalo en el mapa de ese plan"
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_study_plan
       @study_plan = StudyPlan.find(params[:id])

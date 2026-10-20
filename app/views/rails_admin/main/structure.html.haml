@@ -3,9 +3,12 @@
   - school = @object.school
   = render partial: '/study_plans/mapa_prelaciones', locals: {study_plan: @object}
   - if @object.por_dependencia?
-    %details.mt-4
-      %summary.btn.btn-sm.btn-outline-secondary Vista anterior: árbol de asignaturas por cátedra
-      = render partial: '/schools/subjects_organization_by_depen', locals: {school: school}
+    -# El árbol tarda varios segundos en dibujarse: sólo se arma cuando lo piden
+    #arbol.mt-4
+      - if params[:arbol]
+        = render partial: '/schools/subjects_organization_by_depen', locals: {school: school}
+      - else
+        = link_to 'Vista anterior: árbol de asignaturas por cátedra', '?arbol=1#arbol', class: 'btn btn-sm btn-outline-secondary'
   - elsif @object.por_nivel?
     - subjects = school.subjects.order(:ordinal)
     = form_tag("/study_plans/#{@object.id}/save_requirement_by_level", class: 'form-horizontal') do
