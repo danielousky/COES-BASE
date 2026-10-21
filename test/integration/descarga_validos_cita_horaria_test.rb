@@ -38,9 +38,10 @@ class DescargaValidosCitaHorariaTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Validos para Cita Horaria", response.headers['Content-Disposition']
     filas = CSV.parse(response.body)
-    assert_equal ["Estado Insc #{@proceso.process_name}", 'Est. Permanencia', 'Sede', 'Cédula', 'Apellido y Nombre', 'Eficiencia', 'Promedio', 'Ponderado'], filas.first
+    assert_equal ["Estado Insc #{@proceso.process_name}", 'Est. Permanencia', 'Sede', 'Cédula', 'Apellido y Nombre', 'Correo', 'Eficiencia', 'Promedio', 'Ponderado'], filas.first
     assert_equal [@regular.user.ci], filas.drop(1).map { |fila| fila[3] }
     assert_equal ['Sin Inscripción', 'Regular'], filas.second.first(2)
+    assert_equal @regular.user.email, filas.second[5]
   end
 
   test "la pestaña Válidos para Aplicar tiene su botón Descargar" do

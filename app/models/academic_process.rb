@@ -122,12 +122,12 @@ class AcademicProcess < ApplicationRecord
     grades = grades_ready_to_enrollment_day&.includes(:enroll_academic_processes, student: :user) || []
 
     CSV.generate do |csv|
-      csv << ["Estado Insc #{process_name}", 'Est. Permanencia', 'Sede', 'Cédula', 'Apellido y Nombre', 'Eficiencia', 'Promedio', 'Ponderado']
+      csv << ["Estado Insc #{process_name}", 'Est. Permanencia', 'Sede', 'Cédula', 'Apellido y Nombre', 'Correo', 'Eficiencia', 'Promedio', 'Ponderado']
       grades.each do |grade|
         user = grade.user
         inscripcion = grade.enroll_academic_processes.detect { |eap| eap.academic_process_id.eql? id }
         csv << [inscripcion&.enroll_status&.titleize || 'Sin Inscripción', grade.current_permanence_status&.titleize,
-                grade.student.sede, user.ci, user.reverse_name, grade.efficiency, grade.simple_average, grade.weighted_average]
+                grade.student.sede, user.ci, user.reverse_name, user.email, grade.efficiency, grade.simple_average, grade.weighted_average]
       end
     end
   end
