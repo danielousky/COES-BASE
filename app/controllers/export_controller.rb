@@ -15,10 +15,16 @@ class ExportController < ApplicationController
 
 
   def xls
+    return head :forbidden unless logged_as_admin?
+
     if params[:grades_others] and params[:id]
       academic_process = AcademicProcess.find params[:id]
       list = academic_process.invalid_grades_to_csv
       title = "No Validos para Cita Horaria #{academic_process.name}"
+    elsif params[:grades_valid] and params[:id]
+      academic_process = AcademicProcess.find params[:id]
+      list = academic_process.valid_grades_to_csv
+      title = "Validos para Cita Horaria #{academic_process.name}"
     end
     respond_to do |format|
       format.xls {send_data list, filename: "#{title}.xls"}

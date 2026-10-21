@@ -53,6 +53,10 @@
 
       %h6.text-center.alert.alert-warning
         = "Estudiantes sin Cita Horaria e Inscritos en el periodo anterior: <b>#{academic_process&.process_before&.process_name}</b> de <b>#{academic_process.school.short_name}</b>".html_safe
+      = link_to "/export/xls/#{academic_process.id}.xls?grades_valid=true", class: 'btn btn-info float-end m-1' do
+        .fa.fa-download
+        Descargar
+      .clearfix
       = render partial: '/enrollment_days/grades', locals: {grades: grades_without_appointment, academic_process: academic_process}
     - else
       %h5.alert.alert-info Sin estudiantes pendientes por asignar Cita Horaria  

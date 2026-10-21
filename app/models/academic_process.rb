@@ -117,6 +117,21 @@ class AcademicProcess < ApplicationRecord
     (active? or enroll?)
   end
 
+  # Mismas columnas y orden que la pestaña "Válidos para Aplicar" de Cita Horaria
+  def valid_grades_to_csv
+    grades = grades_ready_to_enrollment_day&.includes(:enroll_academic_processes, student: :user) || []
+
+    CSV.generate do |csv|
+      csv << ["Estado Insc #{process_name}", 'Est. Permanencia', 'Sede', 'Cédula', 'Apellido y Nombre', 'Eficiencia', 'Promedio', 'Ponderado']
+      grades.each do |grade|
+        user = grade.user
+        inscripcion = grade.enroll_academic_processes.detect { |eap| eap.academic_process_id.eql? id }
+        csv << [inscripcion&.enroll_status&.titleize || 'Sin Inscripción', grade.current_permanence_status&.titleize,
+                grade.student.sede, user.ci, user.reverse_name, grade.efficiency, grade.simple_average, grade.weighted_average]
+      end
+    end
+  end
+
   def invalid_grades_to_csv
 
     grades_others = Grade.enrolled_in_academic_process(self.process_before_id).others_permanence_invalid_to_enroll.includes(student: :user)
