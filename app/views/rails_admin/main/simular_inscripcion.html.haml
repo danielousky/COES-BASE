@@ -1,0 +1,38 @@
+-# Simulador de inscripción para CE: lo que el estudiante vería al inscribirse por su cuenta.
+-# Todo sale de AccesoInscripcion y OfertaInscripcion, las mismas clases de su pantalla de inscripción.
+- grade = @object
+- school = grade.school
+- if current_user&.admin&.schools_auh&.exists?(id: school.id)
+  - procesos = school.academic_processes.unscope(:order).order(id: :desc).limit(8)
+  - abierto = school.academic_processes.enrolls.where(modality: grade.study_plan_modality).unscope(:order).order(id: :desc).first
+  - proceso = school.academic_processes.find_by(id: params[:academic_process_id]) || abierto || procesos.first
+  - user = grade.student.user
+  .d-flex.flex-wrap.align-items-center.gap-3.mb-3
+    = link_to "/admin/student/#{grade.student_id}", class: 'btn btn-sm btn-primary' do
+      %i.fa-regular.fa-chevron-left
+      Volver al detalle
+    %div
+      %b= user.reverse_name
+      = "· #{user.ci} · #{school.short_name} · #{grade.study_plan&.desc}"
+    - if proceso
+      = form_tag request.path, method: :get, class: 'ms-auto d-flex align-items-center gap-2' do
+        %label.small.text-muted.mb-0{for: 'academic_process_id'} Período
+        = select_tag :academic_process_id, options_from_collection_for_select(procesos, :id, :process_name, proceso.id), class: 'form-select form-select-sm'
+        = submit_tag 'Ver', class: 'btn btn-sm btn-outline-primary', name: nil
+
+  - if proceso
+    - acceso = AccesoInscripcion.new(grade, proceso)
+    .alert{class: acceso.habilitado? ? 'alert-success' : 'alert-warning'}
+      %b= "Hoy (#{I18n.l(Time.current, format: '%d/%m/%Y %I:%M %p')}):"
+      = acceso.mensaje
+      .small.mt-1
+        = "Permanencia: #{grade.current_permanence_status&.titleize}"
+        = " · Inscripción en #{proceso.process_name}: #{acceso.inscripcion&.enroll_status&.titleize || 'sin inscripción'}"
+        - if acceso.tiene_cita?
+          = " · Cita horaria: #{I18n.l(grade.appointment_time, format: '%d/%m/%Y %I:%M %p')} a #{I18n.l(grade.appointment_slot_time, format: '%I:%M %p')}"
+
+    = render partial: '/study_plans/mapa_prelaciones', locals: {study_plan: grade.study_plan, grade: grade, academic_process: proceso, acceso: acceso}
+  - else
+    .alert.alert-warning La escuela no tiene períodos para simular.
+- else
+  %h1.text-center.alert.alert-warning Acceso Restringido

@@ -41,6 +41,10 @@ class Ability
                 can :programation, [AcademicProcess]
                 can :enrollment_day, [AcademicProcess]
             end
+            # Simular la inscripción de un estudiante: quien puede leer estudiantes o sus inscripciones
+            if %w[Student EnrollAcademicProcess].include? authd.authorizable.klazz and authd.can_read?
+                can :simular_inscripcion, [Grade]
+            end
             if authd.authorizable.klazz.eql? 'School' and authd.can_read?
                can :organization_chart, [School] 
             end

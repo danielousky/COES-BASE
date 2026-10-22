@@ -116,6 +116,13 @@ RailsAdmin.config do |config|
       end
     end
 
+    member :simular_inscripcion do
+      only [Grade]
+      link_icon do
+        'fa-solid fa-flask'
+      end
+    end
+
     member :old_inscripcion_coes do 
       only [Grade]
       link_icon do

@@ -1,0 +1,42 @@
+-# Lista del simulador: la misma oferta y las mismas secciones que vería el estudiante (OfertaInscripcion).
+- oferta = OfertaInscripcion.new(grade, academic_process, como_estudiante: true)
+- cursos = OfertaInscripcion.con_secciones(oferta.cursos)
+- pcis = OfertaInscripcion.con_secciones(oferta.pcis)
+- solo_ce = OfertaInscripcion.con_secciones(OfertaInscripcion.new(grade, academic_process, como_estudiante: false).cursos).size - cursos.size
+- registros = grade.academic_records.joins(section: :course).where(courses: {academic_process_id: academic_process.id}).index_by { |ar| ar.section.course_id }
+
+.mp-sim
+  %div
+    %h2= "Le aparecerían #{cursos.size} materias (#{cursos.sum { |c| c.subject.unit_credits.to_i }} UC)"
+    .small.text-muted= "Tope del período: #{academic_process.max_credits} UC y #{academic_process.max_subjects} materias"
+    - unless acceso.habilitado?
+      .small.text-warning-emphasis Hoy no podría inscribirse; esta es la lista que vería cuando pueda.
+  .list-group.list-group-flush
+    - cursos.each do |curso|
+      - registro = registros[curso.id]
+      - secciones = OfertaInscripcion.secciones_elegibles(curso, grade, registro&.section_id)
+      .list-group-item.small
+        .d-flex.justify-content-between.gap-2
+          %span
+            %b= curso.subject.code
+            = curso.subject.name
+          %span.text-nowrap= "#{curso.subject.enroll_desc_ordinal} · #{curso.subject.unit_credits} UC"
+        - if registro&.retirado?
+          .text-muted RETIRADO
+        - elsif registro
+          %span.badge.bg-primary= "Inscrita: sección #{registro.section.code}"
+        - elsif secciones.any?
+          .text-muted= "Secciones con cupo: #{secciones.map { |s| "#{s.code} (#{s.total_students}/#{s.capacity})" }.join(', ')}"
+        - else
+          .text-danger Sin cupos
+    - if cursos.empty?
+      .list-group-item.small.text-muted Ninguna.
+  .small
+    - if solo_ce.positive?
+      %div= "CE ve además #{solo_ce} que el estudiante no ve porque no cumple sus prelaciones."
+    - if pcis.any?
+      %details
+        %summary= "Y #{pcis.size} PCI de otras escuelas"
+        %ul.mb-0.ps-3
+          - pcis.each do |curso|
+            %li= curso.subject_desc_with_pci

@@ -1,8 +1,12 @@
 -# Mapa de prelaciones de la escuela del plan. Lo dibuja mapa_prelaciones_controller.js.
+-# Con grade y academic_process (simulador de inscripción) abre ya en modo estudiante y sin edición.
+- grade = local_assigns[:grade]
 - school = study_plan.school
-- puede_editar = current_user.admin&.authorized_to('update', 'Subject')
+- mapa = MapaPrelaciones.new(school)
+- puede_editar = grade.nil? && current_user.admin&.authorized_to('update', 'Subject')
 .mapa-prelaciones{data: {controller: 'mapa-prelaciones',
-  mapa_prelaciones_datos_value: MapaPrelaciones.new(school).datos.to_json,
+  mapa_prelaciones_datos_value: mapa.datos.to_json,
+  mapa_prelaciones_estudiante_value: (grade ? mapa.simulacion(grade, local_assigns[:academic_process]) : {}).to_json,
   mapa_prelaciones_puede_editar_value: puede_editar.to_s,
   mapa_prelaciones_por_dependencia_value: study_plan.por_dependencia?.to_s,
   mapa_prelaciones_oferta_url_value: main_app.oferta_estudiante_study_plan_path(study_plan, format: :json)}}
@@ -27,6 +31,10 @@
       .mp-board{data: {mapa_prelaciones_target: 'board', action: 'click->mapa-prelaciones#tocar keydown->mapa-prelaciones#teclear'}}
         %svg.mp-arrows{'aria-hidden': 'true', data: {mapa_prelaciones_target: 'svg'}}
     %aside.mp-panel{'aria-live': 'polite', data: {mapa_prelaciones_target: 'panel'}}
+  - if grade
+    -# Lista real de la oferta: el panel la muestra mientras no se toque ninguna materia
+    %template{data: {mapa_prelaciones_target: 'lista'}}
+      = render partial: '/grades/simulacion_oferta', locals: {grade: grade, academic_process: local_assigns[:academic_process], acceso: local_assigns[:acceso]}
 
   .mp-legend
     %span

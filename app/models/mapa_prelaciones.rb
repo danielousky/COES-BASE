@@ -26,6 +26,24 @@ class MapaPrelaciones
     }
   end
 
+  # Simulador de CE: la oferta de hoy en el mapa más la capa del período
+  # (lo que de verdad le aparecería al inscribirse y lo que ya inscribió)
+  def simulacion(grade, academic_process)
+    oferta_real = OfertaInscripcion.new(grade, academic_process, como_estudiante: true)
+    datos = oferta(grade)
+    datos[:ofertables] = @school.subjects.where.not(id: datos[:aprobadas]).ids unless grade.study_plan.por_dependencia?
+    ofertadas = OfertaInscripcion.con_secciones(oferta_real.cursos)
+    datos.merge(periodo: {
+      nombre: academic_process.process_name,
+      ofertadas: ofertadas.map(&:subject_id),
+      sin_cupo: ofertadas.select { |curso| OfertaInscripcion.secciones_elegibles(curso, grade, nil).empty? }.map(&:subject_id),
+      # Para simular al tocar materias: todo lo ofertado con sección, sin filtrar prelaciones ni aprobadas
+      programadas: OfertaInscripcion.con_secciones(academic_process.courses.offers.includes(:sections)).map(&:subject_id),
+      inscritas: grade.academic_records.where.not(status: :retirado).joins(section: :course)
+                      .where(courses: {academic_process_id: academic_process.id}).pluck('courses.subject_id')
+    })
+  end
+
   private
 
   def datos_materia(materia, externa: false)

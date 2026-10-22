@@ -5,12 +5,13 @@ import { Controller } from "@hotwired/stimulus"
 // Las reglas viven en el servidor: la advertencia de cada prelación, los ciclos y la oferta del estudiante
 // (Grade#asignaturas_ofertables_segun_dependencia). Aquí sólo se dibuja y, en modo estudiante, se simula.
 export default class extends Controller {
-  static targets = ["board", "svg", "panel", "banner", "buscar", "solo", "vistaPlan", "vistaEstudiante"]
+  static targets = ["board", "svg", "panel", "banner", "buscar", "solo", "vistaPlan", "vistaEstudiante", "lista"]
   static values = {
     datos: Object,
     puedeEditar: Boolean,
     porDependencia: Boolean,
-    ofertaUrl: String
+    ofertaUrl: String,
+    estudiante: Object
   }
 
   connect() {
@@ -22,6 +23,10 @@ export default class extends Controller {
     this.estudiante = null
     this.aprobadas = new Set()
     this.ofertablesServidor = null
+    this.periodo = null
+    // Simulador de inscripción: el estudiante viene del servidor y no se cambia desde aquí
+    this.fijo = !!this.estudianteValue.ci
+    if (this.fijo) { this.vista = "est"; this.usarEstudiante(this.estudianteValue) }
     this.alRedimensionar = () => { clearTimeout(this.tRedim); this.tRedim = setTimeout(() => this.render(), 150) }
     window.addEventListener("resize", this.alRedimensionar)
     this.render()
@@ -73,6 +78,11 @@ export default class extends Controller {
     if (this.ofertablesServidor) return this.ofertablesServidor.has(id)
     const m = this.materias.get(id)
     return !m.externa && !this.aprobadas.has(id) && this.prereqs(id).every(p => this.aprobadas.has(p))
+  }
+  // Con período: lo real viene del servidor (OfertaInscripcion); al simular, cumple prelaciones y tiene sección
+  apareceEnPeriodo(id) {
+    if (this.ofertablesServidor) return this.periodo.ofertadas.has(id)
+    return this.ofertable(id) && this.periodo.programadas.has(id)
   }
   alertas() { return this.prelaciones.filter(l => l.advertencia) }
 
@@ -135,8 +145,15 @@ export default class extends Controller {
       pie = `<span>necesita ${this.prereqs(m.id).length}</span><span>abre ${this.abre(m.id).length}</span>`
     } else if (this.estudiante) {
       const aprobada = this.aprobadas.has(m.id), oferta = !aprobada && this.ofertable(m.id)
-      clases.push(aprobada ? "mp-ok" : oferta ? "mp-av" : "mp-lock")
-      pie = aprobada ? "" : oferta ? `<span class="mp-tag mp-tag-av">se le oferta</span>` : `<span class="mp-tag">bloqueada</span>`
+      if (this.periodo && !aprobada && this.periodo.inscritas.has(m.id)) {
+        clases.push("mp-ins"); pie = `<span class="mp-tag mp-tag-ins">inscrita</span>`
+      } else if (this.periodo && oferta && !this.apareceEnPeriodo(m.id)) {
+        clases.push("mp-nop"); pie = `<span class="mp-tag">cumple, sin sección</span>`
+      } else {
+        clases.push(aprobada ? "mp-ok" : oferta ? "mp-av" : "mp-lock")
+        const sinCupo = oferta && this.periodo && this.ofertablesServidor && this.periodo.sinCupo.has(m.id)
+        pie = aprobada ? "" : oferta ? `<span class="mp-tag mp-tag-av">${this.periodo ? "le aparece" : "se le oferta"}</span>${sinCupo ? `<span class="mp-tag mp-tag-bad">sin cupo</span>` : ""}` : `<span class="mp-tag">bloqueada</span>`
+      }
     } else {
       pie = ""
     }
@@ -202,10 +219,17 @@ export default class extends Controller {
         b.innerHTML = `<b>Ver como estudiante</b><span>Escribe una cédula para ver qué se le ofertaría con las prelaciones de hoy.</span>${buscador}`
         return
       }
-      const n = this.datosValue.materias.filter(m => !this.aprobadas.has(m.id) && this.ofertable(m.id)).length
       const fuente = this.ofertablesServidor ? "según COES" : "simulación: tocaste materias para marcarlas o desmarcarlas como aprobadas"
       const ocultas = this.soloTarget.checked ? " Incluye materias sin prelaciones, que el filtro oculta." : ""
-      b.innerHTML = `<b>${esc(this.estudiante.estudiante)}</b><span>${this.aprobadas.size} aprobadas · se le ofertarían ${n} (${fuente}).${ocultas}</span>${buscador}` +
+      let resumen
+      if (this.periodo) {
+        const n = this.datosValue.materias.filter(m => !this.aprobadas.has(m.id) && this.apareceEnPeriodo(m.id)).length
+        resumen = `${this.aprobadas.size} aprobadas · en ${esc(this.periodo.nombre)} le aparecerían ${n} materias de su escuela (${fuente}).${ocultas}`
+      } else {
+        const n = this.datosValue.materias.filter(m => !this.aprobadas.has(m.id) && this.ofertable(m.id)).length
+        resumen = `${this.aprobadas.size} aprobadas · se le ofertarían ${n} (${fuente}).${ocultas}`
+      }
+      b.innerHTML = `<b>${esc(this.estudiante.estudiante)}</b><span>${resumen}</span>${this.fijo ? "" : buscador}` +
         (this.ofertablesServidor ? "" : `<button class="mp-btn" type="button" data-action="mapa-prelaciones#recargarEstudiante">Volver a lo real</button>`)
       return
     }
@@ -258,8 +282,13 @@ export default class extends Controller {
   }
 
   renderPanelEstudiante(p) {
+    if (this.hasListaTarget && this.ofertablesServidor && !this.sel) {
+      p.innerHTML = this.listaTarget.innerHTML
+      return
+    }
     if (!this.estudiante || !this.sel) {
-      p.innerHTML = `<h2>¿Qué se le ofertaría?</h2><p class="mp-sent">En verde, las materias que el estudiante vería al inscribirse: no las ha aprobado y ya cumplió todas sus prelaciones. Toca una bloqueada para saber qué le falta; al tocarla también se marca o desmarca como aprobada para simular.</p>`
+      p.innerHTML = `<h2>¿Qué se le ofertaría?</h2><p class="mp-sent">En verde, las materias que el estudiante vería al inscribirse: no las ha aprobado y ya cumplió todas sus prelaciones. Toca una bloqueada para saber qué le falta; al tocarla también se marca o desmarca como aprobada para simular.</p>` +
+        (this.hasListaTarget ? `<p class="mp-sent">Estás simulando: la lista real de su oferta vuelve con «Volver a lo real».</p>` : "")
       return
     }
     const m = this.materias.get(this.sel)
@@ -267,7 +296,9 @@ export default class extends Controller {
     p.innerHTML = `<div><div class="mp-sub">${esc(m.codigo)} · ${semestre(m)}</div><h2>${esc(this.nombre(this.sel))}</h2></div>` +
       (this.aprobadas.has(this.sel) ? `<p class="mp-sent">Marcada como aprobada.</p>`
         : falta.length ? `<div class="mp-sent mp-sent-need"><span class="mp-k">Le falta aprobar</span><div class="mp-chips">${falta.map(x => `<span class="mp-chip mp-chip-need">${esc(this.nombre(x))}</span>`).join("")}</div></div>`
-          : `<p class="mp-sent">Se le oferta: cumple todas las prelaciones.</p>`)
+          : this.periodo && this.periodo.inscritas.has(this.sel) ? `<p class="mp-sent">Ya la inscribió en ${esc(this.periodo.nombre)}.</p>`
+            : this.periodo && !this.apareceEnPeriodo(this.sel) ? `<p class="mp-sent">Cumple todas las prelaciones, pero en ${esc(this.periodo.nombre)} no tiene sección: no le aparece.</p>`
+              : `<p class="mp-sent">${this.periodo ? `Le aparece en ${esc(this.periodo.nombre)}` : "Se le oferta"}: cumple todas las prelaciones.</p>`)
   }
 
   // --- acciones del panel ---
@@ -346,18 +377,22 @@ export default class extends Controller {
     if (!ci) return
     const r = await this.enviar("GET", `${this.ofertaUrlValue}?ci=${encodeURIComponent(ci)}`)
     if (!r.ok) return this.aviso(r.json.error || "No se encontró el estudiante")
-    this.estudiante = r.json
-    this.aprobadas = new Set(r.json.aprobadas)
-    this.ofertablesServidor = new Set(r.json.ofertables)
-    this.sel = null
+    this.usarEstudiante(r.json)
     this.render()
   }
 
   recargarEstudiante() {
-    this.aprobadas = new Set(this.estudiante.aprobadas)
-    this.ofertablesServidor = new Set(this.estudiante.ofertables)
-    this.sel = null
+    this.usarEstudiante(this.estudiante)
     this.render()
+  }
+
+  usarEstudiante(json) {
+    this.estudiante = json
+    this.aprobadas = new Set(json.aprobadas)
+    this.ofertablesServidor = new Set(json.ofertables)
+    this.periodo = json.periodo && { nombre: json.periodo.nombre, ofertadas: new Set(json.periodo.ofertadas),
+      programadas: new Set(json.periodo.programadas), inscritas: new Set(json.periodo.inscritas), sinCupo: new Set(json.periodo.sin_cupo) }
+    this.sel = null
   }
 
   async enviar(metodo, url, cuerpo) {

@@ -53,6 +53,10 @@
   .mp-lock { opacity: .45; }
   .mp-tag { font-size: 10px; padding: 0 5px; border-radius: 999px; color: var(--mp-muted); }
   .mp-tag-av { background: var(--mp-opens-soft); color: var(--mp-opens); }
+  .mp-ins { background: var(--mp-accent-soft); border-color: var(--mp-accent); box-shadow: 0 0 0 1.5px var(--mp-accent); }
+  .mp-tag-ins { background: var(--mp-accent); color: #fff; }
+  .mp-tag-bad { background: var(--mp-bad-soft); color: var(--mp-bad); }
+  .mp-nop { border-style: dashed; border-color: var(--mp-opens); }
 
   .mp-panel { background: var(--mp-card); border: 1px solid var(--mp-line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px;
     position: sticky; top: 70px; max-height: 80vh; overflow: auto; min-width: 0; }

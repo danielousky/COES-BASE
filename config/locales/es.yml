@@ -95,6 +95,11 @@ es:
         link: "Programación"
       index:
         title: 'Listado'
+      simular_inscripcion:
+        title: Simular inscripción
+        menu: Simular inscripción
+        link: Simular inscripción
+        breadcrumb: Simular inscripción
       structure:
         title: Estructura
         menu: Estructura del Plan

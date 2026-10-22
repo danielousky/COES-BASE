@@ -4,6 +4,10 @@
       %span.fa.fa-trash
   .m-0.bg-primary.text-white.text-center
     = "Plan: #{@grade.study_plan&.desc}"
+    - if session[:rol].eql? 'admin' and can? :simular_inscripcion, @grade
+      = link_to "/admin/grade/#{@grade.id}/simular_inscripcion", class: 'btn btn-sm btn-light ms-2', 'data-bs-toggle': :tooltip, title: 'Ver lo que COES le ofertaría al inscribirse' do
+        %i.fa-solid.fa-flask
+        Simular inscripción
     - if session[:rol].eql? 'admin' and (current_user&.admin&.authorized_manage? 'Grade')
       =# label_link_with_tooltip("/admin/grade/#{@grade.id}/edit", 'btn btn-info', "<i class='fa fa-pencil'></i>", 'Editar valores', placement='top')
       =link_to "/admin/grade/#{@grade.id}/edit", class: 'btn btn-info', 'data-bs-toggle': :tooltip, placement: 'top' do
