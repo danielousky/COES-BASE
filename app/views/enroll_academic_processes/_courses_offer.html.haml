@@ -61,7 +61,7 @@
                 - if ac&.retirado?
                   .text-center.text-muted= 'RETIRADO'
                 - else
-                  - sections = sections.select{|s| s.has_capacity? or s.has_academic_record? @grade.student_id or s.id.eql? section_id}
+                  - sections = OfertaInscripcion.secciones_elegibles(course, @grade, section_id)
                   - disable_promt = ''
                   - if sections.any?
                     = collection_select("sections", nil, sections, :id, :description_with_quotes, {selected: section_id, include_blank: 'Seleccione sección o libere cupo'}, {class: "form-control", style: 'width: 100%', name: "sections_course_id_#{course.id}", id: "sections_course_id_#{course.id}", data: {enrollment_target: 'select', action: 'change->enrollment#reserve', titulo: subject.desc_to_select, credits: subject.unit_credits, grade_id: @grade.id, course_id: course.id, academic_process_id: academic_process_id, pci: pcis}})

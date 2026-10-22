@@ -2,35 +2,11 @@
 - @grade ||= grade 
 - school = @grade.school
 
-- courses_offer = academic_process.courses.offers
 - user = @grade.student.user
 
-- study_plan = @grade.study_plan
-
-- if current_user.student? and (session[:rol].eql? 'student')
-
-  - if false #study_plan.por_nivel?
-    - # forzada a false para que, por el momento, no entre en ningún caso por aquí
-    - subjects_offer_by_level_approved = @grade.subjects_offer_by_level_approved
-    - courses_offer = courses_offer.where(subject_id: subjects_offer_by_level_approved.ids)
-
-  - elsif study_plan.por_dependencia?
-    - # Forzada a true para que siempre entre por aquí
-    - # subjects_offer_by_dependency = @grade.subjects_offer_by_dependent
-    - subjects_offer_by_dependency = @grade.asignaturas_ofertables_segun_dependencia
-
-    - courses_offer = courses_offer.where(subject_id: subjects_offer_by_dependency.ids)
-
-- #@departament1 = @grade.departament1
-- #@departament2 = @grade.departament2
-
-- if false #@grade.school&.code.eql? 'IDIO' and !departament1.nil? and !departament2.nil?
-  - courses_offer = courses_offer.joins(:departament).joins(:area).where('departaments.id': [departament1.id, departament2.id], 'areas.name': ['CULTURA, TEMAS Y TEXTOS', 'IDIOMA BÁSICO'])
-  -# - courses_offer = courses_offer.joins(:departament).joins(:area).where("departaments.id IN (#{departament1.id}, #{departament2.id}) and areas.name = 'CULTURA, TEMAS Y TEXTOS' and areas.name = 'IDIOMA BÁSICO'")
-
-- subjects_approved_ids = @grade.subjects_approved_ids
-- courses_offer = courses_offer.joins(:subject).where("subjects.id NOT IN (#{subjects_approved_ids.join(',')})") if subjects_approved_ids&.any?
-- courses_offer = courses_offer.order_by_subject_code.uniq
+-# La oferta sale de OfertaInscripcion, la misma que usa el simulador de CE
+- oferta = OfertaInscripcion.new(@grade, academic_process, como_estudiante: (current_user.student? and session[:rol].eql? 'student'))
+- courses_offer = oferta.cursos
 - limitCredits = academic_process.max_credits
 - limitSubjects = academic_process.max_subjects
 - msgDanger = "<b>Atención:</b> </br> <ul><li>Seleccione la sección de las asignaturas que desea preinscribir.</li> <li>Puede usar el scroll para ver todas las asignaturas ofertadas o filtrarlas por el nombre o código de la asignatura.</li> <li>Finalmente haga clíc en 'Completar' para terminar su preinscripción.</li> </ul>"
@@ -75,7 +51,7 @@
   .border.p-1{style: 'overflow-y:scroll;max-height:280px'}
     = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: courses_offer, pcis: false, academic_process_id: academic_process.id}
 
-    - pcis = academic_process.period.courses.joins(:school).where("schools.id != '?'", school.id).where(schools: { type_entity: :pregrado }).pcis.order_by_subject_code.uniq
+    - pcis = oferta.pcis
     - if pcis.any?
       %hr
       = render partial: 'enroll_academic_processes/courses_offer', locals: {courses: pcis, pcis: true, academic_process_id: academic_process.id}
