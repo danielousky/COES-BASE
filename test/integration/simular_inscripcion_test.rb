@@ -68,6 +68,14 @@ class SimularInscripcionTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "el detalle del estudiante lleva al simulador junto al botón de inscribir" do
+    entrar users(:admin_user)
+    get "/admin/student/#{@grade.student_id}"
+
+    assert_response :success
+    assert_select ".col-md-8 a[href='#{ruta}']", /Simular inscripción/
+  end
+
   test "se puede simular otro período de la escuela" do
     entrar users(:admin_user)
     get ruta, params: {academic_process_id: @anterior.id}

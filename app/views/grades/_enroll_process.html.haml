@@ -14,6 +14,7 @@
                     = link_to "/enroll_academic_processes?academic_process_id=#{academic_process.id}&grade_id=#{@grade.id}", class: "btn btn-lg btn-success float-start m-3", method: :post do
                         .fa.fa-calendar-check
                         = "Preinscribirse en #{academic_process.process_name}"
+        = render partial: 'grades/boton_simular'
     .col-md-4
         - id = 'addInscriptionModal'
         %a.btn.btn-info.float-end.btn-lg.my-3{"data-bs-target": "##{id}", "data-bs-toggle": :modal, type: :button}

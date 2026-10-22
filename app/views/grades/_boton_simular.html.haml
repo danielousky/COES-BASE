@@ -1,0 +1,5 @@
+-# Junto a la inscripción: lo que COES le ofertaría a este expediente si se inscribiera por su cuenta
+- if session[:rol].eql? 'admin' and can? :simular_inscripcion, @grade
+  = link_to "/admin/grade/#{@grade.id}/simular_inscripcion", class: 'btn btn-lg btn-outline-primary float-start my-3' do
+    %i.fa-solid.fa-flask
+    Simular inscripción
