@@ -135,6 +135,14 @@ class Admin < ApplicationRecord
     end
   end
 
+  # Devolverle la cédula como contraseña: hace falta gestionar su rol más alto (admin > profesor > estudiante),
+  # y a un desarrollador sólo lo resetea otro desarrollador
+  def puede_resetear_clave? user
+    return false if user.admin&.desarrollador? and !(yo? or desarrollador?)
+
+    authorized_manage?(user.admin? ? 'Admin' : (user.teacher? ? 'Teacher' : 'Student'))
+  end
+
   def authorized_create? clazz
     if yo? or desarrollador? or jefe_control_estudio?
       return true
@@ -243,6 +251,16 @@ class Admin < ApplicationRecord
       end
 
       field :env_auths
+
+      field :reset_password_button do
+        label 'Contraseña'
+        visible do
+          bindings[:view]._current_user&.admin&.puede_resetear_clave? bindings[:object].user
+        end
+        formatted_value do
+          bindings[:object].user.reset_password_button
+        end
+      end
 
       # field :env_authorizable 
       # field :created_at

@@ -288,6 +288,11 @@ class User < ApplicationRecord
     "<a href='/users/#{id}/reset_password' class='float-end' data-bs-toggle='tooltip' data-bs-placement='top' title='Resetear Contraseña de #{nick_name}' data-confirm='Esta acción colocará la Cédula de Identidad como contraseña, ¿está completamente seguro?'><i class='fa-regular fa-user-cog'></i></a>".html_safe
   end
 
+  # Para el detalle de profesores y admins: el mismo reset, como botón visible
+  def reset_password_button
+    "<a href='/users/#{id}/reset_password' class='btn btn-sm btn-info' data-confirm='Esta acción colocará la Cédula de Identidad como contraseña de #{nick_name}, ¿está completamente seguro?'><i class='fa-regular fa-user-cog'></i> Resetear contraseña</a>".html_safe
+  end
+
   def links_to_detail
     aux = []
     aux << "<i class='fa-regular fa-user-tie'></i>#{I18n.t('activerecord.models.admin.one')}" if admin?

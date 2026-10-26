@@ -183,6 +183,16 @@ class Teacher < ApplicationRecord
           bindings[:view].render(partial: '/teachers/index_sections', locals: {sections: bindings[:object].secondary_sections.joins(:period).order('periods.name': :desc), teacher_session: false})
         end        
       end
+
+      field :reset_password_button do
+        label 'Contraseña'
+        visible do
+          bindings[:view]._current_user&.admin&.puede_resetear_clave? bindings[:object].user
+        end
+        formatted_value do
+          bindings[:object].user.reset_password_button
+        end
+      end
     end
 
     edit do

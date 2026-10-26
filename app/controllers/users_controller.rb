@@ -6,6 +6,7 @@ class UsersController < ApplicationController
   # por `update`, así que queda cubierta aquí.
   before_action :authenticate_owner_or_admin!, only: [:edit, :update, :edit_images]
   before_action :require_admin, only: %i[ reset_password ]
+  before_action :require_puede_resetear_clave, only: %i[ reset_password ]
   # before_action :authenticate_student_or_teacher!
 
   layout 'logged'
@@ -59,6 +60,14 @@ class UsersController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_user
       @user = User.find(params[:id])
+    end
+
+    # Antes bastaba con ser admin: un asistente de sólo lectura podía resetear la clave de un jefe o un desarrollador
+    def require_puede_resetear_clave
+      return if current_user&.admin&.puede_resetear_clave? @user
+
+      flash[:danger] = 'No autorizado para resetear la contraseña de este usuario'
+      redirect_back fallback_location: rails_admin_path
     end
 
     # El perfil solo lo edita su dueño o un admin (en sesión de admin).
