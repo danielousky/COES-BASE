@@ -136,9 +136,9 @@ class Admin < ApplicationRecord
   end
 
   # Devolverle la cédula como contraseña: hace falta gestionar su rol más alto (admin > profesor > estudiante),
-  # y a un desarrollador sólo lo resetea otro desarrollador
+  # y a un desarrollador sólo lo resetean un desarrollador o el jefe de CE
   def puede_resetear_clave? user
-    return false if user.admin&.desarrollador? and !(yo? or desarrollador?)
+    return false if user.admin&.desarrollador? and asistente?
 
     authorized_manage?(user.admin? ? 'Admin' : (user.teacher? ? 'Teacher' : 'Student'))
   end

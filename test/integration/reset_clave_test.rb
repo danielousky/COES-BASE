@@ -61,13 +61,16 @@ class ResetClaveTest < ActionDispatch::IntegrationTest
     assert_not clave_es_la_cedula?(@profe.user)
   end
 
-  test "a un desarrollador sólo lo resetea otro desarrollador" do
+  test "a un desarrollador lo resetea el jefe de CE, no un asistente" do
     dev = users(:admin_user)
-    assert_not @jefe.puede_resetear_clave?(dev)
-    assert dev.admin.puede_resetear_clave?(@jefe.user)
+    @otro_admin.authorizeds.create!(authorizable: Authorizable.find_by(klazz: 'Admin') ||
+                                    Authorizable.create!(klazz: 'Admin', area_authorizable: AreaAuthorizable.create!(name: "Área RCA #{@uid}")),
+                                    can_read: true, can_update: true)
+    assert @otro_admin.puede_resetear_clave?(@jefe.user)
+    assert_not @otro_admin.puede_resetear_clave?(dev)
 
     entrar @jefe.user
     get "/users/#{dev.id}/reset_password"
-    assert_not clave_es_la_cedula?(dev)
+    assert clave_es_la_cedula?(dev)
   end
 end
