@@ -91,3 +91,26 @@ Resuelto en esta rama (`test/integration/seguridad_before_action_test.rb`, 21 ca
 - `schools` (update y exportes), `export#history_grade` y `#xls`, `enrollment_days` (create/destroy/export): admin de
   esa escuela. `enrollment_days#destroy_all` (borra las de todas las escuelas, sin uso en vistas): sólo desarrollador.
 - `session_admin`, `subjects`: `require_admin`.
+
+## Pendiente: barrido (paso 4) — controladores ruteados sin ningún filtro de rol
+
+Medido el 2026-10-26 con una sonda como **estudiante** autenticado (no queda en la suite):
+
+| Petición | Respuesta | Efecto |
+|---|---|---|
+| `DELETE /period_types/:id` | 302 | el tipo de período **se borra** |
+| `PATCH /academic_processes/:id` `max_credits=99` | 302 | **se guarda** |
+| `DELETE /enroll_academic_processes/:id` | 302 | la inscripción **se borra** |
+| `PATCH /academic_records/:id` `status=aprobado` | 302 | no cambió, pero sólo por validación del modelo |
+| `PATCH /sections/:id` `teacher_id` | 302 | no cambió sólo porque la sección no estaba `totaly_qualified?` |
+
+Sin filtro (scaffolds `resources` completos): `faculties` (+ `schools/admission_types/study_plans/areas/subjects`
+anidados), `periods`, `period_types`, `profiles`, `banks`, `study_plans` (salvo `oferta_estudiante`), `courses`,
+`academic_processes` (salvo 4 acciones), `grades` (incluye `kardex`, `import_inscripciones`), `academic_records`
+(salvo `destroy`), `sections` (`create`, `update`, `change_qualification_status`, `export`, `index`),
+`enroll_academic_processes` (`update`, `destroy`, `create`, `show`…), `payment_reports` (`show`, `edit`, `create`),
+`timetables#show`, `students#update`.
+
+Ojo al corregir: varios los usan estudiantes y profesores (`enroll`, `reserve_space`, `study_constance`, reporte de
+pago, `sections#show/update` para cerrar el acta, `kardex`, `students#update`, horarios). No es un `require_admin`
+global: hay que decidir acción por acción quién la usa, con prueba de cada flujo legítimo.
