@@ -1,6 +1,10 @@
 class SectionsController < ApplicationController
   before_action :set_section, only: %i[ show update export change_qualification_status]
-  before_action :require_admin, only: %i[ bulk_delete ]
+  before_action :require_admin, only: %i[ index create bulk_delete change_qualification_status ]
+  before_action -> { rechazar unless administra_escuela?(@section.school&.id) }, only: %i[ change_qualification_status ]
+  before_action -> { rechazar unless administra_escuela?(Course.find_by(id: params.dig(:section, :course_id))&.school&.id) }, only: %i[ create ]
+  before_action -> { rechazar unless administra_escuela?(@section.school&.id) or profesor_de_la_seccion? }, only: %i[ export ]
+  before_action -> { rechazar unless administra_escuela?(@section.school&.id) or profesor_califica?(@section) }, only: %i[ update ]
 
   layout 'logged'
 
@@ -16,7 +20,7 @@ class SectionsController < ApplicationController
   end
 
   def bulk_delete
-    if Section.where(id: params[:bulk_ids]).destroy_all
+    if Section.joins(:course).where(id: params[:bulk_ids], 'courses.academic_process_id': current_admin.academic_processes.ids).destroy_all
       flash[:info] = 'Secciones Eliminadas'
     else
       flash[:danger] = 'Error al intentar eliminar las secciones'
@@ -27,7 +31,7 @@ class SectionsController < ApplicationController
 
   # GET /sections/1 or /sections/1.json
   def show
-    if current_admin or (current_teacher and @section.teacher and (@section.teacher_id.eql? current_teacher.id or @section.secondary_teachers.pluck(:teacher_id).include? current_teacher.id ))
+    if administra_escuela?(@section.school&.id) or profesor_de_la_seccion?
       respond_to do |format|
         format.html
         format.pdf do
@@ -74,7 +78,9 @@ class SectionsController < ApplicationController
   # PATCH/PUT /sections/1 or /sections/1.json
   def update
     if @section.totaly_qualified?
-      msg, type = @section.update(section_params) ? ["¡Sección calificada con éxito!", 'success'] : [@section.errors.full_messages.to_sentence, 'danger']
+      # El profesor sólo cierra el acta; el resto de la sección lo cambia el admin
+      cambios = logged_as_admin? ? section_params : {qualified: true}
+      msg, type = @section.update(cambios) ? ["¡Sección calificada con éxito!", 'success'] : [@section.errors.full_messages.to_sentence, 'danger']
     else
       msg, type = ['Atención: No se pudo cerrar la calificación, faltan calificaciones por completar. Por favor refresque la pantalla e inténte calificar los registros restantes.', 'danger']
     end
@@ -94,6 +100,10 @@ class SectionsController < ApplicationController
   end  
 
   private
+    def profesor_de_la_seccion?
+      logged_as_teacher? and @section.current_user_is_a_teacher_of_this?(current_user.id)
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_section
       @section = Section.find(params[:id])

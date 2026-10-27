@@ -14,8 +14,8 @@ module AutorizaCalificacion
     section = @academic_record.section
     autorizado = if logged_as_admin?
                    current_admin.authorized_manage?('Section') and administra_escuela?(section.school&.id)
-                 elsif logged_as_teacher?
-                   section.teacher_id.eql? current_teacher.id and !section.qualified?
+                 else
+                   profesor_califica?(section)
                  end
     rechazar 'No autorizado para calificar esta sección' unless autorizado
   end

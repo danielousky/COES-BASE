@@ -1,4 +1,5 @@
 class AdmissionTypesController < ApplicationController
+  before_action :autorizar_como_en_rails_admin
   before_action :set_admission_type, only: %i[ show edit update destroy ]
 
   # GET /admission_types or /admission_types.json

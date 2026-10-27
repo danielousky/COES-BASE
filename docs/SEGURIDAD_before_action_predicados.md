@@ -92,25 +92,41 @@ Resuelto en esta rama (`test/integration/seguridad_before_action_test.rb`, 21 ca
   esa escuela. `enrollment_days#destroy_all` (borra las de todas las escuelas, sin uso en vistas): sólo desarrollador.
 - `session_admin`, `subjects`: `require_admin`.
 
-## Pendiente: barrido (paso 4) — controladores ruteados sin ningún filtro de rol
+## Barrido (paso 4) — 2026-10-26
 
-Medido el 2026-10-26 con una sonda como **estudiante** autenticado (no queda en la suite):
+Medido primero con una sonda como **estudiante** autenticado: `DELETE /period_types/:id` lo borraba,
+`PATCH /academic_processes/:id` guardaba `max_credits=99`, `DELETE /enroll_academic_processes/:id` borraba la inscripción.
 
-| Petición | Respuesta | Efecto |
+Pruebas: `test/integration/seguridad_barrido_test.rb` (21 casos; sin el arreglo fallan 15, las 6 restantes son los
+flujos legítimos de estudiante, profesor y admin). Suite completa: 182 runs, 0 failures, 0 errors.
+
+| Controlador | Antes | Ahora |
 |---|---|---|
-| `DELETE /period_types/:id` | 302 | el tipo de período **se borra** |
-| `PATCH /academic_processes/:id` `max_credits=99` | 302 | **se guarda** |
-| `DELETE /enroll_academic_processes/:id` | 302 | la inscripción **se borra** |
-| `PATCH /academic_records/:id` `status=aprobado` | 302 | no cambió, pero sólo por validación del modelo |
-| `PATCH /sections/:id` `teacher_id` | 302 | no cambió sólo porque la sección no estaba `totaly_qualified?` |
+| `faculties`, `periods`, `period_types`, `profiles`, `banks`, `admission_types` (scaffolds sin vistas que los enlacen) | cualquiera | `autorizar_como_en_rails_admin`: los mismos permisos de `Ability` que en RailsAdmin |
+| `areas`, `study_plans` | cualquiera | ídem + escuela; `save_requirement_by_level` con el criterio de la vista Estructura (`authorized_manage? 'StudyPlan'`) |
+| `academic_processes` | cualquiera (salvo 4 acciones) | admin de la escuela del proceso (y de la de destino / la del proceso a clonar); `download_actas` sólo admin |
+| `courses` | cualquiera | admin de la escuela del proceso |
+| `grades` | cualquiera; el kardex de **cualquier** expediente | kardex: el estudiante dueño o admin de la escuela con lectura de `Grade` (igual que el botón); lo demás, admin |
+| `enroll_academic_processes` | estudiante: confirmarse a sí mismo (`enroll_status`), inscribir/reservar en expediente ajeno o fuera de su cita; borrar inscripciones | `reserve_space`/`enroll`: admin de la escuela, o el estudiante dueño cuando `AccesoInscripcion#habilitado?` (la misma regla de la pantalla) y el proceso es de su escuela; `enroll_status` sólo lo fija el admin; constancia: dueño o admin; resto, admin de la escuela |
+| `payment_reports` | crear un reporte ya `Validado` o sobre la inscripción de otro | estudiante sólo sobre lo suyo y sin `status`; validar/borrar, admin de la escuela |
+| `sections` | cerrar/reabrir acta, cambiar profesor y capacidad | `update`: admin de la escuela, o el titular con el acta abierta y **sólo** `qualified: true`; reabrir, `create`, `index`, `bulk_delete` (acotado a sus procesos): admin; `show`/`export`: admin de la escuela o profesor de la sección |
+| `academic_records` | cambiar el estado de cualquier registro | admin de la escuela; el titular con el acta abierta, sólo `status` (inasistencia y absolutas de la planilla) |
+| `students`, `addresses` | ver/editar los de otro estudiante (también por render implícito de `students#edit`) | sólo los propios |
+| `timetables` | el horario de cualquiera | el propio (profesor o estudiante) o admin de la escuela |
 
-Sin filtro (scaffolds `resources` completos): `faculties` (+ `schools/admission_types/study_plans/areas/subjects`
-anidados), `periods`, `period_types`, `profiles`, `banks`, `study_plans` (salvo `oferta_estudiante`), `courses`,
-`academic_processes` (salvo 4 acciones), `grades` (incluye `kardex`, `import_inscripciones`), `academic_records`
-(salvo `destroy`), `sections` (`create`, `update`, `change_qualification_status`, `export`, `index`),
-`enroll_academic_processes` (`update`, `destroy`, `create`, `show`…), `payment_reports` (`show`, `edit`, `create`),
-`timetables#show`, `students#update`.
+Detalles:
+- `rechazar` responde 403 en JSON con `status: 'error'`; el JS de inscripción ya no pisa el texto de la opción cuando el
+  rechazo no trae cupo (p. ej. se venció la cita con el formulario abierto).
+- `reserve_space_acid_test` y `academic_records_create_acid_test` entraban con `sign_in` (sin `session[:rol]`) y con
+  actores que en la realidad no existen: el estudiante reservaba con la inscripción cerrada y creaba histórico. Ahora el
+  estudiante está habilitado (`enroll: true`, `enabled_enroll_process`) y el histórico lo carga un jefe de CE. Lo que
+  miden (atomicidad) no cambió.
 
-Ojo al corregir: varios los usan estudiantes y profesores (`enroll`, `reserve_space`, `study_constance`, reporte de
-pago, `sections#show/update` para cerrar el acta, `kardex`, `students#update`, horarios). No es un `require_admin`
-global: hay que decidir acción por acción quién la usa, con prueba de cada flujo legítimo.
+## Pendiente
+
+- `export_csv` (requiere admin, pero no acota por escuela) e `importer` (cualquier admin importa: no revisa
+  `can :import` ni `Authorizable::IMPORTABLES`).
+- Producción, sólo lectura, antes de desplegar: rastro en `PaperTrail::Version` de uso indebido (cambios en
+  `Authorized`, `Qualification`, `EnrollAcademicProcess` a `confirmado`, `PaymentReport` validados, `PeriodType`/
+  `AcademicProcess` borrados o cambiados) con `whodunnit` de usuarios sin rol de admin.
+- `subjects#show` en HTML falla para todos (`undefined method modality`); el JSON que usa el histórico va bien.

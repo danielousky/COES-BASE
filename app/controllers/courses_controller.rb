@@ -1,5 +1,7 @@
 class CoursesController < ApplicationController
+  before_action :require_admin
   before_action :set_course, only: %i[update]
+  before_action :require_administra_escuela
   def create
     begin
       respond_to do |format|
@@ -81,6 +83,12 @@ class CoursesController < ApplicationController
   end
 
   private
+    # destroy ubica el curso por proceso y asignatura, así que su proceso es el de los params
+    def require_administra_escuela
+      proceso = @course&.academic_process || AcademicProcess.find_by(id: params.dig(:course, :academic_process_id))
+      rechazar unless proceso and administra_escuela?(proceso.school_id)
+    end
+
     # Only allow a list of trusted parameters through.
     def set_course
       @course = Course.find(params[:id])

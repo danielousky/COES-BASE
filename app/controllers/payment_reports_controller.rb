@@ -1,6 +1,7 @@
 class PaymentReportsController < ApplicationController
   before_action :set_payment_report, only: %i[ show edit update destroy quick_validation]
-  before_action :require_admin, only: %i[ quick_validation destroy ]
+  before_action :require_admin, except: %i[ show create ]
+  before_action :autorizar_reporte, except: %i[ index new ]
 
   # GET /payment_reports or /payment_reports.json
   def index
@@ -22,7 +23,7 @@ class PaymentReportsController < ApplicationController
 
   # POST /payment_reports or /payment_reports.json
   def create
-    @payment_report = PaymentReport.new(payment_report_params)
+    @payment_report = PaymentReport.new(logged_as_admin? ? payment_report_params : payment_report_params.except(:status))
 
     if @payment_report.save
       flash[:success] = "¡Reporte de pago realizado con éxito! Por favor espere la confirmación por parte de Control de Estudio."
@@ -79,6 +80,13 @@ class PaymentReportsController < ApplicationController
   end
 
   private
+    def autorizar_reporte
+      payable = @payment_report&.payable
+      payable ||= params.dig(:payment_report, :payable_type).presence_in(%w[EnrollAcademicProcess Grade])&.constantize&.find_by(id: params.dig(:payment_report, :payable_id))
+      grade = payable.is_a?(Grade) ? payable : payable&.grade
+      rechazar unless administra_escuela?(grade&.school&.id) or estudiante_dueno?(grade)
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_payment_report
       @payment_report = PaymentReport.find(params[:id])

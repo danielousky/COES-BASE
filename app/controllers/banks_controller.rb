@@ -1,4 +1,5 @@
 class BanksController < ApplicationController
+  before_action :autorizar_como_en_rails_admin
   before_action :set_bank, only: %i[ show edit update destroy ]
 
   # GET /banks or /banks.json

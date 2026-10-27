@@ -1,4 +1,5 @@
 class FacultiesController < ApplicationController
+  before_action :autorizar_como_en_rails_admin
   before_action :set_faculty, only: %i[ show edit update destroy ]
 
   # GET /faculties or /faculties.json

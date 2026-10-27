@@ -2,7 +2,8 @@ class AcademicProcessesController < ApplicationController
   include ActionController::Live
   include Streamable
   before_action :set_academic_process, only: %i[ show edit update destroy clone_sections clean_courses clean_appointments run_regulation massive_confirmation massive_actas_generation massive_actas_generation_async]
-  before_action :require_admin, only: %i[ massive_confirmation clean_courses clean_appointments run_regulation ]
+  before_action :require_admin, prepend: true
+  before_action :require_administra_escuela, except: %i[ index new download_actas ]
 
   def massive_confirmation
     total = @academic_process.enroll_academic_processes.not_confirmado.with_payment_report
@@ -331,6 +332,16 @@ class AcademicProcessesController < ApplicationController
   end
 
   private
+    # La escuela del proceso, y la de destino si la cambian; al clonar, también la del proceso de origen
+    def require_administra_escuela
+      escuelas = [@academic_process&.school_id, params.dig(:academic_process, :school_id), params[:school_id]]
+      escuelas << AcademicProcess.find_by(id: params[:cloneble_academic_process_id])&.school_id if params[:cloneble_academic_process_id]
+      escuelas = escuelas.compact_blank
+      return if escuelas.empty? and action_name.eql?('get_school_processes')
+
+      rechazar unless escuelas.any? and escuelas.all? { |id| administra_escuela?(id) }
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_academic_process
       @academic_process = AcademicProcess.find(params[:id])

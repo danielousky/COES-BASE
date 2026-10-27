@@ -53,6 +53,7 @@ class SeguridadBeforeActionTest < ActionDispatch::IntegrationTest
 
   # Por el formulario de verdad, para que after_sign_in_path_for fije session[:rol]
   def entrar(user)
+    delete destroy_user_session_path # con sesión abierta, Devise no cambia de usuario
     post user_session_path, params: {user: {ci: user.ci, password: 'password123'}}
   end
 

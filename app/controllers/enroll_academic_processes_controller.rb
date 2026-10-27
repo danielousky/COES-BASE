@@ -1,6 +1,9 @@
 class EnrollAcademicProcessesController < ApplicationController
   before_action :set_enroll_academic_process, only: %i[ show edit update destroy study_constance total_retire update_permanece_status preinscribir_admin]
-  before_action :require_admin, only: %i[ total_retire update_permanece_status preinscribir_admin ]
+  before_action :require_admin, except: %i[ show reserve_space enroll ]
+  before_action -> { rechazar unless administra_escuela?(@enroll_academic_process.school&.id) }, only: %i[ edit update destroy total_retire update_permanece_status preinscribir_admin ]
+  before_action -> { rechazar unless administra_escuela?(@enroll_academic_process.school&.id) or estudiante_dueno?(@enroll_academic_process.grade) }, only: %i[ show ]
+  before_action :autorizar_inscripcion, only: %i[ reserve_space enroll create ]
 
   # GET /enroll_academic_processes or /enroll_academic_processes.json
   def index
@@ -94,7 +97,7 @@ class EnrollAcademicProcessesController < ApplicationController
       flash[:danger] = "Supera el límite de asignaturas permitidas para este proceso de inscripción. Por favor, corrija su inscripción e inténtelo de nuevo. Se anularon las selecciones previas."
       
       any_error = true
-    elsif params[:enroll_status]
+    elsif params[:enroll_status] and logged_as_admin?
       if enroll_academic_process.update(enroll_status: params[:enroll_status])
         flash[:success] = "¡#{enroll_academic_process.enroll_status&.titleize} con éxito!"
         if params[:send_confirmation]
@@ -234,6 +237,15 @@ class EnrollAcademicProcessesController < ApplicationController
   end
 
   private
+    # El admin de la escuela inscribe a cualquiera; el estudiante, sólo su expediente y cuando la pantalla se lo permite
+    def autorizar_inscripcion
+      grade = Grade.find_by(id: params[:grade_id])
+      proceso = AcademicProcess.find_by(id: params[:academic_process_id])
+      autorizado = grade && proceso && proceso.school_id.eql?(grade.school&.id) &&
+                   (administra_escuela?(proceso.school_id) || (estudiante_dueno?(grade) && AccesoInscripcion.new(grade, proceso).habilitado?))
+      rechazar 'No puede inscribir en este proceso académico' unless autorizado
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_enroll_academic_process
       @enroll_academic_process = EnrollAcademicProcess.find(params[:id])

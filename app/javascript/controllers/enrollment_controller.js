@@ -45,7 +45,8 @@ export default class extends Controller {
           this.notify("error", data.data)
           select.selectedIndex = 0
         }
-        if (option) option.text = data.cupo
+        // Un rechazo (403: p. ej. se venció la cita) no trae el cupo
+        if (option && data.cupo) option.text = data.cupo
         // Refrescar el conteo de la sección cuyo cupo se devolvió (al liberar o
         // al cambiar de sección): su opción sigue en el select, sin estar seleccionada.
         if (data.liberada_id) {

@@ -1,5 +1,6 @@
 class TimetablesController < ApplicationController
   before_action :set_viewable, only: [:show]
+  before_action :autorizar_horario, only: [:show]
 
   layout 'logged'
   
@@ -48,6 +49,26 @@ class TimetablesController < ApplicationController
   
   private
   
+  # Cada quien ve el suyo; el admin, los de su escuela
+  def autorizar_horario
+    autorizado = case @viewable_type
+                 when 'Teacher'
+                   teacher = Teacher.find(params[:id])
+                   (logged_as_teacher? and teacher.id.eql? current_user.id) or administra_escuela?(teacher.departament&.school_id)
+                 when 'EnrollAcademicProcess'
+                   inscripcion = EnrollAcademicProcess.find(params[:id])
+                   estudiante_dueno?(inscripcion.grade) or administra_escuela?(inscripcion.school&.id)
+                 when 'Course'
+                   administra_escuela?(Course.find(params[:id]).school&.id)
+                 when 'Section'
+                   section = Section.find(params[:id])
+                   (logged_as_teacher? and section.current_user_is_a_teacher_of_this?(current_user.id)) or administra_escuela?(section.school&.id)
+                 else
+                   true # show responde 'Sin tipo de vista especificado'
+                 end
+    rechazar unless autorizado
+  end
+
   def set_viewable
     @viewable_type = params[:type] || 'All'
   end

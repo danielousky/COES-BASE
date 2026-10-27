@@ -1,5 +1,9 @@
 class StudyPlansController < ApplicationController
+  before_action :autorizar_como_en_rails_admin, except: %i[ oferta_estudiante save_requirement_by_level ]
   before_action :set_study_plan, only: %i[ show edit update destroy save_requirement_by_level oferta_estudiante]
+  before_action -> { rechazar unless administra_escuela?(@study_plan.school_id) }, only: %i[ show edit update destroy save_requirement_by_level ]
+  # Mismo criterio con que la vista Estructura muestra el formulario
+  before_action -> { rechazar unless current_admin.authorized_manage?('StudyPlan') }, only: %i[ save_requirement_by_level ]
 
   # GET /study_plans/1/oferta_estudiante.json?ci=  (mapa de prelaciones, modo "Ver como estudiante")
   def oferta_estudiante

@@ -1,6 +1,8 @@
 class StudentsController < ApplicationController
-  before_action :set_student, only: [:edit, :update]
+  before_action :set_student, only: [:show, :edit, :update]
   before_action :authenticate_student_or_teacher!
+  # Sus propios datos: antes bastaba cambiar el id para ver o editar los de otro estudiante
+  before_action -> { rechazar unless logged_as_student? and @student.id.eql? current_user.id }, only: [:show, :edit, :update]
 
   # def edit
   # end

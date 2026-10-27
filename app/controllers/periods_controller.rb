@@ -1,4 +1,5 @@
 class PeriodsController < ApplicationController
+  before_action :autorizar_como_en_rails_admin
   before_action :set_period, only: %i[ show edit update destroy ]
 
   # GET /periods or /periods.json

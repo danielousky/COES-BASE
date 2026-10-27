@@ -158,6 +158,21 @@ class ApplicationController < ActionController::Base
     logged_as_admin? and current_admin.schools_auh&.exists?(id: school_id)
   end
 
+  def estudiante_dueno?(grade)
+    logged_as_student? and grade&.student_id.eql? current_user.id
+  end
+
+  # El titular de la sección, mientras no haya cerrado el acta
+  def profesor_califica?(section)
+    logged_as_teacher? and section.teacher_id.eql? current_user.id and !section.qualified?
+  end
+
+  # Scaffolds que ninguna vista enlaza: los mismos permisos que da RailsAdmin (Ability), ni uno más
+  def autorizar_como_en_rails_admin
+    accion = {'index' => :read, 'show' => :read, 'new' => :create, 'create' => :create, 'destroy' => :destroy}.fetch(action_name, :update)
+    rechazar unless logged_as_admin? and current_ability.can?(accion, controller_name.classify.constantize)
+  end
+
   # Corta la petición: en HTML vuelve atrás con el aviso; en JSON, JS o descargas responde 403
   def rechazar(mensaje = 'No autorizado')
     respond_to do |format|
@@ -165,7 +180,7 @@ class ApplicationController < ActionController::Base
         flash[:danger] = mensaje
         redirect_back fallback_location: root_path
       end
-      format.any { render json: {data: mensaje, type: 'danger', error: mensaje}, status: :forbidden }
+      format.any { render json: {data: mensaje, type: 'danger', status: 'error', error: mensaje}, status: :forbidden }
     end
   end
 

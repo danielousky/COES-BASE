@@ -75,7 +75,11 @@ class AcademicRecordsCreateAcidTest < ActionDispatch::IntegrationTest
       enroll_status: :preinscrito, permanence_status: :regular
     )
 
-    sign_in @user
+    # El histórico lo carga Control de Estudio desde RailsAdmin: entra un admin por el formulario (fija session[:rol])
+    admin_user = User.create!(ci: "ADM#{@uid}", email: "adm#{@uid}@test.com", first_name: "Jefe", last_name: "CE",
+                              password: "password123", updated_password: true)
+    Admin.new(user: admin_user, role: :jefe_control_estudio).tap { |a| a.env_auths.build(env_authorizable: @school) }.save!
+    post user_session_path, params: {user: {ci: admin_user.ci, password: 'password123'}}
   end
 
   # ---------------------------------------------------------------------

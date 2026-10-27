@@ -35,7 +35,7 @@ class ReserveSpaceAcidTest < ActionDispatch::IntegrationTest
       coes_boss_name: "Jefe RS #{@uid}"
     )
     @school = School.create!(name: "Escuela RS #{@uid}", code: "ERS#{@uid}", faculty: @faculty)
-    @study_plan = StudyPlan.create!(code: "SPRS#{@uid}", name: "Plan RS #{@uid}", school: @school)
+    @study_plan = StudyPlan.create!(code: "SPRS#{@uid}", name: "Plan RS #{@uid}", school: @school, modality: :Semestral)
     @admission_type = AdmissionType.create!(name: "Adm RS #{@uid}", code: "ARS#{@uid}")
 
     @period_type = PeriodType.create!(code: "U#{@uid}", name: "Único #{@uid}")
@@ -43,9 +43,10 @@ class ReserveSpaceAcidTest < ActionDispatch::IntegrationTest
 
     # Proceso académico con cupos altos -> happy path no se cae por límites.
     # En la prueba de rollback se sobrescribe con max_credits = 0.
+    # Inscripción abierta: reserve_space exige que el estudiante pueda inscribirse (AccesoInscripcion)
     @academic_process = AcademicProcess.create!(
-      school: @school, period: @period,
-      max_credits: 24, max_subjects: 6
+      school: @school, period: @period, modality: :Semestral,
+      max_credits: 24, max_subjects: 6, enroll: true
     )
 
     # Asignatura completa (Area, Departament, SubjectType)
@@ -87,10 +88,11 @@ class ReserveSpaceAcidTest < ActionDispatch::IntegrationTest
     @student = Student.create!(user: @user)
     @grade   = Grade.create!(
       student: @student, study_plan: @study_plan, admission_type: @admission_type,
-      current_permanence_status: :regular
+      current_permanence_status: :regular, enabled_enroll_process: @academic_process
     )
 
-    sign_in @user
+    # Por el formulario, para que after_sign_in_path_for fije session[:rol]
+    post user_session_path, params: {user: {ci: @user.ci, password: 'password123'}}
   end
 
   # ---------------------------------------------------------------------

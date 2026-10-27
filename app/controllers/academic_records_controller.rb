@@ -1,6 +1,9 @@
 class AcademicRecordsController < ApplicationController
   before_action :set_academic_record, only: %i[ show edit update destroy ]
-  before_action :require_admin, only: %i[ destroy ]
+  before_action :require_admin, except: %i[ update ]
+  before_action -> { rechazar unless administra_escuela?(@academic_record.school&.id) }, only: %i[ show edit destroy ]
+  before_action -> { rechazar unless administra_escuela?(@academic_record.school&.id) or profesor_califica?(@academic_record.section) }, only: %i[ update ]
+  before_action -> { rechazar unless administra_escuela?(EnrollAcademicProcess.find_by(id: params.dig(:academic_record, :enroll_academic_process_id))&.school&.id) }, only: %i[ create ]
 
   # GET /academic_records or /academic_records.json
   def index
@@ -93,7 +96,8 @@ class AcademicRecordsController < ApplicationController
   # PATCH/PUT /academic_records/1 or /academic_records/1.json
   def update
     respond_to do |format|
-      if @academic_record.update(academic_record_params)
+      cambios = logged_as_admin? ? academic_record_params : academic_record_params.slice(:status)
+      if @academic_record.update(cambios)
         flash[:success] = '¡Actualización Exitosa!'
         format.html { redirect_back fallback_location: root_path}
         format.json { render json: {data: '¡Datos Guardados con éxito!', type: 'success'}, status: :ok }

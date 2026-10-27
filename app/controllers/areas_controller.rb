@@ -1,5 +1,7 @@
 class AreasController < ApplicationController
+  before_action :autorizar_como_en_rails_admin
   before_action :set_area, only: %i[ show edit update destroy ]
+  before_action -> { rechazar unless administra_escuela?(@area.school_id) }, only: %i[ show edit update destroy ]
 
   # GET /areas or /areas.json
   def index
