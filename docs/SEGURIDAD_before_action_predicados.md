@@ -129,8 +129,11 @@ Detalles:
 - `Authorized`, `PartialQualification`, `PeriodType`, `Address` y `EnrollmentDay` no tienen `has_paper_trail`: de
   ellos no queda rastro de quién cambió qué.
 - Notificar/decidir sobre la descarga masiva de kardex del 2026-10-12 (ver auditoría abajo).
-- Firewall de producción: `ufw` deja abiertos 2375/2376 (API de Docker) aunque nada escucha ahí; no hay fail2ban
-  (sólo `ufw LIMIT` en 22). Hay un `rails c` (`coes-base.run.17922`) abierto en producción desde hace 12 meses.
+- Servidor (hecho el 2026-10-27, fuera del repo): fail2ban 0.11.2 con `/etc/fail2ban/jail.d/coes.local` y filtros
+  `coes-escaneo` (rutas .php/wp-/.env/cgi-bin/.git, 5 en 10 min → 1 día) y `coes-login` (POST sign_in fallido, 100 en
+  10 min → 15 min; el máximo legítimo medido desde una NAT móvil fue 38), más `sshd` en modo aggressive. Se ignora
+  190.169.0.0/16 (UCV). Se quitaron de `ufw` las reglas 2375/2376 (API de Docker, nada escuchaba) y se detuvo un
+  `rails c` huérfano (`coes-base.run.17922`, del 2025-10-02).
 
 ## Auditoría de producción (2026-10-26, sólo lectura)
 
