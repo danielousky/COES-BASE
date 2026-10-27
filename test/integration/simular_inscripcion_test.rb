@@ -76,6 +76,18 @@ class SimularInscripcionTest < ActionDispatch::IntegrationTest
     assert_select ".col-md-8 a[href='#{ruta}']", /Simular inscripción/
   end
 
+  test "con dos expedientes, cada Agregar Histórico abre su propia modal" do
+    otro_plan = StudyPlan.create!(code: "SPSI2#{@uid}", name: "Plan SI2 #{@uid}", school: @school, modality: :Semestral)
+    otro = Grade.create!(student: @grade.student, study_plan: otro_plan, admission_type: @grade.admission_type)
+    entrar users(:admin_user)
+    get "/admin/student/#{@grade.student_id}"
+
+    [@grade, otro].each do |grade|
+      assert_select "a[data-bs-target='#addInscriptionModal#{grade.id}']", 1
+      assert_select "#addInscriptionModal#{grade.id}.modal", 1
+    end
+  end
+
   test "se puede simular otro período de la escuela" do
     entrar users(:admin_user)
     get ruta, params: {academic_process_id: @anterior.id}
