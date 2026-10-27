@@ -148,10 +148,24 @@ class ApplicationController < ActionController::Base
 
 
 
+  # Ojo: los predicados logged_as_...? no sirven como before_action (devuelven true/false y no cortan nada).
+  # Para proteger una acción, este filtro o rechazar.
   def require_admin
-    unless logged_as_admin?
-      flash[:danger] = 'No autorizado'
-      redirect_back fallback_location: root_path
+    rechazar unless logged_as_admin?
+  end
+
+  def administra_escuela?(school_id)
+    logged_as_admin? and current_admin.schools_auh&.exists?(id: school_id)
+  end
+
+  # Corta la petición: en HTML vuelve atrás con el aviso; en JSON, JS o descargas responde 403
+  def rechazar(mensaje = 'No autorizado')
+    respond_to do |format|
+      format.html do
+        flash[:danger] = mensaje
+        redirect_back fallback_location: root_path
+      end
+      format.any { render json: {data: mensaje, type: 'danger', error: mensaje}, status: :forbidden }
     end
   end
 

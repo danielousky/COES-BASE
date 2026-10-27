@@ -1,6 +1,7 @@
 class EnrollmentDaysController < ApplicationController
-  before_action :logged_as_admin?
+  before_action :require_admin
   before_action :set_enrollment_day, only: %i[ destroy export ]
+  before_action :require_administra_escuela, only: %i[ create destroy export ]
 
   # GET /enrollment_days or /enrollment_days.json
   def index
@@ -91,7 +92,10 @@ class EnrollmentDaysController < ApplicationController
   #   end
   # end
 
+  # Borra las jornadas de todas las escuelas: sólo el desarrollador (ninguna vista lo usa)
   def destroy_all
+    return rechazar unless current_admin.desarrollador?
+
     flash[:info] = 'Eliminadas todas las Citas Horarias' if EnrollmentDay.destroy_all
     redirect_back fallback_location: '/admin/academic_process'
   end
@@ -108,6 +112,11 @@ class EnrollmentDaysController < ApplicationController
   end
 
   private
+    def require_administra_escuela
+      academic_process = @enrollment_day&.academic_process || AcademicProcess.find_by(id: params.dig(:enrollment_day, :academic_process_id))
+      rechazar unless academic_process and administra_escuela?(academic_process.school_id)
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_enrollment_day
       @enrollment_day = EnrollmentDay.find(params[:id])

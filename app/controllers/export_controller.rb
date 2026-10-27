@@ -1,9 +1,11 @@
 class ExportController < ApplicationController
-  before_action :logged_as_admin?
+  before_action :require_admin
   include Streamable
 
   def history_grade
     @grade = Grade.find params[:id]
+    return rechazar unless administra_escuela?(@grade.school&.id)
+
     data = @grade.csv_academic_records
     title = "registro_academico_ #{@grade.short_name}"
 
@@ -15,7 +17,7 @@ class ExportController < ApplicationController
 
 
   def xls
-    return head :forbidden unless logged_as_admin?
+    return rechazar unless administra_escuela?(AcademicProcess.find(params[:id]).school_id)
 
     if params[:grades_others] and params[:id]
       academic_process = AcademicProcess.find params[:id]

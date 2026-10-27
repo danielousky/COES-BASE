@@ -1,7 +1,7 @@
 
 class SessionAdminController < ApplicationController
 
-  before_action :logged_as_admin?
+  before_action :require_admin
 
   def change_period_session
     session[:period_name] = params[:nuevo]

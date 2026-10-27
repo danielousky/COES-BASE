@@ -1,5 +1,5 @@
 class SubjectsController < ApplicationController
-  before_action :logged_as_admin?
+  before_action :require_admin
   before_action :set_subject, only: %i[ show ]
 
   # GET /subjects/1 or /subjects/1.json

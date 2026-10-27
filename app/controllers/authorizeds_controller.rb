@@ -1,5 +1,6 @@
 class AuthorizedsController < ApplicationController
-	before_action :logged_as_admin?
+	before_action :require_admin
+	before_action :require_gestionar_admins
 
 	def update_authorize
 		@admin = Admin.find params[:id]
@@ -32,5 +33,12 @@ class AuthorizedsController < ApplicationController
 
 		redirect_to "/admin/admin/#{@admin.id}"
 
+	end
+
+	private
+
+	# Reescribir permisos es gestionar admins: ser admin no basta (antes un asistente podía darse todo)
+	def require_gestionar_admins
+		rechazar 'No autorizado para cambiar permisos de administradores' unless current_admin.authorized_update? 'Admin'
 	end
 end

@@ -1,6 +1,5 @@
 class QualificationsController < ApplicationController
-  before_action :set_academic_record, only: %i[ update ]
-  before_action :logged_as_teacher_or_admin?, only: %i[ update ]
+  include AutorizaCalificacion
 
   # PATCH/PUT /academic_records/1 or /academic_records/1.json
   def update
@@ -25,11 +24,6 @@ class QualificationsController < ApplicationController
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_academic_record
-      @academic_record = AcademicRecord.find(params[:id])
-    end
-
     # Only allow a list of trusted parameters through.
     def qualification_params
       params.require(:qualification).permit(:type_q, :value)
