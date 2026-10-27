@@ -92,7 +92,9 @@ class SeguridadBeforeActionTest < ActionDispatch::IntegrationTest
     post '/authorizeds/update_authorize', params: {id: @asistente.id, "model#{authorizable('Admin').id}": {can_read: 1}}
 
     assert_redirected_to "/admin/admin/#{@asistente.id}"
-    assert @asistente.authorizeds.reload.find_by(authorizable: authorizable('Admin')).can_read?
+    permiso = @asistente.authorizeds.reload.find_by(authorizable: authorizable('Admin'))
+    assert permiso.can_read?
+    assert_equal users(:admin_user).id.to_s, permiso.versions.last&.whodunnit, 'el cambio de permisos queda en el historial'
   end
 
   # == qualifications#update y partial_qualifications#update: cambiar notas
@@ -125,7 +127,9 @@ class SeguridadBeforeActionTest < ActionDispatch::IntegrationTest
 
     calificar_parcial 12
     assert_response :success
-    assert_equal 12, @record.partial_qualifications.find_by(partial: :primer_lapso).value
+    parcial = @record.partial_qualifications.find_by(partial: :primer_lapso)
+    assert_equal 12, parcial.value
+    assert_equal @profe.user_id.to_s, parcial.versions.last&.whodunnit, 'la nota parcial queda en el historial'
   end
 
   test "el profesor no cambia notas de una sección ya calificada" do

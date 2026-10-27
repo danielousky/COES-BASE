@@ -9,6 +9,7 @@
 #  updated_at :datetime         not null
 #
 class PeriodType < ApplicationRecord
+	has_paper_trail on: [:create, :destroy, :update]
 
 	# ASSOCIATIONS:
 	has_many :periods

@@ -26,6 +26,7 @@
 #  fk_rails_...  (authorizable_id => authorizables.id) ON DELETE => cascade ON UPDATE => cascade
 #
 class Authorized < ApplicationRecord
+  has_paper_trail on: [:create, :destroy, :update]
 
   belongs_to :admin
   belongs_to :authorizable

@@ -18,6 +18,7 @@
 #  fk_rails_...  (academic_record_id => academic_records.id)
 #
 class PartialQualification < ApplicationRecord
+  has_paper_trail on: [:create, :destroy, :update]
   include Qualifying
   # ASSOCIATIONS:
   belongs_to :academic_record

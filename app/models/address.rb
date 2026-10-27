@@ -23,6 +23,7 @@
 #  fk_rails_...  (student_id => students.user_id) ON DELETE => cascade ON UPDATE => cascade
 #
 class Address < ApplicationRecord
+  has_paper_trail on: [:create, :destroy, :update]
 
   # ENUMERIZE:
   enum house_type: [:casa, :quinta, :apartamento]

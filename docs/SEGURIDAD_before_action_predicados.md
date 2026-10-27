@@ -126,8 +126,10 @@ Detalles:
 
 - `export_csv` (requiere admin, pero no acota por escuela) e `importer` (cualquier admin importa: no revisa
   `can :import` ni `Authorizable::IMPORTABLES`).
-- `Authorized`, `PartialQualification`, `PeriodType`, `Address` y `EnrollmentDay` no tienen `has_paper_trail`: de
-  ellos no queda rastro de quién cambió qué.
+- Historial: `Authorized`, `PartialQualification`, `PeriodType`, `Address` y `EnrollmentDay` ya tienen
+  `has_paper_trail` (rama `historial-modelos-sin-paper-trail`). Dos límites: `version_limit = 30` (global) guarda
+  sólo las 30 últimas versiones de cada registro, y `academic_processes#clean_appointments` borra citas con
+  `delete_all`, que no pasa por PaperTrail.
 - Notificar/decidir sobre la descarga masiva de kardex del 2026-10-12 (ver auditoría abajo).
 - Servidor (hecho el 2026-10-27, fuera del repo): fail2ban 0.11.2 con `/etc/fail2ban/jail.d/coes.local` y filtros
   `coes-escaneo` (rutas .php/wp-/.env/cgi-bin/.git, 5 en 10 min → 1 día) y `coes-login` (POST sign_in fallido, 100 en

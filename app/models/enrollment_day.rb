@@ -21,6 +21,7 @@
 #  fk_rails_...  (academic_process_id => academic_processes.id)
 #
 class EnrollmentDay < ApplicationRecord
+  has_paper_trail on: [:create, :destroy, :update]
 
   #RELATIONSHIPS:
   belongs_to :academic_process
