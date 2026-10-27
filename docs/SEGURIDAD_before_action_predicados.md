@@ -126,7 +126,33 @@ Detalles:
 
 - `export_csv` (requiere admin, pero no acota por escuela) e `importer` (cualquier admin importa: no revisa
   `can :import` ni `Authorizable::IMPORTABLES`).
-- Producción, sólo lectura, antes de desplegar: rastro en `PaperTrail::Version` de uso indebido (cambios en
-  `Authorized`, `Qualification`, `EnrollAcademicProcess` a `confirmado`, `PaymentReport` validados, `PeriodType`/
-  `AcademicProcess` borrados o cambiados) con `whodunnit` de usuarios sin rol de admin.
+- `Authorized`, `PartialQualification`, `PeriodType`, `Address` y `EnrollmentDay` no tienen `has_paper_trail`: de
+  ellos no queda rastro de quién cambió qué.
+- Notificar/decidir sobre la descarga masiva de kardex del 2026-10-12 (ver auditoría abajo).
+- Firewall de producción: `ufw` deja abiertos 2375/2376 (API de Docker) aunque nada escucha ahí; no hay fail2ban
+  (sólo `ufw LIMIT` en 22). Hay un `rails c` (`coes-base.run.17922`) abierto en producción desde hace 12 meses.
+
+## Auditoría de producción (2026-10-26, sólo lectura)
+
+`psql` con `default_transaction_read_only=on` (comprobado: un `CREATE` falla) sobre 2.219.476 versiones
+(2024-06-20 → 2026-10-27) y el log de nginx (14 días, desde 2026-10-12). Criterio: acciones de un usuario que no era
+admin *en ese momento* (alta/baja según las versiones de `Admin`).
+
+Sin rastro de abuso de escritura:
+
+- Inscripciones pasadas a `confirmado` y pagos `Validado` por no-admins de hoy: todas de 5 usuarios que eran admin
+  entonces (dados de baja el 2026-10-21). Ningún ex-admin actuó después de su baja.
+- Notas puestas por profesores en secciones ajenas (23 versiones, 10 profesores): en todos los casos el profesor
+  calificó su propia sección y días después un admin movió la inscripción (`section_id`) a la actual.
+- `User`/`Student` editados por alguien distinto del dueño que no fuera admin: ninguno.
+- El único `PaymentReport#destroy` de un estudiante cae en cascada al anular su propia inscripción.
+- `update_authorize` (7 llamadas en 14 días): IPs de oficina y casa del jefe de Control de Estudio; los cambios en
+  `authorizeds` son de asistentes.
+
+**Sí hubo abuso de lectura (IDOR en `grades#kardex`, cerrado en esta rama):** el 2026-10-12 entre 15:26 y 15:41
+(hora de Caracas), desde la IP compartida 179.63.108.1, con la sesión de la cuenta de estudiante `user_id` 15958
+(expediente 15129; única sesión iniciada desde esa IP en esa franja) se descargaron 29 kardex ajenos recorriendo ids:
+15109, 15110, 15122, 15127, 15130–15140, 15145, 15150, 15160, 15170, 15180, 15190, 15200, 15300, 15350, 15450,
+15500, 15000, 15100. No hubo otra ráfaga en el log (el siguiente máximo son 4 ids distintos en 10 min, de una IP
+de la UCV). Antes del 2026-10-12 no hay log de nginx para saberlo.
 - `subjects#show` en HTML falla para todos (`undefined method modality`); el JSON que usa el histórico va bien.
