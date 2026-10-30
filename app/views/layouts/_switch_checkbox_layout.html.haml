@@ -1,2 +1,2 @@
 .form-switch{'data-bs-toggle': :tooltip, title: title}
-  = check_box_tag name, id, checked, class: "form-check-input switch", disabled: disabled, onclick: js_action_name
+  = check_box_tag name, id, checked, class: "form-check-input switch", disabled: disabled, onclick: local_assigns[:js_action_name], data: local_assigns[:data]

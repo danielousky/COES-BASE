@@ -18,3 +18,6 @@ application.register("enrollment", EnrollmentController)
 
 import MapaPrelacionesController from "./mapa_prelaciones_controller"
 application.register("mapa-prelaciones", MapaPrelacionesController)
+
+import FieldUpdateController from "./field_update_controller"
+application.register("field-update", FieldUpdateController)

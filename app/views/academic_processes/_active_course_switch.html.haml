@@ -11,17 +11,18 @@
     - else 
         - id = @course.id
         - disabled = false
+        - campo = tipo.eql?(1) ? 'offer' : 'offer_as_pci'
+        -# Se guarda al cambiarlo, con el field-update de Stimulus (común con FAU).
+        - data = {controller: 'field-update', 'field-update-url-value': main_app.course_path(@course), 'field-update-model-value': 'course', 'field-update-field-value': campo, action: 'change->field-update#patch'}
         - if tipo.eql? 1
             - title = 'Ofertar u ocultar asignatura durante la inscripción de los estudiantes' 
             - name = "course_offer_#{@course.id}"
             - checked = @course&.offer?
-            - js_action_name = 'courseOffer(this);'
         - else
             - title = 'Ofertar u ocultar asignatura como PCI durante la inscripción de los estudiantes' 
             - name = "course_offer_as_pci_#{@course.id}"            
             - checked = @course&.offer_as_pci?
-            - js_action_name = 'courseOffer(this, true);'
-    = render partial: 'layouts/switch_checkbox_layout', locals: {title: title, name: name, id: id, checked: checked, disabled: disabled, js_action_name: js_action_name}
+    = render partial: 'layouts/switch_checkbox_layout', locals: {title: title, name: name, id: id, checked: checked, disabled: disabled, js_action_name: js_action_name, data: data}
 - else    
     - if @course
         %i.fas.fa-check

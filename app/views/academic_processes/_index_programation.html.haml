@@ -168,37 +168,6 @@
 
   }
 
-  function courseOffer(ele, pci=false){
-    let course_id = ele.value; //$(ele).attr('id');
-    let url = `/courses/${course_id}`;
-    let attrs;
-    if (pci == true) {
-      attrs = `{"course":{"offer_as_pci": ${ele.checked == true}}}`;
-    } else {
-      attrs = `{"course":{"offer": ${ele.checked == true}}}`;
-    }
-
-    $.ajax({
-      url: url,
-      type: 'PUT',
-      data: JSON.parse(attrs),
-      dataType: 'json',
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
-      },
-      success: function(json) {
-        toastr.success(json.data);
-      },
-      error: function(json) {
-        toastr.error(json.data);
-      },
-      unprocessable_entity: function(json) {
-        toastr.error(json.data);
-      }
-    });
-
-  }   
-
   /* 
   function updateCourse(ele){
     let  attrs = `{"course": {"academic_process_id": #{@academic_process_id}, "subject_id": ${ele.value}}, "offer_as_pci": ${ele.checked}}`;

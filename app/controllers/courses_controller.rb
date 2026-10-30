@@ -9,19 +9,11 @@ class CoursesController < ApplicationController
         if course.save
           new_section = ApplicationController.helpers.button_add_section(course.id)
 
-          # Ofertar
-          title = 'Ofertar u ocultar asignatura durante la inscripción de los estudiantes' 
-          name = "course_offer_#{course.id}"
-          js_action_name = 'courseOffer(this);'
-
-          course_offer = view_context.render partial: 'layouts/switch_checkbox_layout', locals: {title: title, name: name, id: course.id, checked: course&.offer?, disabled: false, js_action_name: js_action_name}
-
-          # Ofertar como PCI
-          title = 'Ofertar u ocultar asignatura como PCI durante la inscripción de los estudiantes' 
-          name = "course_offer_as_pci#{course.id}"
-          js_action_name = 'courseOffer(this, true);'
-
-          course_offer_as_pci = view_context.render partial: 'layouts/switch_checkbox_layout', locals: {title: title, name: name, id: course.id, checked: course&.offer_as_pci?, disabled: false, js_action_name: js_action_name}
+          # Los interruptores «Ofertar» y «PCI» de la fila: los mismos de la programación
+          @course = course
+          course_offer, course_offer_as_pci = [1, 2].map do |tipo|
+            view_context.render partial: 'academic_processes/active_course_switch', formats: [:html], locals: {tipo: tipo}
+          end
 
           format.json {render json: {data: "¡Curso activado para el período #{course.academic_process.process_name}!", status: :success, new_section: new_section, type: :create, course_offer: course_offer, course_offer_as_pci: course_offer_as_pci} }
         else
@@ -50,17 +42,16 @@ class CoursesController < ApplicationController
   #   end
   # end 
 
-  # UPDATE
+  # UPDATE: los interruptores «Ofertar» y «PCI» de la programación (field-update de Stimulus)
   def update
     respond_to do |format|
       if @course.update(course_params)
-        msg = "¡Valor actualizado!"
-        format.json { render json: {data: msg, status: :success} }
+        format.json { render json: {data: aviso_de_oferta, type: 'success'} }
       else
-        format.json {render json: {data: "¡Error al intentar actualizar el valor de la asignatura!", status: :unprocessable_entity} }
+        format.json { render json: {data: "¡Error al intentar actualizar el valor de la asignatura!", type: 'danger'} }
       end
     end
-  end  
+  end
 
   # DELETE /courses/1 or /courses/1.json
   def destroy
@@ -95,5 +86,14 @@ class CoursesController < ApplicationController
     end    
     def course_params
       params.require(:course).permit(:academic_process_id, :subject_id, :offer_as_pci, :offer)
+    end
+
+    # El aviso del interruptor dice cómo quedó la asignatura, no solo que se guardó
+    def aviso_de_oferta
+      if @course.saved_change_to_offer_as_pci?
+        @course.offer_as_pci? ? '¡Asignatura ofertada como PCI!' : '¡La asignatura ya no se oferta como PCI!'
+      else
+        @course.offer? ? '¡Asignatura ofertada en la inscripción!' : '¡Asignatura oculta en la inscripción!'
+      end
     end
 end
