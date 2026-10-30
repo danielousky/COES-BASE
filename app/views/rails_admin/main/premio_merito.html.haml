@@ -58,16 +58,23 @@
           = premio.aviso_sin_premio(grupo)
       .table-responsive
         %table.table.table-hover.align-middle
+          - columnas = premio.columnas_de_creditos(grupo)
           %thead.table-light
             %tr
-              %th.text-center{style: 'width: 4.5rem'} Puesto
-              %th Cédula
-              %th Estudiante
-              %th.text-end= "Créditos #{anio.numero}"
-              - if grupo.falta
-                %th.text-end= "Eficiencia hasta #{anio.numero}"
-              %th.text-end= "Simple #{anio.numero}"
-              %th.text-end= "Ponderado #{anio.numero}"
+              %th.text-center{rowspan: 2, style: 'width: 4.5rem'} Puesto
+              %th{rowspan: 2} Cédula
+              %th{rowspan: 2} Estudiante
+              %th.text-center{colspan: columnas.size, title: premio.ayuda_de_creditos(grupo), style: 'cursor: help'}
+                Créditos inscritos
+                %i.fa-regular.fa-circle-question.text-muted.ms-1
+              %th.text-end Eficiencia
+              %th.text-center{colspan: 2}= "Promedio #{anio.numero}"
+            %tr
+              - columnas.each do |columna|
+                %th.text-end= columna
+              %th.text-end= "hasta #{anio.numero}"
+              %th.text-end Simple
+              %th.text-end Ponderado
           %tbody
             - lista.each do |c|
               - medalla = medallas[c.puesto - 1] unless grupo.falta
@@ -75,8 +82,8 @@
                 %td.text-center= medalla || c.puesto
                 %td= c.ci
                 %td= link_to c.nombre, rails_admin.show_path(model_name: 'student', id: c.student_id), data: { turbo_frame: '_top' }
-                %td.text-end= c.creditos_texto
-                - if grupo.falta
-                  %td.text-end= number_with_precision(c.eficiencia, precision: 2)
+                - premio.celdas_de_creditos(grupo, c).each do |creditos, ocupa, corto|
+                  %td.text-end{colspan: ocupa, class: ('text-danger' if corto)}= creditos || '—'
+                %td.text-end= number_with_precision(c.eficiencia, precision: 2)
                 %td.text-end= c.promedio_simple ? number_with_precision(c.promedio_simple, precision: 2) : '—'
                 %td.text-end= c.promedio ? number_with_precision(c.promedio, precision: 2) : '—'

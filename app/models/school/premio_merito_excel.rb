@@ -39,14 +39,15 @@ class School
     end
 
     def hoja_del_plan(libro, grupo)
-      columnas = ['Puesto', 'Cédula', 'Apellidos y nombres', "Créditos #{anio}"]
-      columnas << "Eficiencia hasta #{anio}" if grupo.falta
-      columnas += ['Promedio simple', 'Promedio ponderado']
+      # Con salto de línea propio: si no, Excel parte «2025-01» en el guion.
+      creditos = @premio.columnas_de_creditos(grupo).map { |columna| "Créditos inscritos\n#{columna}" }
+      columnas = ['Puesto', 'Cédula', 'Apellidos y nombres', *creditos, "Eficiencia\nhasta #{anio}",
+                  "Promedio simple\n#{anio}", "Promedio ponderado\n#{anio}"]
       ultima = Axlsx.col_ref(columnas.size - 1)
 
       libro.add_worksheet(name: grupo.plan.code.to_s.delete('[]:*?/\\')[0, 31]) do |hoja|
         encabezado(hoja, grupo, estado(grupo), columnas.size)
-        hoja.add_row columnas, style: estilo(:encabezado), height: 32
+        hoja.add_row columnas, style: estilo(:encabezado), height: 45
         grupo.estudiantes.each_with_index { |candidato, i| fila(hoja, grupo, candidato, i.odd?) }
 
         hoja.auto_filter = "A#{FILA_ENCABEZADO}:#{ultima}#{FILA_ENCABEZADO + grupo.estudiantes.size}"
@@ -63,7 +64,7 @@ class School
         hoja.add_row ["Generado en COES el #{I18n.l(Time.current, format: '%d/%m/%Y a las %H:%M')}"], style: estilo(:nota)
         hoja.merge_cells("A#{hoja.rows.size}:#{ultima}#{hoja.rows.size}")
         # Al final: caxlsx recalcula el ancho de una columna con cada fila que se agrega.
-        hoja.column_widths(*[8, 13, 42, 14, (16 if grupo.falta), 15, 17].compact)
+        hoja.column_widths(8, 13, 42, *[13] * creditos.size, 12, 12, 13)
       end
     end
 
@@ -96,17 +97,22 @@ class School
 
     def fila(hoja, grupo, candidato, par)
       medalla = MEDALLAS[candidato.puesto - 1] unless grupo.falta
-      creditos = candidato.anual ? candidato.creditos.compact.sum : candidato.creditos_texto
-      valores = [medalla || candidato.puesto, candidato.ci.to_s, candidato.nombre, creditos]
-      tipos = %i[centro centro texto centro]
-      if grupo.falta
-        valores << candidato.eficiencia.round(2)
-        tipos << :numero
+      valores = [medalla || candidato.puesto, candidato.ci.to_s, candidato.nombre]
+      tipos = %i[centro centro texto]
+      a_unir = []
+      @premio.celdas_de_creditos(grupo, candidato).each do |creditos, ocupa, corto|
+        a_unir << valores.size if ocupa > 1
+        valores.concat([creditos || '—'] + [nil] * (ocupa - 1))
+        tipos.concat([corto ? :corto : :centro] * ocupa)
       end
-      valores += [candidato.promedio_simple&.to_f&.round(2), candidato.promedio&.to_f&.round(2)]
-      tipos += %i[numero numero]
+      valores += [candidato.eficiencia.round(2), candidato.promedio_simple&.to_f&.round(2),
+                  candidato.promedio&.to_f&.round(2)]
+      tipos += %i[numero numero numero]
       hoja.add_row valores, style: tipos.map { |tipo| estilo(tipo, par: par, destacado: medalla.present?) },
                             types: [nil, :string, :string] + [nil] * (valores.size - 3)
+      # Quien cursa por año en un plan semestral: su total ocupa las dos columnas de créditos.
+      renglon = hoja.rows.size - 1
+      a_unir.each { |columna| hoja.merge_cells("#{Axlsx.cell_r(columna, renglon)}:#{Axlsx.cell_r(columna + 1, renglon)}") }
     end
 
     def estilo(tipo, par: false, destacado: false)
@@ -127,6 +133,7 @@ class School
           alignment: { horizontal: :center, vertical: :center, wrap_text: true } }
       when :texto then celda
       when :centro then celda.merge(alignment: { horizontal: :center, vertical: :center })
+      when :corto then celda.merge(fg_color: 'C00000', alignment: { horizontal: :center, vertical: :center })
       when :numero then celda.merge(format_code: '0.00', alignment: { horizontal: :right, vertical: :center })
       end
     end

@@ -40,8 +40,8 @@ class School
     Candidato = Struct.new(:grade_id, :student_id, :study_plan_id, :ci, :nombre, :primera_carrera, :anual,
                            :creditos, :pendientes, :cursadas, :reprobadas, :promedio, :promedio_simple, :puesto,
                            keyword_init: true) do
-      def creditos_texto
-        anual ? creditos.compact.sum.to_s : creditos.map { |cr| cr || '—' }.join(' + ')
+      def total_de_creditos
+        creditos.compact.sum
       end
 
       # Aprobadas entre cursadas en la carrera hasta el año del premio, como Grade#efficiency.
@@ -52,7 +52,12 @@ class School
 
     # La lista de un plan. falta: nil si son premiados; si no, el criterio que nadie cumplió
     # (:carga_completa, :eficiencia o :promedio) y la lista es la de los más cercanos.
-    Grupo = Struct.new(:plan, :estudiantes, :falta)
+    Grupo = Struct.new(:plan, :estudiantes, :falta) do
+      # Plan anual: los créditos van en una sola columna, la del año, y no una por semestre.
+      def anual?
+        estudiantes.all?(&:anual)
+      end
+    end
 
     SIN_PREMIO = {
       carga_completa: 'Nadie de este plan inscribió la carga completa en %<anio>s.',
@@ -93,10 +98,42 @@ class School
 
     # Lo que se lee arriba de la lista, en la pantalla y en el Excel.
     def texto_criterios
-      "Primera carrera · Carga completa: #{numero(minimo(:creditos_semestre))} créditos en cada semestre, o " \
-        "#{numero(minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta " \
-        "#{anio&.numero} · Promedio simple del año mayor a #{numero(minimo(:promedio_mayor_a))} · Orden: " \
-        'promedio simple; si empatan, ponderado y luego créditos'
+      "Primera carrera · Carga completa: #{texto_de_carga} · Eficiencia 1 en la carrera hasta #{anio&.numero} · " \
+        "Promedio simple del año mayor a #{numero(minimo(:promedio_mayor_a))} · Orden: promedio simple; si " \
+        'empatan, ponderado y luego créditos'
+    end
+
+    # Los dos semestres del año, con el nombre de sus períodos: 2025-01 y 2025-02.
+    def semestres
+      PERIODOS_REGULARES.map { |tipo| "#{anio&.numero}-#{tipo}" }
+    end
+
+    # Los encabezados de los créditos en la lista de un plan: el año si es anual; si no, sus dos semestres.
+    def columnas_de_creditos(grupo)
+      grupo.anual? ? ["#{anio.numero} (anual)"] : semestres
+    end
+
+    # Las celdas de créditos de un estudiante: [créditos, columnas que ocupa, ¿no llega al mínimo?].
+    # Quien cursa por año dentro de un plan semestral ocupa las dos columnas con el total del año.
+    def celdas_de_creditos(grupo, candidato)
+      if candidato.anual
+        total = candidato.total_de_creditos
+        corto = total < minimo(:creditos_anual)
+        grupo.anual? ? [[total, 1, corto]] : [["#{total} en el año", 2, corto]]
+      else
+        candidato.creditos.map { |creditos| [creditos, 1, creditos.to_i < minimo(:creditos_semestre)] }
+      end
+    end
+
+    # La ayuda del encabezado de los créditos, al pasar el ratón.
+    def ayuda_de_creditos(grupo)
+      carga = if grupo.anual?
+                "#{numero(minimo(:creditos_anual))} o más en el año"
+              else
+                "#{numero(minimo(:creditos_semestre))} o más en cada uno de los dos semestres"
+              end
+      "Créditos inscritos en #{anio.numero}, sin contar retiros ni equivalencias. Carga completa: #{carga}. " \
+        'En rojo, lo que no llega.'
     end
 
     def aviso_sin_premio(grupo)
@@ -108,7 +145,7 @@ class School
     def grupos
       @grupos ||= begin
         # Sin créditos en el año no estudió ese año: no entra ni entre los cercanos.
-        evaluables = candidatos.select { |c| c.primera_carrera && c.pendientes.zero? && c.creditos.compact.sum.positive? }
+        evaluables = candidatos.select { |c| c.primera_carrera && c.pendientes.zero? && c.total_de_creditos.positive? }
         planes = StudyPlan.where(id: evaluables.map(&:study_plan_id).uniq).index_by(&:id)
         evaluables.group_by(&:study_plan_id)
                   .map { |plan_id, del_plan| grupo_del_plan(planes[plan_id], del_plan) }
@@ -117,6 +154,17 @@ class School
     end
 
     private
+
+    # Solo el régimen que tiene la escuela ese año: ODON es anual, FAU semestral y FHE tiene de los dos.
+    def texto_de_carga
+      semestral = "#{numero(minimo(:creditos_semestre))} créditos inscritos en cada uno de los dos semestres " \
+                  "(#{semestres.join(' y ')})"
+      case candidatos.map(&:anual).uniq
+      when [true] then "#{numero(minimo(:creditos_anual))} créditos inscritos en el año"
+      when [false] then semestral
+      else "#{semestral}, o #{numero(minimo(:creditos_anual))} en el año si la carrera es anual"
+      end
+    end
 
     # Los que cumplen todo, con medalla. Si nadie, los CERCANOS de la etapa del embudo donde se quedaron todos.
     def grupo_del_plan(plan, del_plan)
@@ -159,7 +207,7 @@ class School
     # Cuánto llegó al mínimo de créditos (1 = justo el mínimo). En semestral cuenta el semestre más flojo.
     def avance_de_carga(candidato)
       if candidato.anual
-        candidato.creditos.compact.sum.fdiv(minimo(:creditos_anual))
+        candidato.total_de_creditos.fdiv(minimo(:creditos_anual))
       else
         candidato.creditos.map(&:to_i).min.fdiv(minimo(:creditos_semestre))
       end
@@ -167,7 +215,7 @@ class School
 
     # Simple, luego ponderado, luego créditos; los promedios a dos decimales, como se ven en pantalla.
     def orden_de_merito(candidato)
-      [candidato.promedio_simple.to_f.round(2), candidato.promedio.to_f.round(2), candidato.creditos.compact.sum]
+      [candidato.promedio_simple.to_f.round(2), candidato.promedio.to_f.round(2), candidato.total_de_creditos]
     end
 
     # De mayor a menor según la clave; los empatados en toda la clave comparten puesto: 1, 1, 3…
