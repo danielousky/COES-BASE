@@ -1,4 +1,4 @@
--# Premio al Mérito Académico de la escuela. Misma vista en COES FHE, ODON y FAU.
+-# Premio al Mérito Académico de la escuela. FHE es la matriz: ODON y FAU la copian cuando Daniel la aprueba.
 - premio = School::PremioMerito.new(@object, params[:anio])
 - anio = premio.anio
 - medallas = %w[🥇 🥈 🥉]
@@ -21,7 +21,7 @@
               %span.badge.rounded-pill.bg-warning.text-dark.ms-1 en curso
 
     %p.small.text-muted.mb-3
-      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))}"
+      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Empates: promedio simple y luego créditos"
 
     .d-flex.flex-wrap.align-items-center.gap-2.mb-3
       - premio.embudo.each_with_index do |(etiqueta, cantidad), i|
@@ -40,20 +40,23 @@
         %i.fa-solid.fa-hourglass-half.me-1
         = "#{premio.esperando_notas} con carga completa y sin reprobadas tienen notas de #{anio.numero} sin cargar; aparecen cuando se carguen."
 
+    - avisos = { carga_completa: "Nadie de este plan inscribió la carga completa en #{anio.numero}.",
+                 eficiencia: "Nadie de este plan con carga completa llegó a eficiencia 1 en #{anio.numero}.",
+                 promedio: "Nadie de este plan con carga completa y eficiencia 1 pasa del promedio mínimo en #{anio.numero}." }
     - if premio.grupos.empty?
-      .alert.alert-light.text-center.text-muted.mt-3= "Nadie cumple los criterios en #{anio.numero}."
+      .alert.alert-light.text-center.text-muted.mt-3= "No hay estudiantes de primera carrera con #{anio.numero} evaluado."
     - premio.grupos.each do |grupo|
       - lista = grupo.estudiantes
       %h6.fw-bold.mt-4.mb-2
         = grupo.plan.name
-        - if grupo.cercanos
-          %span.text-muted.fw-normal= "· #{grupo.plan.code} · nadie llegó a eficiencia 1"
+        - if grupo.falta
+          %span.text-muted.fw-normal= "· #{grupo.plan.code} · nadie cumple todos los criterios"
         - else
           %span.text-muted.fw-normal= "· #{grupo.plan.code} · #{lista.size} #{lista.size == 1 ? 'cumple' : 'cumplen'} los criterios"
-      - if grupo.cercanos
+      - if grupo.falta
         .alert.alert-warning.small.py-2
           %i.fa-solid.fa-circle-info.me-1
-          = "Nadie de este plan con primera carrera y carga completa tiene eficiencia 1 en #{anio.numero}. Aquí van los más cercanos a 1 (hasta #{School::PremioMerito::CERCANOS}), sin exigir el promedio: Control de Estudios decide."
+          = "#{avisos[grupo.falta]} Aquí van los más cercanos (hasta #{School::PremioMerito::CERCANOS}): Control de Estudios decide si entrega el premio."
       .table-responsive
         %table.table.table-hover.align-middle
           %thead.table-light
@@ -62,17 +65,19 @@
               %th Cédula
               %th Estudiante
               %th.text-end= "Créditos #{anio.numero}"
-              - if grupo.cercanos
+              - if grupo.falta
                 %th.text-end= "Eficiencia hasta #{anio.numero}"
-              %th.text-end= "Promedio #{anio.numero}"
+              %th.text-end= "Ponderado #{anio.numero}"
+              %th.text-end= "Simple #{anio.numero}"
           %tbody
             - lista.each do |c|
-              - medalla = medallas[c.puesto - 1] unless grupo.cercanos
+              - medalla = medallas[c.puesto - 1] unless grupo.falta
               %tr{class: ('fw-semibold' if medalla)}
                 %td.text-center= medalla || c.puesto
                 %td= c.ci
                 %td= link_to c.nombre, rails_admin.show_path(model_name: 'student', id: c.student_id), data: { turbo_frame: '_top' }
                 %td.text-end= c.creditos_texto
-                - if grupo.cercanos
+                - if grupo.falta
                   %td.text-end= number_with_precision(c.eficiencia, precision: 2)
                 %td.text-end= c.promedio ? number_with_precision(c.promedio, precision: 2) : '—'
+                %td.text-end= c.promedio_simple ? number_with_precision(c.promedio_simple, precision: 2) : '—'

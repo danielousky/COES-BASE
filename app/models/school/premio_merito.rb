@@ -9,9 +9,13 @@ class School
   #      ese año, y ninguna nota del año sin cargar.
   #   4. Promedio ponderado del año mayor a 15 (asignaturas numéricas, sin equivalencias).
   #
-  # Si en un plan nadie con primera carrera y carga completa llega a eficiencia 1, se muestran los
-  # CERCANOS más cercanos a 1, sin exigir el promedio, para que el plan no quede sin nombres (Daniel,
-  # 29-oct-2026). Esos no llevan medalla: el premio pide eficiencia 1 y lo decide Control de Estudios.
+  # El orden es por promedio ponderado, que pesa más porque cuenta los créditos. Los empates se rompen
+  # con el promedio simple y después con los créditos del año (Daniel, 29-oct-2026).
+  #
+  # Si en un plan nadie cumple todo, se muestran los CERCANOS que llegaron más lejos, ordenados por el
+  # criterio en el que se quedaron todos (carga, eficiencia o promedio) y después por mérito. No llevan
+  # medalla: Control de Estudios decide si entrega el premio (Daniel, 29-oct-2026). Primera carrera no
+  # se relaja.
   #
   # Los tres números se cambian por facultad en Configuración General (claves PREMIO_MERITO_*).
   # FHE es la matriz: se prueba aquí y después se copia igual a COES ODON y FAU.
@@ -34,7 +38,8 @@ class School
     end
 
     Candidato = Struct.new(:grade_id, :student_id, :study_plan_id, :ci, :nombre, :primera_carrera, :anual,
-                           :creditos, :pendientes, :cursadas, :reprobadas, :promedio, :puesto, keyword_init: true) do
+                           :creditos, :pendientes, :cursadas, :reprobadas, :promedio, :promedio_simple, :puesto,
+                           keyword_init: true) do
       def creditos_texto
         anual ? creditos.compact.sum.to_s : creditos.map { |cr| cr || '—' }.join(' + ')
       end
@@ -45,8 +50,9 @@ class School
       end
     end
 
-    # La lista de un plan. cercanos: nadie llegó a eficiencia 1 y son los más cercanos a 1.
-    Grupo = Struct.new(:plan, :estudiantes, :cercanos)
+    # La lista de un plan. falta: nil si son premiados; si no, el criterio que nadie cumplió
+    # (:carga_completa, :eficiencia o :promedio) y la lista es la de los más cercanos.
+    Grupo = Struct.new(:plan, :estudiantes, :falta)
 
     attr_reader :school, :anios, :anio
 
@@ -79,27 +85,34 @@ class School
       candidatos.count { |c| c.primera_carrera && carga_completa?(c) && c.reprobadas.zero? && c.pendientes.positive? }
     end
 
-    # Un Grupo por plan, ordenados por código: los que cumplen todo o, si nadie llegó a eficiencia 1, los cercanos.
+    # Un Grupo por plan, ordenados por código.
     def grupos
       @grupos ||= begin
-        evaluables = candidatos.select { |c| c.primera_carrera && carga_completa?(c) && c.pendientes.zero? }
+        evaluables = candidatos.select { |c| c.primera_carrera && c.pendientes.zero? }
         planes = StudyPlan.where(id: evaluables.map(&:study_plan_id).uniq).index_by(&:id)
-        evaluables.group_by(&:study_plan_id).filter_map do |plan_id, del_plan|
-          con_eficiencia = del_plan.select { |c| c.reprobadas.zero? }
-          if con_eficiencia.any?
-            premiados = con_eficiencia.select { |c| c.promedio.to_f > minimo(:promedio_mayor_a) }
-            next if premiados.empty?
-
-            Grupo.new(planes[plan_id], con_puestos(premiados) { |c| [c.promedio.round(2)] }, false)
-          else
-            cercanos = con_puestos(del_plan) { |c| [c.eficiencia.round(2), c.promedio.to_f.round(2)] }
-            Grupo.new(planes[plan_id], cercanos.take_while { |c| c.puesto <= CERCANOS }, true)
-          end
-        end.sort_by { |grupo| grupo.plan.code.to_s }
+        evaluables.group_by(&:study_plan_id)
+                  .map { |plan_id, del_plan| grupo_del_plan(planes[plan_id], del_plan) }
+                  .sort_by { |grupo| grupo.plan.code.to_s }
       end
     end
 
     private
+
+    # Los que cumplen todo, con medalla. Si nadie, los CERCANOS que llegaron más lejos: primero por el
+    # criterio donde se quedaron todos y después por mérito.
+    def grupo_del_plan(plan, del_plan)
+      con_carga = del_plan.select { |c| carga_completa?(c) }
+      con_eficiencia = con_carga.select { |c| c.reprobadas.zero? }
+      premiados = con_eficiencia.select { |c| c.promedio.to_f > minimo(:promedio_mayor_a) }
+      return Grupo.new(plan, con_puestos(premiados) { |c| orden_de_merito(c) }, nil) if premiados.any?
+
+      falta, quedan, clave =
+        if con_eficiencia.any? then [:promedio, con_eficiencia, ->(c) { orden_de_merito(c) }]
+        elsif con_carga.any? then [:eficiencia, con_carga, ->(c) { [c.eficiencia.round(2), *orden_de_merito(c)] }]
+        else [:carga_completa, del_plan, ->(c) { [avance_de_carga(c).round(2), c.eficiencia.round(2), *orden_de_merito(c)] }]
+        end
+      Grupo.new(plan, con_puestos(quedan, &clave).take_while { |c| c.puesto <= CERCANOS }, falta)
+    end
 
     def criterios
       @criterios ||= [
@@ -112,16 +125,26 @@ class School
     end
 
     def carga_completa?(candidato)
+      avance_de_carga(candidato) >= 1
+    end
+
+    # Cuánto llegó al mínimo de créditos (1 = justo el mínimo). En semestral cuenta el semestre más flojo.
+    def avance_de_carga(candidato)
       if candidato.anual
-        candidato.creditos.compact.sum >= minimo(:creditos_anual)
+        candidato.creditos.compact.sum.fdiv(minimo(:creditos_anual))
       else
-        candidato.creditos.all? { |cr| cr && cr >= minimo(:creditos_semestre) }
+        candidato.creditos.map(&:to_i).min.fdiv(minimo(:creditos_semestre))
       end
     end
 
-    # De mayor a menor según la clave; los empatados en la clave comparten puesto: 1, 1, 3…
+    # El ponderado se compara a dos decimales, como se ve en pantalla.
+    def orden_de_merito(candidato)
+      [candidato.promedio.to_f.round(2), candidato.promedio_simple.to_f.round(2), candidato.creditos.compact.sum]
+    end
+
+    # De mayor a menor según la clave; los empatados en toda la clave comparten puesto: 1, 1, 3…
     def con_puestos(lista, &clave)
-      ordenada = lista.sort_by { |c| clave.call(c).map { |v| -v } + [-c.creditos.compact.sum, c.nombre] }
+      ordenada = lista.sort_by { |c| clave.call(c).map { |v| -v } + [c.nombre] }
       ordenada.each_with_index do |c, i|
         anterior = ordenada[i - 1] if i.positive?
         c.puesto = anterior && clave.call(anterior) == clave.call(c) ? anterior.puesto : i + 1
@@ -143,7 +166,7 @@ class School
           anual: ActiveModel::Type::Boolean.new.cast(fila['anual']),
           creditos: [fila['creditos_1'], fila['creditos_2']].map { |cr| cr&.to_i },
           pendientes: fila['pendientes'].to_i, cursadas: fila['cursadas'].to_i, reprobadas: fila['reprobadas'].to_i,
-          promedio: fila['promedio']&.to_d
+          promedio: fila['promedio']&.to_d, promedio_simple: fila['promedio_simple']&.to_d
         )
       end
     end
@@ -216,7 +239,9 @@ class School
                SUM(creditos * nota) FILTER (WHERE status IN (:cursadas) AND qualification_type = :numerica
                                               AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL)::numeric
                  / NULLIF(SUM(creditos) FILTER (WHERE status IN (:cursadas) AND qualification_type = :numerica
-                                                  AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL), 0) AS promedio
+                                                  AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL), 0) AS promedio,
+               AVG(nota) FILTER (WHERE status IN (:cursadas) AND qualification_type = :numerica
+                                   AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL) AS promedio_simple
         FROM registros
         GROUP BY grade_id
       ), historial AS (
@@ -235,14 +260,15 @@ class School
              bool_or(pp.anual) AS anual,
              MAX(pp.creditos) FILTER (WHERE pp.tipo = '01') AS creditos_1,
              MAX(pp.creditos) FILTER (WHERE pp.tipo = '02') AS creditos_2,
-             a.pendientes, a.promedio, COALESCE(h.cursadas, 0) AS cursadas, COALESCE(h.reprobadas, 0) AS reprobadas
+             a.pendientes, a.promedio, a.promedio_simple,
+             COALESCE(h.cursadas, 0) AS cursadas, COALESCE(h.reprobadas, 0) AS reprobadas
       FROM del_anio a
       JOIN grades g ON g.id = a.grade_id
       JOIN users u ON u.id = g.student_id
       JOIN por_periodo pp ON pp.grade_id = a.grade_id
       LEFT JOIN admission_types adm ON adm.id = g.admission_type_id
       LEFT JOIN historial h ON h.grade_id = a.grade_id
-      GROUP BY g.id, u.id, adm.first_career, a.pendientes, a.promedio, h.cursadas, h.reprobadas
+      GROUP BY g.id, u.id, adm.first_career, a.pendientes, a.promedio, a.promedio_simple, h.cursadas, h.reprobadas
     SQL
   end
 end
