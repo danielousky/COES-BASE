@@ -101,6 +101,16 @@ RailsAdmin.config do |config|
       visible do
         authorized? && (bindings[:object].nil? || bindings[:object].pregrado?)
       end
+      controller do
+        proc do
+          if params[:formato] == 'xlsx'
+            excel = School::PremioMeritoExcel.new(School::PremioMerito.new(@object, params[:anio]))
+            send_data excel.contenido, filename: excel.nombre, type: School::PremioMeritoExcel::TIPO
+          else
+            render action: @action.template_name
+          end
+        end
+      end
     end
 
     member :structure do 

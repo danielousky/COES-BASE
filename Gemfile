@@ -75,6 +75,7 @@ gem 'prawn-table'
 gem 'combine_pdf'
 
 gem 'xlsxtream'
+gem 'caxlsx', '~> 4.2' # Excel con estilos (Premio al Mérito); xlsxtream queda para los listados grandes
 
 # Bitácora
 gem "paper_trail"

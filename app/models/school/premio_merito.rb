@@ -54,6 +54,12 @@ class School
     # (:carga_completa, :eficiencia o :promedio) y la lista es la de los más cercanos.
     Grupo = Struct.new(:plan, :estudiantes, :falta)
 
+    SIN_PREMIO = {
+      carga_completa: 'Nadie de este plan inscribió la carga completa en %<anio>s.',
+      eficiencia: 'Nadie de este plan con carga completa llegó a eficiencia 1 en %<anio>s.',
+      promedio: 'Nadie de este plan con carga completa y eficiencia 1 pasa del promedio mínimo en %<anio>s.'
+    }.freeze
+
     attr_reader :school, :anios, :anio
 
     def initialize(school, anio = nil)
@@ -83,6 +89,19 @@ class School
     # Con carga completa y sin reprobadas, pero con notas del año sin cargar: aparecen cuando se carguen.
     def esperando_notas
       candidatos.count { |c| c.primera_carrera && carga_completa?(c) && c.reprobadas.zero? && c.pendientes.positive? }
+    end
+
+    # Lo que se lee arriba de la lista, en la pantalla y en el Excel.
+    def texto_criterios
+      "Primera carrera · Carga completa: #{numero(minimo(:creditos_semestre))} créditos en cada semestre, o " \
+        "#{numero(minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta " \
+        "#{anio&.numero} · Promedio simple del año mayor a #{numero(minimo(:promedio_mayor_a))} · Orden: " \
+        'promedio simple; si empatan, ponderado y luego créditos'
+    end
+
+    def aviso_sin_premio(grupo)
+      "#{format(SIN_PREMIO.fetch(grupo.falta), anio: anio.numero)} En este plan no hay premio; " \
+        "como referencia, los más cercanos (hasta #{CERCANOS})."
     end
 
     # Un Grupo por plan, ordenados por código.

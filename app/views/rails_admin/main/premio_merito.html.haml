@@ -2,7 +2,6 @@
 - premio = School::PremioMerito.new(@object, params[:anio])
 - anio = premio.anio
 - medallas = %w[🥇 🥈 🥉]
-- cifra = ->(valor) { number_with_precision(valor, precision: 2, strip_insignificant_zeros: true) }
 
 = turbo_frame_tag 'premio_merito', data: { turbo_action: 'advance' } do
   %h5.text-primary.fw-bold.mb-3
@@ -12,16 +11,19 @@
   - if anio.nil?
     .alert.alert-light.text-center.text-muted Esta escuela todavía no tiene años cursados.
   - else
-    %ul.nav.nav-pills.mb-3
-      - premio.anios.each do |a|
-        %li.nav-item
-          = link_to rails_admin.premio_merito_path(model_name: 'school', id: @object.id, anio: a.numero), class: "nav-link #{'active' if a.numero == anio.numero}" do
-            = a.numero
-            - if a.en_curso?
-              %span.badge.rounded-pill.bg-warning.text-dark.ms-1 en curso
+    .d-flex.flex-wrap.align-items-center.justify-content-between.gap-2.mb-3
+      %ul.nav.nav-pills
+        - premio.anios.each do |a|
+          %li.nav-item
+            = link_to rails_admin.premio_merito_path(model_name: 'school', id: @object.id, anio: a.numero), class: "nav-link #{'active' if a.numero == anio.numero}" do
+              = a.numero
+              - if a.en_curso?
+                %span.badge.rounded-pill.bg-warning.text-dark.ms-1 en curso
+      = link_to rails_admin.premio_merito_path(model_name: 'school', id: @object.id, anio: anio.numero, formato: 'xlsx'), class: 'btn btn-outline-success btn-sm', data: { turbo: false } do
+        %i.fa-solid.fa-file-excel.me-1
+        = "Descargar Excel #{anio.numero}"
 
-    %p.small.text-muted.mb-3
-      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio simple del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Orden: promedio simple; si empatan, ponderado y luego créditos"
+    %p.small.text-muted.mb-3= premio.texto_criterios
 
     .d-flex.flex-wrap.align-items-center.gap-2.mb-3
       - premio.embudo.each_with_index do |(etiqueta, cantidad), i|
@@ -40,9 +42,6 @@
         %i.fa-solid.fa-hourglass-half.me-1
         = "#{premio.esperando_notas} con carga completa y sin reprobadas tienen notas de #{anio.numero} sin cargar; aparecen cuando se carguen."
 
-    - avisos = { carga_completa: "Nadie de este plan inscribió la carga completa en #{anio.numero}.",
-                 eficiencia: "Nadie de este plan con carga completa llegó a eficiencia 1 en #{anio.numero}.",
-                 promedio: "Nadie de este plan con carga completa y eficiencia 1 pasa del promedio mínimo en #{anio.numero}." }
     - if premio.grupos.empty?
       .alert.alert-light.text-center.text-muted.mt-3= "No hay estudiantes de primera carrera con #{anio.numero} evaluado."
     - premio.grupos.each do |grupo|
@@ -56,7 +55,7 @@
       - if grupo.falta
         .alert.alert-warning.small.py-2
           %i.fa-solid.fa-circle-info.me-1
-          = "#{avisos[grupo.falta]} En este plan no hay premio; como referencia, los más cercanos (hasta #{School::PremioMerito::CERCANOS})."
+          = premio.aviso_sin_premio(grupo)
       .table-responsive
         %table.table.table-hover.align-middle
           %thead.table-light
