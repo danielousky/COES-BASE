@@ -9,12 +9,13 @@ class School
   #      ese año, y ninguna nota del año sin cargar.
   #   4. Promedio ponderado del año mayor a 15 (asignaturas numéricas, sin equivalencias).
   #
-  # El orden es por promedio ponderado, que pesa más porque cuenta los créditos. Los empates se rompen
-  # con el promedio simple y después con los créditos del año (Daniel, 29-oct-2026).
+  # El orden es por promedio simple. Los empates se rompen con el ponderado, que pesa más porque cuenta
+  # los créditos, y después con los créditos del año (Daniel, 29-oct-2026).
   #
   # Si en un plan nadie cumple todo, se muestran los CERCANOS que llegaron más lejos: primero quien cumple
-  # más criterios, después quien quedó más cerca de la carga y después el mérito. No llevan medalla:
-  # Control de Estudios decide si entrega el premio (Daniel, 29-oct-2026). Primera carrera no se relaja.
+  # más criterios, después quien quedó más cerca de la carga y después el mérito. Son solo referencia:
+  # sin los criterios cumplidos no se entrega el premio (Pedro, ratificado el 29-oct-2026). Primera
+  # carrera no se relaja.
   #
   # Los tres números se cambian por facultad en Configuración General (claves PREMIO_MERITO_*).
   # FHE es la matriz: se prueba aquí y después se copia igual a COES ODON y FAU.
@@ -145,9 +146,9 @@ class School
       end
     end
 
-    # El ponderado se compara a dos decimales, como se ve en pantalla.
+    # Simple, luego ponderado, luego créditos; los promedios a dos decimales, como se ven en pantalla.
     def orden_de_merito(candidato)
-      [candidato.promedio.to_f.round(2), candidato.promedio_simple.to_f.round(2), candidato.creditos.compact.sum]
+      [candidato.promedio_simple.to_f.round(2), candidato.promedio.to_f.round(2), candidato.creditos.compact.sum]
     end
 
     # De mayor a menor según la clave; los empatados en toda la clave comparten puesto: 1, 1, 3…

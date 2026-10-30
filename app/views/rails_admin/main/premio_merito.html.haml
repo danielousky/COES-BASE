@@ -21,7 +21,7 @@
               %span.badge.rounded-pill.bg-warning.text-dark.ms-1 en curso
 
     %p.small.text-muted.mb-3
-      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Empates: promedio simple y luego créditos"
+      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Orden: promedio simple; si empatan, ponderado y luego créditos"
 
     .d-flex.flex-wrap.align-items-center.gap-2.mb-3
       - premio.embudo.each_with_index do |(etiqueta, cantidad), i|
@@ -50,13 +50,13 @@
       %h6.fw-bold.mt-4.mb-2
         = grupo.plan.name
         - if grupo.falta
-          %span.text-muted.fw-normal= "· #{grupo.plan.code} · nadie cumple todos los criterios"
+          %span.text-muted.fw-normal= "· #{grupo.plan.code} · sin premio: nadie cumple todos los criterios"
         - else
           %span.text-muted.fw-normal= "· #{grupo.plan.code} · #{lista.size} #{lista.size == 1 ? 'cumple' : 'cumplen'} los criterios"
       - if grupo.falta
         .alert.alert-warning.small.py-2
           %i.fa-solid.fa-circle-info.me-1
-          = "#{avisos[grupo.falta]} Aquí van los más cercanos (hasta #{School::PremioMerito::CERCANOS}): Control de Estudios decide si entrega el premio."
+          = "#{avisos[grupo.falta]} En este plan no hay premio; como referencia, los más cercanos (hasta #{School::PremioMerito::CERCANOS})."
       .table-responsive
         %table.table.table-hover.align-middle
           %thead.table-light
@@ -67,8 +67,8 @@
               %th.text-end= "Créditos #{anio.numero}"
               - if grupo.falta
                 %th.text-end= "Eficiencia hasta #{anio.numero}"
-              %th.text-end= "Ponderado #{anio.numero}"
               %th.text-end= "Simple #{anio.numero}"
+              %th.text-end= "Ponderado #{anio.numero}"
           %tbody
             - lista.each do |c|
               - medalla = medallas[c.puesto - 1] unless grupo.falta
@@ -79,5 +79,5 @@
                 %td.text-end= c.creditos_texto
                 - if grupo.falta
                   %td.text-end= number_with_precision(c.eficiencia, precision: 2)
-                %td.text-end= c.promedio ? number_with_precision(c.promedio, precision: 2) : '—'
                 %td.text-end= c.promedio_simple ? number_with_precision(c.promedio_simple, precision: 2) : '—'
+                %td.text-end= c.promedio ? number_with_precision(c.promedio, precision: 2) : '—'
