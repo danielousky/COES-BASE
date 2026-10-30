@@ -7,7 +7,7 @@ class School
   #      Cuenta lo inscrito y no retirado; las equivalencias no cuentan.
   #   3. Eficiencia 1: ninguna asignatura aplazada ni perdida por inasistencia en la carrera hasta
   #      ese año, y ninguna nota del año sin cargar.
-  #   4. Promedio ponderado del año mayor a 15 (asignaturas numéricas, sin equivalencias).
+  #   4. Promedio simple del año mayor a 15 (asignaturas numéricas, sin equivalencias).
   #
   # El orden es por promedio simple. Los empates se rompen con el ponderado, que pesa más porque cuenta
   # los créditos, y después con los créditos del año (Daniel, 29-oct-2026).
@@ -121,7 +121,7 @@ class School
     end
 
     def supera_promedio?(candidato)
-      candidato.promedio.to_f > minimo(:promedio_mayor_a)
+      candidato.promedio_simple.to_f > minimo(:promedio_mayor_a)
     end
 
     def criterios
@@ -129,7 +129,7 @@ class School
         ['de primera carrera', ->(c) { c.primera_carrera }],
         ['con carga completa', ->(c) { carga_completa?(c) }],
         ['con eficiencia 1', ->(c) { c.reprobadas.zero? && c.pendientes.zero? }],
-        ["con promedio mayor a #{numero(minimo(:promedio_mayor_a))}", ->(c) { supera_promedio?(c) }]
+        ["con promedio simple mayor a #{numero(minimo(:promedio_mayor_a))}", ->(c) { supera_promedio?(c) }]
       ]
     end
 

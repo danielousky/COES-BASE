@@ -21,7 +21,7 @@
               %span.badge.rounded-pill.bg-warning.text-dark.ms-1 en curso
 
     %p.small.text-muted.mb-3
-      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Orden: promedio simple; si empatan, ponderado y luego créditos"
+      = "Primera carrera · Carga completa: #{cifra.(premio.minimo(:creditos_semestre))} créditos en cada semestre, o #{cifra.(premio.minimo(:creditos_anual))} en el año si la carrera es anual · Eficiencia 1 en la carrera hasta #{anio.numero} · Promedio simple del año mayor a #{cifra.(premio.minimo(:promedio_mayor_a))} · Orden: promedio simple; si empatan, ponderado y luego créditos"
 
     .d-flex.flex-wrap.align-items-center.gap-2.mb-3
       - premio.embudo.each_with_index do |(etiqueta, cantidad), i|

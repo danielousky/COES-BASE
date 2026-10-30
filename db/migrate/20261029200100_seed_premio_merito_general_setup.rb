@@ -4,7 +4,7 @@ class SeedPremioMeritoGeneralSetup < ActiveRecord::Migration[7.0]
   DESCRIPCIONES = {
     creditos_semestre: 'Premio al Mérito: créditos mínimos inscritos en cada semestre del año (carreras semestrales).',
     creditos_anual: 'Premio al Mérito: créditos mínimos inscritos en el año (carreras anuales).',
-    promedio_mayor_a: 'Premio al Mérito: el promedio ponderado del año tiene que ser mayor a este valor.'
+    promedio_mayor_a: 'Premio al Mérito: el promedio simple del año tiene que ser mayor a este valor.'
   }.freeze
 
   def up
