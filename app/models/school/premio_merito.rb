@@ -12,10 +12,9 @@ class School
   # El orden es por promedio ponderado, que pesa más porque cuenta los créditos. Los empates se rompen
   # con el promedio simple y después con los créditos del año (Daniel, 29-oct-2026).
   #
-  # Si en un plan nadie cumple todo, se muestran los CERCANOS que llegaron más lejos, ordenados por el
-  # criterio en el que se quedaron todos (carga, eficiencia o promedio) y después por mérito. No llevan
-  # medalla: Control de Estudios decide si entrega el premio (Daniel, 29-oct-2026). Primera carrera no
-  # se relaja.
+  # Si en un plan nadie cumple todo, se muestran los CERCANOS que llegaron más lejos: primero quien cumple
+  # más criterios, después quien quedó más cerca de la carga y después el mérito. No llevan medalla:
+  # Control de Estudios decide si entrega el premio (Daniel, 29-oct-2026). Primera carrera no se relaja.
   #
   # Los tres números se cambian por facultad en Configuración General (claves PREMIO_MERITO_*).
   # FHE es la matriz: se prueba aquí y después se copia igual a COES ODON y FAU.
@@ -99,20 +98,29 @@ class School
 
     private
 
-    # Los que cumplen todo, con medalla. Si nadie, los CERCANOS que llegaron más lejos: primero por el
-    # criterio donde se quedaron todos y después por mérito.
+    # Los que cumplen todo, con medalla. Si nadie, los CERCANOS de la etapa del embudo donde se quedaron todos.
     def grupo_del_plan(plan, del_plan)
       con_carga = del_plan.select { |c| carga_completa?(c) }
       con_eficiencia = con_carga.select { |c| c.reprobadas.zero? }
-      premiados = con_eficiencia.select { |c| c.promedio.to_f > minimo(:promedio_mayor_a) }
+      premiados = con_eficiencia.select { |c| supera_promedio?(c) }
       return Grupo.new(plan, con_puestos(premiados) { |c| orden_de_merito(c) }, nil) if premiados.any?
 
-      falta, quedan, clave =
-        if con_eficiencia.any? then [:promedio, con_eficiencia, ->(c) { orden_de_merito(c) }]
-        elsif con_carga.any? then [:eficiencia, con_carga, ->(c) { [c.eficiencia.round(2), *orden_de_merito(c)] }]
-        else [:carga_completa, del_plan, ->(c) { [avance_de_carga(c).round(2), c.eficiencia.round(2), *orden_de_merito(c)] }]
+      falta, quedan =
+        if con_eficiencia.any? then [:promedio, con_eficiencia]
+        elsif con_carga.any? then [:eficiencia, con_carga]
+        else [:carga_completa, del_plan]
         end
-      Grupo.new(plan, con_puestos(quedan, &clave).take_while { |c| c.puesto <= CERCANOS }, falta)
+      Grupo.new(plan, con_puestos(quedan) { |c| cercania(c) }.take_while { |c| c.puesto <= CERCANOS }, falta)
+    end
+
+    # Primero cuántos criterios cumple, después qué tan cerca quedó de la carga y después el mérito.
+    def cercania(candidato)
+      cumplidos = [carga_completa?(candidato), candidato.reprobadas.zero?, supera_promedio?(candidato)].count(true)
+      [cumplidos, [avance_de_carga(candidato), 1].min.round(2), candidato.eficiencia.round(2), *orden_de_merito(candidato)]
+    end
+
+    def supera_promedio?(candidato)
+      candidato.promedio.to_f > minimo(:promedio_mayor_a)
     end
 
     def criterios
@@ -120,8 +128,7 @@ class School
         ['de primera carrera', ->(c) { c.primera_carrera }],
         ['con carga completa', ->(c) { carga_completa?(c) }],
         ['con eficiencia 1', ->(c) { c.reprobadas.zero? && c.pendientes.zero? }],
-        ["con promedio mayor a #{numero(minimo(:promedio_mayor_a))}",
-         ->(c) { c.promedio.to_f > minimo(:promedio_mayor_a) }]
+        ["con promedio mayor a #{numero(minimo(:promedio_mayor_a))}", ->(c) { supera_promedio?(c) }]
       ]
     end
 
