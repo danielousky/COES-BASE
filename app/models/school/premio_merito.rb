@@ -88,7 +88,8 @@ class School
     # Un Grupo por plan, ordenados por código.
     def grupos
       @grupos ||= begin
-        evaluables = candidatos.select { |c| c.primera_carrera && c.pendientes.zero? }
+        # Sin créditos en el año no estudió ese año: no entra ni entre los cercanos.
+        evaluables = candidatos.select { |c| c.primera_carrera && c.pendientes.zero? && c.creditos.compact.sum.positive? }
         planes = StudyPlan.where(id: evaluables.map(&:study_plan_id).uniq).index_by(&:id)
         evaluables.group_by(&:study_plan_id)
                   .map { |plan_id, del_plan| grupo_del_plan(planes[plan_id], del_plan) }
