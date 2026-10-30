@@ -22,7 +22,10 @@ class CoursesController < ApplicationController
       end
       
     rescue StandardError => e
-      format.json { render json: {data: e, status: :unprocessable_entity} }
+      # Fuera del bloque, «format» era el Kernel#format de Ruby: el error se perdía en un 500
+      respond_to do |format|
+        format.json { render json: {data: e, status: :unprocessable_entity} }
+      end
     end
   end
 
