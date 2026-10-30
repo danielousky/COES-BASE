@@ -281,6 +281,20 @@
                           - if entry[:last_action_at]
                             %span.ms-1= "· Hace #{time_ago_in_words(entry[:last_action_at])}"
 
+      -# Primero que el Top 10: debajo de las dos tablas quedaba fuera de la pantalla.
+      - premio_schools = @dashboard.schools.select { |school| school.pregrado? && can?(:premio_merito, school) }
+      - if premio_schools.any?
+        .card.shadow-sm.mb-3
+          .card-header.bg-white.border-bottom.py-3
+            %h6.card-title.mb-0
+              %i.fa-solid.fa-award.me-1.text-warning
+              Premio al Mérito Académico
+          .list-group.list-group-flush
+            - premio_schools.each do |school|
+              = link_to rails_admin.premio_merito_path(model_name: 'school', id: school.id), class: 'list-group-item list-group-item-action d-flex justify-content-between align-items-center', style: 'font-size: 0.85rem' do
+                = school.short_name.presence || school.name
+                %i.fa-solid.fa-chevron-right.text-muted
+
       - type_labels = { 'pregrado' => 'Pregrado', 'postgrado' => 'Postgrado', 'extension' => 'Extensión', 'investigacion' => 'Investigación' }
       - display_types = school_types.select { |t| %w[pregrado postgrado].include?(t) }
       - display_types = ['pregrado'] if display_types.empty?
@@ -329,19 +343,6 @@
               .text-center.py-4
                 %i.fa-solid.fa-graduation-cap.fa-2x.text-muted.mb-2
                 %p.text-muted.mb-0 Sin datos para este período
-
-      - premio_schools = @dashboard.schools.select { |school| school.pregrado? && can?(:premio_merito, school) }
-      - if premio_schools.any?
-        .card.shadow-sm.mb-3
-          .card-header.bg-white.border-bottom.py-3
-            %h6.card-title.mb-0
-              %i.fa-solid.fa-award.me-1.text-warning
-              Premio al Mérito Académico
-          .list-group.list-group-flush
-            - premio_schools.each do |school|
-              = link_to rails_admin.premio_merito_path(model_name: 'school', id: school.id), class: 'list-group-item list-group-item-action d-flex justify-content-between align-items-center', style: 'font-size: 0.85rem' do
-                = school.short_name.presence || school.name
-                %i.fa-solid.fa-chevron-right.text-muted
 
 - else
   .alert.alert-info
