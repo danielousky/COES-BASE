@@ -26,6 +26,7 @@ class Ability
         can :manage, [Admin, Student, Teacher, Area, Departament, Subject, SubjectType, Course, Grade, AcademicProcess, AcademicRecord, Section, AdmissionType, PeriodType, Address, StudyPlan, Period, SubjectLink, Schedule, EnrollmentDay, Billboard, User, EnrollAcademicProcess, PaymentReport, Bank, BankAccount, Mention, EnvAuth]
         can :ru, [School, Language]
         can :organization_chart, [School]
+        can :premio_merito, [School]
         can :manage, :graduacion
       else
         can :manage, [User]
@@ -47,6 +48,7 @@ class Ability
             end
             if authd.authorizable.klazz.eql? 'School' and authd.can_read?
                can :organization_chart, [School] 
+               can :premio_merito, [School]
             end
             # if authd.authorizable.klazz.eql? 'School' and authd.can_manage?
             #    can :manage, [Bank, BankAccount] 

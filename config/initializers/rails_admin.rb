@@ -93,6 +93,16 @@ RailsAdmin.config do |config|
     #   end
     # end
 
+    member :premio_merito do
+      only [School]
+      link_icon do
+        'fa-solid fa-award'
+      end
+      visible do
+        authorized? && (bindings[:object].nil? || bindings[:object].pregrado?)
+      end
+    end
+
     member :structure do 
 
       only [StudyPlan]

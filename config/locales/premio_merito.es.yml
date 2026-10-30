@@ -1,0 +1,12 @@
+es:
+  admin:
+    actions:
+      premio_merito:
+        title: "Premio al Mérito Académico"
+        menu: "Premio al mérito"
+        breadcrumb: "Premio al mérito"
+        link: "Premio al mérito"
+  activerecord:
+    attributes:
+      admission_type:
+        first_career: "Primera carrera"

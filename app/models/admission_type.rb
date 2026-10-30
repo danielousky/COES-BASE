@@ -2,11 +2,12 @@
 #
 # Table name: admission_types
 #
-#  id         :bigint           not null, primary key
-#  code       :string
-#  name       :string
-#  created_at :datetime         not null
-#  updated_at :datetime         not null
+#  id           :bigint           not null, primary key
+#  code         :string
+#  first_career :boolean          default(FALSE), not null
+#  name         :string
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
 #
 class AdmissionType < ApplicationRecord
 
@@ -35,6 +36,7 @@ class AdmissionType < ApplicationRecord
       checkboxes false
       field :name
       field :code
+      field :first_career
 
       field :total_students do
         label 'Total Estudiantes'
@@ -46,6 +48,7 @@ class AdmissionType < ApplicationRecord
     show do
       field :name
       field :code
+      field :first_career
     end
 
     edit do
@@ -55,6 +58,9 @@ class AdmissionType < ApplicationRecord
           {length: 4, size: 4, onInput: "$(this).val($(this).val().replace(/[^0-9]/g,''))"}
         end
         help 'Sólo 4 dígitos numéricos permitidos' 
+      end
+      field :first_career do
+        help 'Marcada: sus estudiantes pueden optar al Premio al Mérito Académico.'
       end
     end
 

@@ -1,0 +1,248 @@
+class School
+  # Premio al Mérito Académico: los mejores promedios del año en cada plan de estudio.
+  #
+  # Criterios de Control de Estudios (Pedro Coronado, FHE, 28-oct-2026), en el orden en que filtran:
+  #   1. Primera carrera: la forma de ingreso está marcada así (AdmissionType#first_career).
+  #   2. Carga completa: 18 créditos inscritos en cada semestre del año, o 36 si la carrera es anual.
+  #      Cuenta lo inscrito y no retirado; las equivalencias no cuentan.
+  #   3. Eficiencia 1: ninguna asignatura aplazada ni perdida por inasistencia en la carrera hasta
+  #      ese año, y ninguna nota del año sin cargar.
+  #   4. Promedio ponderado del año mayor a 15 (asignaturas numéricas, sin equivalencias).
+  #
+  # Si en un plan nadie con primera carrera y carga completa llega a eficiencia 1, se muestran los
+  # CERCANOS más cercanos a 1, sin exigir el promedio, para que el plan no quede sin nombres (Daniel,
+  # 29-oct-2026). Esos no llevan medalla: el premio pide eficiencia 1 y lo decide Control de Estudios.
+  #
+  # Los tres números se cambian por facultad en Configuración General (claves PREMIO_MERITO_*).
+  # FHE es la matriz: se prueba aquí y después se copia igual a COES ODON y FAU.
+  class PremioMerito
+    MINIMOS = {
+      creditos_semestre: ['PREMIO_MERITO_CREDITOS_SEMESTRE', 18],
+      creditos_anual: ['PREMIO_MERITO_CREDITOS_ANUAL', 36],
+      promedio_mayor_a: ['PREMIO_MERITO_PROMEDIO_MAYOR_A', 15]
+    }.freeze
+
+    ANIOS_VISIBLES = 8
+    CERCANOS = 5
+    PERIODOS_REGULARES = %w[01 02].freeze # los intensivos no cuentan
+    EN_CURSO_SI_PENDIENTES = 0.1          # fracción de notas sin cargar a partir de la cual el año sigue abierto
+
+    Anio = Struct.new(:numero, :registros, :pendientes) do
+      def en_curso?
+        pendientes > registros * EN_CURSO_SI_PENDIENTES
+      end
+    end
+
+    Candidato = Struct.new(:grade_id, :student_id, :study_plan_id, :ci, :nombre, :primera_carrera, :anual,
+                           :creditos, :pendientes, :cursadas, :reprobadas, :promedio, :puesto, keyword_init: true) do
+      def creditos_texto
+        anual ? creditos.compact.sum.to_s : creditos.map { |cr| cr || '—' }.join(' + ')
+      end
+
+      # Aprobadas entre cursadas en la carrera hasta el año del premio, como Grade#efficiency.
+      def eficiencia
+        cursadas.zero? ? 1.0 : (cursadas - reprobadas).fdiv(cursadas)
+      end
+    end
+
+    # La lista de un plan. cercanos: nadie llegó a eficiencia 1 y son los más cercanos a 1.
+    Grupo = Struct.new(:plan, :estudiantes, :cercanos)
+
+    attr_reader :school, :anios, :anio
+
+    def initialize(school, anio = nil)
+      @school = school
+      @anios = cargar_anios
+      @anio = @anios.find { |a| a.numero == anio.to_i } || @anios.find { |a| !a.en_curso? } || @anios.first
+    end
+
+    def minimo(nombre)
+      @minimos ||= {}
+      @minimos[nombre] ||= begin
+        clave, por_defecto = MINIMOS.fetch(nombre)
+        valor = GeneralSetup.find_by(clave: clave)&.valor.to_s.strip.tr(',', '.')
+        valor.match?(/\A\d+(\.\d+)?\z/) ? valor.to_f : por_defecto
+      end
+    end
+
+    # [[etiqueta, cuántos quedan], ...]: cada paso aplica un criterio más sobre el anterior.
+    def embudo
+      @embudo ||= begin
+        quedan = candidatos
+        [["inscritos en #{anio&.numero}", quedan.size]] +
+          criterios.map { |etiqueta, cumple| [etiqueta, (quedan = quedan.select(&cumple)).size] }
+      end
+    end
+
+    # Con carga completa y sin reprobadas, pero con notas del año sin cargar: aparecen cuando se carguen.
+    def esperando_notas
+      candidatos.count { |c| c.primera_carrera && carga_completa?(c) && c.reprobadas.zero? && c.pendientes.positive? }
+    end
+
+    # Un Grupo por plan, ordenados por código: los que cumplen todo o, si nadie llegó a eficiencia 1, los cercanos.
+    def grupos
+      @grupos ||= begin
+        evaluables = candidatos.select { |c| c.primera_carrera && carga_completa?(c) && c.pendientes.zero? }
+        planes = StudyPlan.where(id: evaluables.map(&:study_plan_id).uniq).index_by(&:id)
+        evaluables.group_by(&:study_plan_id).filter_map do |plan_id, del_plan|
+          con_eficiencia = del_plan.select { |c| c.reprobadas.zero? }
+          if con_eficiencia.any?
+            premiados = con_eficiencia.select { |c| c.promedio.to_f > minimo(:promedio_mayor_a) }
+            next if premiados.empty?
+
+            Grupo.new(planes[plan_id], con_puestos(premiados) { |c| [c.promedio.round(2)] }, false)
+          else
+            cercanos = con_puestos(del_plan) { |c| [c.eficiencia.round(2), c.promedio.to_f.round(2)] }
+            Grupo.new(planes[plan_id], cercanos.take_while { |c| c.puesto <= CERCANOS }, true)
+          end
+        end.sort_by { |grupo| grupo.plan.code.to_s }
+      end
+    end
+
+    private
+
+    def criterios
+      @criterios ||= [
+        ['de primera carrera', ->(c) { c.primera_carrera }],
+        ['con carga completa', ->(c) { carga_completa?(c) }],
+        ['con eficiencia 1', ->(c) { c.reprobadas.zero? && c.pendientes.zero? }],
+        ["con promedio mayor a #{numero(minimo(:promedio_mayor_a))}",
+         ->(c) { c.promedio.to_f > minimo(:promedio_mayor_a) }]
+      ]
+    end
+
+    def carga_completa?(candidato)
+      if candidato.anual
+        candidato.creditos.compact.sum >= minimo(:creditos_anual)
+      else
+        candidato.creditos.all? { |cr| cr && cr >= minimo(:creditos_semestre) }
+      end
+    end
+
+    # De mayor a menor según la clave; los empatados en la clave comparten puesto: 1, 1, 3…
+    def con_puestos(lista, &clave)
+      ordenada = lista.sort_by { |c| clave.call(c).map { |v| -v } + [-c.creditos.compact.sum, c.nombre] }
+      ordenada.each_with_index do |c, i|
+        anterior = ordenada[i - 1] if i.positive?
+        c.puesto = anterior && clave.call(anterior) == clave.call(c) ? anterior.puesto : i + 1
+      end
+    end
+
+    def numero(valor)
+      ActiveSupport::NumberHelper.number_to_rounded(valor, precision: 2, strip_insignificant_zeros: true)
+    end
+
+    def candidatos
+      return [] unless anio
+
+      @candidatos ||= consultar(CANDIDATOS_SQL, escuela: school.id, anio: anio.numero).map do |fila|
+        Candidato.new(
+          grade_id: fila['grade_id'], student_id: fila['student_id'], study_plan_id: fila['study_plan_id'],
+          ci: fila['ci'], nombre: "#{fila['last_name']}, #{fila['first_name']}",
+          primera_carrera: ActiveModel::Type::Boolean.new.cast(fila['primera_carrera']),
+          anual: ActiveModel::Type::Boolean.new.cast(fila['anual']),
+          creditos: [fila['creditos_1'], fila['creditos_2']].map { |cr| cr&.to_i },
+          pendientes: fila['pendientes'].to_i, cursadas: fila['cursadas'].to_i, reprobadas: fila['reprobadas'].to_i,
+          promedio: fila['promedio']&.to_d
+        )
+      end
+    end
+
+    def cargar_anios
+      consultar(ANIOS_SQL, escuela: school.id, limite: ANIOS_VISIBLES).map do |fila|
+        Anio.new(fila['year'].to_i, fila['registros'].to_i, fila['pendientes'].to_i)
+      end
+    end
+
+    def consultar(sql, binds)
+      binds = binds.merge(
+        modalidades: AcademicProcess.modalities.values_at('Semestral', 'Anual'),
+        anual: AcademicProcess.modalities['Anual'],
+        periodos_regulares: PERIODOS_REGULARES,
+        sin_calificar: AcademicRecord.statuses['sin_calificar'],
+        retirado: AcademicRecord.statuses['retirado'],
+        cursadas: AcademicRecord.statuses.values_at('aprobado', 'aplazado', 'perdida_por_inasistencia'),
+        reprobadas: AcademicRecord.statuses.values_at('aplazado', 'perdida_por_inasistencia'),
+        numerica: Subject.qualification_types['numerica'],
+        equivalencias: Section.modalities.select { |nombre, _| nombre.start_with?('equivalencia') }.values.presence || [-1]
+      )
+      ActiveRecord::Base.connection.select_all(ActiveRecord::Base.sanitize_sql_array([sql, binds])).to_a
+    end
+
+    # Solo los años con registros: hay procesos creados de años que nunca se cargaron en COES.
+    ANIOS_SQL = <<~SQL.freeze
+      SELECT p.year, COUNT(*) AS registros, COUNT(*) FILTER (WHERE ar.status = :sin_calificar) AS pendientes
+      FROM academic_processes ap
+      JOIN periods p ON p.id = ap.period_id
+      JOIN period_types pt ON pt.id = p.period_type_id
+      JOIN enroll_academic_processes eap ON eap.academic_process_id = ap.id
+      JOIN academic_records ar ON ar.enroll_academic_process_id = eap.id
+      WHERE ap.school_id = :escuela AND ap.modality IN (:modalidades) AND pt.code IN (:periodos_regulares)
+      GROUP BY p.year
+      ORDER BY p.year DESC
+      LIMIT :limite
+    SQL
+
+    CANDIDATOS_SQL = <<~SQL.freeze
+      WITH ventana AS (
+        SELECT ap.id, ap.modality, pt.code AS tipo
+        FROM academic_processes ap
+        JOIN periods p ON p.id = ap.period_id
+        JOIN period_types pt ON pt.id = p.period_type_id
+        WHERE ap.school_id = :escuela AND p.year = :anio
+          AND ap.modality IN (:modalidades) AND pt.code IN (:periodos_regulares)
+      ), registros AS (
+        SELECT eap.grade_id, v.modality, v.tipo, ar.status, s.unit_credits AS creditos,
+               s.qualification_type, sec.modality AS seccion, q.value AS nota
+        FROM ventana v
+        JOIN enroll_academic_processes eap ON eap.academic_process_id = v.id
+        JOIN academic_records ar ON ar.enroll_academic_process_id = eap.id
+        JOIN sections sec ON sec.id = ar.section_id
+        JOIN courses c ON c.id = sec.course_id
+        JOIN subjects s ON s.id = c.subject_id
+        LEFT JOIN LATERAL (
+          SELECT value FROM qualifications
+          WHERE academic_record_id = ar.id AND definitive
+          ORDER BY id DESC LIMIT 1
+        ) q ON true
+      ), por_periodo AS (
+        SELECT grade_id, tipo, bool_or(modality = :anual) AS anual,
+               COALESCE(SUM(creditos) FILTER (WHERE status <> :retirado AND seccion NOT IN (:equivalencias)), 0) AS creditos
+        FROM registros
+        GROUP BY grade_id, tipo
+      ), del_anio AS (
+        SELECT grade_id,
+               COUNT(*) FILTER (WHERE status = :sin_calificar) AS pendientes,
+               SUM(creditos * nota) FILTER (WHERE status IN (:cursadas) AND qualification_type = :numerica
+                                              AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL)::numeric
+                 / NULLIF(SUM(creditos) FILTER (WHERE status IN (:cursadas) AND qualification_type = :numerica
+                                                  AND seccion NOT IN (:equivalencias) AND nota IS NOT NULL), 0) AS promedio
+        FROM registros
+        GROUP BY grade_id
+      ), historial AS (
+        SELECT eap.grade_id,
+               COUNT(*) FILTER (WHERE ar.status IN (:cursadas)) AS cursadas,
+               COUNT(*) FILTER (WHERE ar.status IN (:reprobadas)) AS reprobadas
+        FROM academic_records ar
+        JOIN enroll_academic_processes eap ON eap.id = ar.enroll_academic_process_id
+        JOIN academic_processes ap ON ap.id = eap.academic_process_id
+        JOIN periods p ON p.id = ap.period_id
+        WHERE eap.grade_id IN (SELECT grade_id FROM del_anio) AND p.year <= :anio
+        GROUP BY eap.grade_id
+      )
+      SELECT g.id AS grade_id, g.student_id, g.study_plan_id, u.ci, u.last_name, u.first_name,
+             COALESCE(adm.first_career, false) AS primera_carrera,
+             bool_or(pp.anual) AS anual,
+             MAX(pp.creditos) FILTER (WHERE pp.tipo = '01') AS creditos_1,
+             MAX(pp.creditos) FILTER (WHERE pp.tipo = '02') AS creditos_2,
+             a.pendientes, a.promedio, COALESCE(h.cursadas, 0) AS cursadas, COALESCE(h.reprobadas, 0) AS reprobadas
+      FROM del_anio a
+      JOIN grades g ON g.id = a.grade_id
+      JOIN users u ON u.id = g.student_id
+      JOIN por_periodo pp ON pp.grade_id = a.grade_id
+      LEFT JOIN admission_types adm ON adm.id = g.admission_type_id
+      LEFT JOIN historial h ON h.grade_id = a.grade_id
+      GROUP BY g.id, u.id, adm.first_career, a.pendientes, a.promedio, h.cursadas, h.reprobadas
+    SQL
+  end
+end
