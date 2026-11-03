@@ -11,7 +11,7 @@
     "blueimp-file-upload": "^10.32.0",
     "bootstrap": "^5.2.3",
     "jquery": "^3.6.3",
-    "rails_admin": "3.1.1",
+    "rails_admin": "3.1.2",
     "sass": "^1.57.1",
     "toastr": "^2.1.4",
     "trix": "^2.0.4",
