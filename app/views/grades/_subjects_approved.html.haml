@@ -1,24 +1,25 @@
-
+-# Modal de asignaturas aprobadas del admin, agrupadas por semestre/año. Se quitó la
+-# columna ID (era el record.id interno: no le dice nada a CE). `records` llega ordenado
+-# por subjects.ordinal, subjects.code; `tipo` ('semestre'/'año') lo pasa el caller según
+-# el régimen del plan. Las electivas (ordinal 0) van al final.
+- tipo = local_assigns.fetch(:tipo, 'semestre')
 %table.table.table-striped.table-sm.table-hover.table-bordered.responsive-table
   %thead{style: "position: sticky;top: 0"}
     %tr
-      %th.text-center.table-primary{colspan: 5} Asignaturas Aprobadas
+      %th.text-center.table-primary{colspan: 2} Asignaturas Aprobadas
     %tr.table-primary
-      - if current_user&.admin&.yo?
-        %th ID
-      %th.headers{style: 'width: 4%', scope: :col} #
-      %th.headers{style: 'width: 5%', scope: :col}= "(Sem/Año)"
-      %th.headers{style: 'width: 56%', scope: :col} Asignatura
-      - if false
-        %th.headers{style: 'width: 5%', scope: :col} Créd
+      %th.headers{style: 'width: 5%', scope: :col} #
+      %th.headers{scope: :col} Asignatura
   %tbody
-    - records.each_with_index do |record, i|
-      - subject = record.subject
-      %tr
-        - if current_user&.admin&.yo?
-          %td= record.id
-        %td.align-middle.text-right= i+1
-        %td.align-middle.text-center= subject.ordinal
-        %td.align-middle{'data-bs-toggle': :tooltip, title: subject.desc}= subject.desc
-        - if false
-          %td.align-middle.text-center= subject.unit_credits
+    - i = 0
+    - records.group_by { |r| r.subject.ordinal.to_i }.sort_by { |ordinal, _| ordinal.zero? ? 99 : ordinal }.each do |ordinal, grupo|
+      %tr.table-secondary
+        %th{colspan: 2, scope: :colgroup}
+          = ordinal.zero? ? 'Electivas y otras' : "#{ordinal}º #{tipo}"
+          %span.badge.bg-secondary.ms-2.fw-normal= grupo.one? ? '1 asignatura' : "#{grupo.size} asignaturas"
+      - grupo.each do |record|
+        - subject = record.subject
+        - i += 1
+        %tr
+          %td.align-middle.text-end.text-muted= i
+          %td.align-middle{'data-bs-toggle': :tooltip, title: subject.desc}= subject.desc

@@ -28,7 +28,7 @@
 
         - title1 = "Asignaturas Aprobadas #{user.reverse_name}"
         - title2 = "#{school.name}"
-        - content = render partial: 'grades/subjects_approved', locals: {records: records_from_subjects_approved}
+        - content = render partial: 'grades/subjects_approved', locals: {records: records_from_subjects_approved, tipo: (@grade&.study_plan&.Anual? ? 'año' : 'semestre')}
 
       = render partial: '/layouts/scaffold-modal-static', locals: {content: content, title1: title1, title2: title2, id: 'subjectsApproved'}
     - else
