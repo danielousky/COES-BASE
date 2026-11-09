@@ -21,6 +21,3 @@ application.register("mapa-prelaciones", MapaPrelacionesController)
 
 import FieldUpdateController from "./field_update_controller"
 application.register("field-update", FieldUpdateController)
-
-import PestanasController from "./pestanas_controller"
-application.register("pestanas", PestanasController)

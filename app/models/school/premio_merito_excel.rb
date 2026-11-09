@@ -49,50 +49,39 @@ class School
         encabezado(hoja, grupo, estado(grupo), columnas.size)
         hoja.add_row columnas, style: estilo(:encabezado), height: 45
         grupo.estudiantes.each_with_index { |candidato, i| fila(hoja, grupo, candidato, i.odd?) }
-        cerrar(hoja, ultima, grupo.estudiantes.size)
+
+        hoja.auto_filter = "A#{FILA_ENCABEZADO}:#{ultima}#{FILA_ENCABEZADO + grupo.estudiantes.size}"
+        hoja.sheet_view.pane do |pane|
+          pane.state = :frozen
+          pane.y_split = FILA_ENCABEZADO
+          pane.top_left_cell = "A#{FILA_ENCABEZADO + 1}"
+          pane.active_pane = :bottom_left
+        end
+        hoja.page_setup.set(orientation: :landscape)
+        hoja.page_setup.fit_to(width: 1, height: 0)
+
+        hoja.add_row []
+        hoja.add_row ["Generado en COES el #{I18n.l(Time.current, format: '%d/%m/%Y a las %H:%M')}"], style: estilo(:nota)
+        hoja.merge_cells("A#{hoja.rows.size}:#{ultima}#{hoja.rows.size}")
         # Al final: caxlsx recalcula el ancho de una columna con cada fila que se agrega.
         hoja.column_widths(8, 13, 42, *[13] * creditos.size, 12, 12, 13)
       end
     end
 
     def encabezado(hoja, grupo, estado, columnas)
+      ultima = Axlsx.col_ref(columnas - 1)
       plan = grupo ? " · #{grupo.plan.name} (#{grupo.plan.code})" : ''
-      embudo = @premio.embudo.map { |etiqueta, cantidad| "#{miles(cantidad)} #{etiqueta}" }.join('  ▸  ')
-      cabecera(hoja, Axlsx.col_ref(columnas - 1), [
-                 ["Premio al Mérito Académico #{anio}", :titulo, 24],
-                 ["#{@premio.school.name}#{plan}", :subtitulo, 18],
-                 [@premio.texto_criterios, :nota, 30],
-                 [embudo, :nota, 18],
-                 [estado, grupo.nil? || grupo.falta ? :sin_premio : :con_premio, 30]
-               ])
-    end
-
-    # Los renglones de arriba, cada uno a lo ancho de la tabla, y uno vacío antes de ella.
-    def cabecera(hoja, ultima, renglones)
-      renglones.each_with_index do |(texto, tipo, alto), i|
+      [
+        ["Premio al Mérito Académico #{anio}", :titulo, 24],
+        ["#{@premio.school.name}#{plan}", :subtitulo, 18],
+        [@premio.texto_criterios, :nota, 30],
+        [@premio.embudo.map { |etiqueta, cantidad| "#{miles(cantidad)} #{etiqueta}" }.join('  ▸  '), :nota, 18],
+        [estado, grupo.nil? || grupo.falta ? :sin_premio : :con_premio, 30]
+      ].each_with_index do |(texto, tipo, alto), i|
         hoja.add_row [texto], style: estilo(tipo), height: alto
         hoja.merge_cells("A#{i + 1}:#{ultima}#{i + 1}")
       end
       hoja.add_row []
-    end
-
-    # Filtro y encabezado fijo en la tabla, apaisada a una página de ancho, y la fecha al pie. La fila del
-    # encabezado es la de cada Excel (self.class): el premio por la carrera tiene un renglón menos arriba.
-    def cerrar(hoja, ultima, filas)
-      fila_de_titulos = self.class::FILA_ENCABEZADO
-      hoja.auto_filter = "A#{fila_de_titulos}:#{ultima}#{fila_de_titulos + filas}" if filas.positive?
-      hoja.sheet_view.pane do |pane|
-        pane.state = :frozen
-        pane.y_split = fila_de_titulos
-        pane.top_left_cell = "A#{fila_de_titulos + 1}"
-        pane.active_pane = :bottom_left
-      end
-      hoja.page_setup.set(orientation: :landscape)
-      hoja.page_setup.fit_to(width: 1, height: 0)
-
-      hoja.add_row []
-      hoja.add_row ["Generado en COES el #{I18n.l(Time.current, format: '%d/%m/%Y a las %H:%M')}"], style: estilo(:nota)
-      hoja.merge_cells("A#{hoja.rows.size}:#{ultima}#{hoja.rows.size}")
     end
 
     def miles(numero)

@@ -67,40 +67,10 @@ class School
 
     attr_reader :school, :anios, :anio
 
-    # El premio de la escuela: por la carrera si PREMIO_MERITO_POR_CARRERA está en SI (ODON); si no, por el año.
-    def self.para(school, anio = nil)
-      PremioMeritoCarrera.activo? ? PremioMeritoCarrera.new(school, anio) : new(school, anio)
-    end
-
-    # Una consulta del premio, con los estados y modalidades tal como los numera cada COES. La usan los dos premios.
-    def self.consultar(sql, binds)
-      binds = binds.merge(
-        modalidades: AcademicProcess.modalities.values_at('Semestral', 'Anual'),
-        anual: AcademicProcess.modalities['Anual'],
-        periodos_regulares: PERIODOS_REGULARES,
-        sin_calificar: AcademicRecord.statuses['sin_calificar'],
-        retirado: AcademicRecord.statuses['retirado'],
-        cursadas: AcademicRecord.statuses.values_at('aprobado', 'aplazado', 'perdida_por_inasistencia'),
-        reprobadas: AcademicRecord.statuses.values_at('aplazado', 'perdida_por_inasistencia'),
-        numerica: Subject.qualification_types['numerica'],
-        equivalencias: Section.modalities.select { |nombre, _| nombre.start_with?('equivalencia') }.values.presence ||
-                       [-1]
-      )
-      ActiveRecord::Base.connection.select_all(ActiveRecord::Base.sanitize_sql_array([sql, binds])).to_a
-    end
-
     def initialize(school, anio = nil)
       @school = school
       @anios = cargar_anios
       @anio = @anios.find { |a| a.numero == anio.to_i } || @anios.find { |a| !a.en_curso? } || @anios.first
-    end
-
-    def por_carrera?
-      false
-    end
-
-    def excel
-      PremioMeritoExcel.new(self)
     end
 
     def minimo(nombre)
@@ -264,7 +234,7 @@ class School
     def candidatos
       return [] unless anio
 
-      @candidatos ||= self.class.consultar(CANDIDATOS_SQL, escuela: school.id, anio: anio.numero).map do |fila|
+      @candidatos ||= consultar(CANDIDATOS_SQL, escuela: school.id, anio: anio.numero).map do |fila|
         Candidato.new(
           grade_id: fila['grade_id'], student_id: fila['student_id'], study_plan_id: fila['study_plan_id'],
           ci: fila['ci'], nombre: "#{fila['last_name']}, #{fila['first_name']}",
@@ -278,9 +248,24 @@ class School
     end
 
     def cargar_anios
-      self.class.consultar(ANIOS_SQL, escuela: school.id, limite: ANIOS_VISIBLES).map do |fila|
+      consultar(ANIOS_SQL, escuela: school.id, limite: ANIOS_VISIBLES).map do |fila|
         Anio.new(fila['year'].to_i, fila['registros'].to_i, fila['pendientes'].to_i)
       end
+    end
+
+    def consultar(sql, binds)
+      binds = binds.merge(
+        modalidades: AcademicProcess.modalities.values_at('Semestral', 'Anual'),
+        anual: AcademicProcess.modalities['Anual'],
+        periodos_regulares: PERIODOS_REGULARES,
+        sin_calificar: AcademicRecord.statuses['sin_calificar'],
+        retirado: AcademicRecord.statuses['retirado'],
+        cursadas: AcademicRecord.statuses.values_at('aprobado', 'aplazado', 'perdida_por_inasistencia'),
+        reprobadas: AcademicRecord.statuses.values_at('aplazado', 'perdida_por_inasistencia'),
+        numerica: Subject.qualification_types['numerica'],
+        equivalencias: Section.modalities.select { |nombre, _| nombre.start_with?('equivalencia') }.values.presence || [-1]
+      )
+      ActiveRecord::Base.connection.select_all(ActiveRecord::Base.sanitize_sql_array([sql, binds])).to_a
     end
 
     # Solo los años con registros: hay procesos creados de años que nunca se cargaron en COES.
