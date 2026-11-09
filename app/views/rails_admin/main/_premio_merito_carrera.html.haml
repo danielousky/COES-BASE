@@ -1,0 +1,50 @@
+-# Por la carrera (ODON): la General y una lista por año de la carrera, cada una en su pestaña. Están todas en la
+-# página: el controlador `pestanas` las muestra sin ir al servidor.
+- anio = premio.anio
+- medallas = %w[🥇 🥈 🥉]
+- vista = premio.listas.map(&:clave).include?(params[:vista]) ? params[:vista] : 'general'
+
+%p.small.text-muted.mb-3= premio.texto_criterios
+
+- if anio.en_curso?
+  .alert.alert-warning.small.py-2
+    %i.fa-solid.fa-hourglass-half.me-1
+    = "#{anio.numero} sigue en curso: faltan #{number_with_delimiter(anio.pendientes)} de #{number_with_delimiter(anio.registros)} notas. Quien tenga notas pendientes aparece cuando se carguen."
+
+%ul.nav.nav-tabs.mb-3
+  - premio.listas.each do |lista|
+    %li.nav-item
+      %button.nav-link{type: 'button', class: ('active' if lista.clave == vista), data: { pestanas_target: 'boton', clave: lista.clave, action: 'pestanas#mostrar' }}= lista.titulo
+
+- premio.listas.each do |lista|
+  %div{hidden: lista.clave != vista, data: { pestanas_target: 'panel', clave: lista.clave }}
+    %p.small.text-muted.mb-2= premio.resumen(lista)
+    - if lista.estudiantes.any?
+      .table-responsive
+        %table.table.table-hover.align-middle
+          %thead.table-light
+            %tr
+              %th.text-center{rowspan: 2, style: 'width: 4.5rem'} Puesto
+              %th{rowspan: 2} Cédula
+              %th{rowspan: 2} Estudiante
+              - if lista.general?
+                %th.text-center{rowspan: 2}= premio.unidad.capitalize
+              %th.text-end Eficiencia
+              %th.text-center{colspan: 2}= "Promedio de la carrera hasta #{anio.numero}"
+            %tr
+              %th.text-end= "hasta #{anio.numero}"
+              %th.text-end Simple
+              %th.text-end Ponderado
+          %tbody
+            - lista.estudiantes.each do |c|
+              - medalla = medallas[c.puesto - 1]
+              %tr{class: ('fw-semibold' if medalla)}
+                %td.text-center= medalla || c.puesto
+                %td= c.ci
+                -# rails_admin corta las celdas a 150 px: el nombre va completo y, si no cabe, baja de línea.
+                %td{style: 'max-width: none; white-space: normal'}= link_to c.nombre, rails_admin.show_path(model_name: 'student', id: c.student_id), data: { turbo_frame: '_top' }
+                - if lista.general?
+                  %td.text-center= "#{c.anio_de_carrera}º"
+                %td.text-end= number_with_precision(c.eficiencia, precision: 2)
+                %td.text-end= number_with_precision(c.promedio_simple, precision: 2)
+                %td.text-end= number_with_precision(c.promedio, precision: 2)

@@ -104,7 +104,7 @@ RailsAdmin.config do |config|
       controller do
         proc do
           if params[:formato] == 'xlsx'
-            excel = School::PremioMeritoExcel.new(School::PremioMerito.new(@object, params[:anio]))
+            excel = School::PremioMerito.para(@object, params[:anio]).excel
             send_data excel.contenido, filename: excel.nombre, type: School::PremioMeritoExcel::TIPO
           else
             render action: @action.template_name
