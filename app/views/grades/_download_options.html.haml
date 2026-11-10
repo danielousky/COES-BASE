@@ -4,6 +4,15 @@
 		.fa.fa-download.fa-list
 		Kardex PDF
 - if session[:rol].eql? 'admin' and (admin&.authorized_read? 'Grade')
+	-# El de solo aprobadas, como en FAU: para Control de Estudios, con el mismo permiso del kardex.
+	- if @grade.academic_records.aprobado.any?
+		= link_to "/grades/#{@grade.id}/kardex.pdf?approved=true", class: 'btn btn-success float-end mb-3 me-3', target: '_blank', rel: "noopener noreferrer" do
+			.fa.fa-download.fa-list
+			Kardex Aprobadas PDF
+	- else
+		.btn.btn-secondary.disabled.float-end.mb-3.me-3{title: 'No hay asignaturas aprobadas'}
+			.fa.fa-download.fa-list
+			Kardex Aprobadas PDF
 	= link_to "/export/history_grade/#{@grade.id}.xls", class: 'btn btn-success float-end mb-3 me-3', target: '_blank', rel: "noopener noreferrer" do
 		.fa.fa-download.fa-list
 		Registros Excel

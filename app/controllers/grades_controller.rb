@@ -58,11 +58,13 @@ class GradesController < ApplicationController
     user = @grade.user
     respond_to do |format|
       format.pdf do
+        # Con ?approved=true, el de solo aprobadas (como en FAU).
+        aprobadas = params[:approved] == 'true'
         # Registrar la descarga en PaperTrail
-        @grade.versions.create(event: 'Se generó Kardex')
+        @grade.versions.create(event: aprobadas ? 'Se generó Kardex de Aprobadas' : 'Se generó Kardex')
 
-        title = 'Historia Académica'
-        render pdf: "kardex-#{school.code}-#{user.ci}", locals: {grade: @grade}, formats: [:html], page_size: 'letter', header: {html: {template: '/grades/kardex_title', formats: [:html], layout: false, locals: {title: title, school: school, user: user}}}, footer: {center: "Página: [page] de [topage]", font_size: '10'}, margin: {top: 30}
+        title = aprobadas ? 'Historia Académica (Aprobadas)' : 'Historia Académica'
+        render pdf: "kardex#{'-aprobadas' if aprobadas}-#{school.code}-#{user.ci}", locals: {grade: @grade, approved: aprobadas}, formats: [:html], page_size: 'letter', header: {html: {template: '/grades/kardex_title', formats: [:html], layout: false, locals: {title: title, school: school, user: user}}}, footer: {center: "Página: [page] de [topage]", font_size: '10'}, margin: {top: 30}
       end
     end
   end
