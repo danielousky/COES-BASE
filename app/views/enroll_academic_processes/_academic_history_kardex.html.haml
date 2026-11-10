@@ -1,7 +1,10 @@
 %h3.text-center.my-2 Historial Académico
 
 - enroll_academic_processes.sort_by_period_reverse.each do |enroll_academic_process|
-  
+  -# Los números del período, los mismos de la pantalla: CE los reporta con el kardex (premio al mérito).
+  -# Sin notas todavía, un guion: el 0.0 del período en curso parecería real.
+  - con_notas = enroll_academic_process.academic_records.qualified.any?
+
   %table.table-sm.nobreak
     %thead
       %tr
@@ -9,6 +12,9 @@
         %th.text-center Estado Inscripción
         %th.text-center Estado de Permanencia
         %th.text-center Total inscripciones
+        %th.text-center Eficiencia
+        %th.text-center Promedio Simple
+        %th.text-center Promedio Ponderado
 
     %tbody
       %tr
@@ -18,8 +24,10 @@
         %td.text-center
           .badge.bg-info= enroll_academic_process.permanence_status.titleize if enroll_academic_process.permanence_status
         %td.text-center= enroll_academic_process.academic_records.count
+        - %i[efficiency simple_average weighted_average].each do |numero|
+          %td.text-center= con_notas ? enroll_academic_process.public_send(numero)&.round(2) : '—'
 
       %tr
-        %td{style: 'padding: 10px', colspan: 4}
+        %td{style: 'padding: 10px', colspan: 7}
           = render partial: 'academic_records/index_to_history_kardex', locals: {academic_records: enroll_academic_process.academic_records}
   %br
