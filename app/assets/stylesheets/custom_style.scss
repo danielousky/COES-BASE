@@ -112,9 +112,14 @@ body:not(.modal-open) .card {
 	box-shadow: inset 0 -2px 0 #6c757d;
 }
 
-.enrollment-day-table-wrapper .col-name {
+// Nombre completo en las tablas del admin (Cita Horaria, Premio al Mérito…). rails_admin corta cada celda
+// a 150 px y sin salto de línea (`body.rails_admin .table td`), y gana por especificidad: por eso la regla
+// lleva `body.rails_admin .table`. El nombre ocupa al menos 240 px y baja de línea si no cabe.
+body.rails_admin .table .col-name {
 	min-width: 240px;
+	max-width: none;
 	white-space: normal;
+	overflow: visible;
 	word-break: break-word;
 }
 

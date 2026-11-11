@@ -1,5 +1,6 @@
 - logged_as_admin = (current_user&.admin? and session[:rol].eql? 'admin') ? true : false
-- enrollment_days = academic_process.enrollment_days
+-# Por fecha: sin orden, la base las devuelve como las guardó, y una jornada editada se va al final.
+- enrollment_days = academic_process.enrollment_days.order(:start)
 - grades_without_appointment = academic_process.grades_ready_to_enrollment_day
 
 - totales = grades_without_appointment&.unscope(:order)&.group(:current_permanence_status)&.count || {}

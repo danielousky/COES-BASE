@@ -63,7 +63,7 @@
             %tr
               %th.text-center{rowspan: 2, style: 'width: 4.5rem'} Puesto
               %th{rowspan: 2} Cédula
-              %th{rowspan: 2} Estudiante
+              %th.col-name{rowspan: 2} Estudiante
               %th.text-center{colspan: columnas.size, title: premio.ayuda_de_creditos(grupo), style: 'cursor: help'}
                 Créditos inscritos
                 %i.fa-regular.fa-circle-question.text-muted.ms-1
@@ -81,8 +81,8 @@
               %tr{class: ('fw-semibold' if medalla)}
                 %td.text-center= medalla || c.puesto
                 %td= c.ci
-                -# rails_admin corta las celdas a 150 px: el nombre va completo y, si no cabe, baja de línea.
-                %td{style: 'max-width: none; white-space: normal'}= link_to c.nombre, rails_admin.show_path(model_name: 'student', id: c.student_id), data: { turbo_frame: '_top' }
+                -# rails_admin corta las celdas a 150 px: con col-name (custom_style) el nombre va completo y, si no cabe, baja de línea.
+                %td.col-name= link_to c.nombre, rails_admin.show_path(model_name: 'student', id: c.student_id), data: { turbo_frame: '_top' }
                 - premio.celdas_de_creditos(grupo, c).each do |creditos, ocupa, corto|
                   %td.text-end{colspan: ocupa, class: ('text-danger' if corto)}= creditos || '—'
                 %td.text-end= number_with_precision(c.eficiencia, precision: 2)
