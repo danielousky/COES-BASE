@@ -38,6 +38,8 @@ export default class extends Controller {
       .then(data => {
         if (data.status === "success") {
           this.notify("success", data.data)
+          // Reservó el admin aunque choca con otra asignatura: el aviso queda hasta que lo cierre.
+          if (data.aviso) this.notify("warning", data.aviso, { timeOut: 0, extendedTimeOut: 0, closeButton: true })
           const row = select.closest("tr")
           if (row) row.classList.toggle("table-success", select.value !== "")
           this.totalize()
@@ -120,8 +122,8 @@ export default class extends Controller {
     return document.querySelector('meta[name="csrf-token"]')?.content
   }
 
-  notify(type, message) {
+  notify(type, message, options = {}) {
     if (!message) return
-    if (window.toastr && typeof window.toastr[type] === "function") window.toastr[type](message)
+    if (window.toastr && typeof window.toastr[type] === "function") window.toastr[type](message, "", options)
   }
 }

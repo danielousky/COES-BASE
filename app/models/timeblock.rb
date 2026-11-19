@@ -77,6 +77,13 @@ class Timeblock < ApplicationRecord
     inicio_en_minutos < otro.fin_en_minutos && otro.inicio_en_minutos < fin_en_minutos
   end
 
+  # «LINGÜÍSTICA I (A1), Lunes de 6:00 pm a 8:30 pm»: para avisar con qué choca una reserva.
+  def descripcion_del_choque
+    seccion = timetable&.section
+    "#{seccion&.subject&.name} (#{seccion&.code}), #{day} de #{start_time&.strftime('%-I:%M %P')} " \
+      "a #{end_time&.strftime('%-I:%M %P')}"
+  end
+
   validates :modality, presence: true
   
   validates_uniqueness_of :timetable_id, scope: [:day, :start_time], message: 'Ya existe un bloque horario con una hora de entrada igual para el horario.', field_name: false

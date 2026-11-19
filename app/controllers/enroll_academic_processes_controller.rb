@@ -68,10 +68,12 @@ class EnrollAcademicProcessesController < ApplicationController
       grade_id:            params[:grade_id],
       academic_process_id: params[:academic_process_id],
       section_id:          params[:section_id],
-      course_id:           params[:course_id]
+      course_id:           params[:course_id],
+      admin:               logged_as_admin?
     )
     cupo = resultado.section ? resultado.section.description_with_quotes : 'Seleccione sección o libere cupo'
     json = { data: resultado.mensaje, status: resultado.estado, cupo: cupo }
+    json[:aviso] = resultado.aviso if resultado.aviso
     if resultado.liberada
       # Para que el front refresque el conteo de la sección cuyo cupo se devolvió.
       json[:liberada_id]   = resultado.liberada.id

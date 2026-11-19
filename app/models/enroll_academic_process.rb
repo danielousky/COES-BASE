@@ -131,8 +131,9 @@ include AcademicProcessable
 
   # Resultado de una operación de reserva/liberación de cupo. `section` es la
   # sección reservada (si la hubo) y `liberada` la sección cuyo cupo se devolvió,
-  # para que el front pueda refrescar el conteo de ambas opciones.
-  ReservaCupoResultado = Struct.new(:estado, :mensaje, :section, :liberada, keyword_init: true)
+  # para que el front pueda refrescar el conteo de ambas opciones. `aviso` acompaña a una reserva hecha que choca con el
+  # horario de otra asignatura: al admin no se le impide, se le avisa (Daniel, 19-nov).
+  ReservaCupoResultado = Struct.new(:estado, :mensaje, :section, :liberada, :aviso, keyword_init: true)
 
   # Libera el cupo previo del curso y, si se indica una sección, reserva el cupo
   # nuevo aplicando las reglas de negocio (solapamiento, créditos, asignaturas,
@@ -140,11 +141,13 @@ include AcademicProcessable
   # del cupo van bajo lock pesimista de la sección para evitar sobreventa
   # concurrente. No lanza por reglas de negocio: las traduce a estado 'error' +
   # mensaje. Devuelve un ReservaCupoResultado(estado, mensaje, section).
-  def self.reservar_cupo(grade_id:, academic_process_id:, section_id:, course_id:)
+  # Un choque de horario detiene al estudiante; al admin (`admin: true`) no: reserva igual y avisa con qué choca.
+  def self.reservar_cupo(grade_id:, academic_process_id:, section_id:, course_id:, admin: false)
     section  = nil
     liberada = nil
     estado   = nil
     mensaje  = nil
+    aviso    = nil
 
     res = Transaccionable.transaccion_atomica(contexto: "EnrollAcademicProcess.reservar_cupo") do
       # LIBERAR cupo previo del curso (cambio o liberación de sección).
@@ -181,7 +184,8 @@ include AcademicProcessable
         creditos_intento    = eap.total_credits_not_retired + course.subject.unit_credits
         asignaturas_intento = eap.total_subjects_not_retired + 1
 
-        if eap.overlapped?(section.timetable)
+        choque = eap.choque_con(section.timetable)
+        if choque && !admin
           estado = 'error'
           mensaje = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
           raise ActiveRecord::Rollback
@@ -201,6 +205,10 @@ include AcademicProcessable
           AcademicRecord.create!(section_id: section.id, enroll_academic_process_id: eap.id, status: :sin_calificar)
           eap.update!(enroll_status: :reservado)
           estado = 'success'; mensaje = 'Cupo reservado'
+          if choque
+            aviso = "¡Atención! Esta sección choca con el horario de #{choque.descripcion_del_choque}. " \
+                    'Se reservó igual porque está inscribiendo como administrador.'
+          end
         end
       end
     end
@@ -218,7 +226,8 @@ include AcademicProcessable
     # Solo reportar la liberación si la transacción quedó en éxito: si una regla
     # de negocio la revirtió, el cupo previo se restauró y NO debe decrementarse.
     liberada = nil unless estado == 'success'
-    ReservaCupoResultado.new(estado: estado, mensaje: mensaje, section: section, liberada: liberada)
+    aviso    = nil unless estado == 'success'
+    ReservaCupoResultado.new(estado: estado, mensaje: mensaje, section: section, liberada: liberada, aviso: aviso)
   end
 
   def total_retire?
@@ -242,10 +251,6 @@ include AcademicProcessable
     # ['#', 'CI', 'NOMBRES', 'APELLIDOS', 'CORREO', 'ESCUELA', 'NIVEL', 'PERIODO','ESTADO INSCRIP','ESTADO PERMANENCIA','REPORTE PAGO']
     user_aux = user
     [user_aux.ci, user_aux.first_name, user_aux.last_name, user_aux.email, school.name, grade&.admission_type&.name, academic_process.process_name, enroll_status&.titleize, permanence_status&.titleize, resume_payment_reports.join(' | ')]
-  end
-
-  def overlapped?(timetable)
-    choque_con(timetable).present?
   end
 
   # El bloque ya reservado en esta inscripción (sin las asignaturas retiradas) que choca con el horario dado, o nil.
