@@ -244,25 +244,24 @@ include AcademicProcessable
     [user_aux.ci, user_aux.first_name, user_aux.last_name, user_aux.email, school.name, grade&.admission_type&.name, academic_process.process_name, enroll_status&.titleize, permanence_status&.titleize, resume_payment_reports.join(' | ')]
   end
 
-  def overlapped? timetable
-    # Get timeblocks from the enroll_academic_process that are not retired
-    enroll_timeblocks = self.timeblocks.joins(:timetable => {:section => :academic_records})
-                                   .where.not('academic_records.status': 3)
-    
-    # Get timeblocks from the provided timetable
-    timetable_timeblocks = timetable&.timeblocks
-    
-    # Compare each timeblock from the timetable with enroll timeblocks
-    timetable_timeblocks&.each do |timetable_block|
-      enroll_timeblocks.where(day: timetable_block.day).each do |enroll_block|
-        # Check if there's overlap in time
-        if ((enroll_block.start_time&.to_i < timetable_block.end_time&.to_i) and 
-            (timetable_block.start_time&.to_i < enroll_block.end_time&.to_i))
-          return true
-        end
-      end
-    end  
-    return false
+  def overlapped?(timetable)
+    choque_con(timetable).present?
+  end
+
+  # El bloque ya reservado en esta inscripción (sin las asignaturas retiradas) que choca con el horario dado, o nil.
+  # Compara en minutos del día (Timeblock#se_pisa_con?): con .to_i, una clase que cruzaba las 8 pm no chocaba con nada.
+  def choque_con(timetable)
+    return nil unless timetable
+
+    reservados = Timeblock.joins(timetable: {section: :academic_records})
+                          .where(academic_records: {enroll_academic_process_id: id})
+                          .where.not(academic_records: {status: AcademicRecord.statuses[:retirado]})
+                          .distinct.preload(timetable: {section: :subject}).to_a
+    timetable.timeblocks.each do |nuevo|
+      choque = reservados.find { |reservado| reservado.se_pisa_con?(nuevo) }
+      return choque if choque
+    end
+    nil
   end
 
 

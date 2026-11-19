@@ -53,10 +53,30 @@ class Timeblock < ApplicationRecord
 
   def start_time_must_be_at_least_thirty_minutes_before_end_time
     return if start_time.blank? || end_time.blank?
-    if (end_time - start_time) < 30.minutes
+    if fin_en_minutos - inicio_en_minutos < 30
       errors.add(:start_time, :too_close_to_end)
     end
   end
+
+  # Las horas en minutos del día (7:30 pm → 1170). La base guarda la hora en UTC: leída en Caracas, una hora de las
+  # 8 pm en adelante vuelve con fecha 31-dic-1999 y las demás con 1-ene-2000. Restándolas o con .to_i, una clase de
+  # 6:00 a 8:30 pm, tal como se lee de la base, «terminaba antes de empezar»: no chocaba con nada al reservar cupo.
+  def inicio_en_minutos
+    start_time && start_time.hour * 60 + start_time.min
+  end
+
+  def fin_en_minutos
+    end_time && end_time.hour * 60 + end_time.min
+  end
+
+  # Si este bloque y otro caen el mismo día a horas que se pisan.
+  def se_pisa_con?(otro)
+    return false unless day == otro.day
+    return false unless [inicio_en_minutos, fin_en_minutos, otro.inicio_en_minutos, otro.fin_en_minutos].all?
+
+    inicio_en_minutos < otro.fin_en_minutos && otro.inicio_en_minutos < fin_en_minutos
+  end
+
   validates :modality, presence: true
   
   validates_uniqueness_of :timetable_id, scope: [:day, :start_time], message: 'Ya existe un bloque horario con una hora de entrada igual para el horario.', field_name: false
