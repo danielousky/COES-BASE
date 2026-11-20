@@ -229,6 +229,7 @@ class AcademicProcessesController < ApplicationController
               nueva_seccion = section.dup
               nueva_seccion.course_id = nuevo_curso.id
               nueva_seccion.teacher_id = nil unless params[:teachers]
+              nueva_seccion.classroom = nil # el aula vive en los bloques, que se copian aparte
               nueva_seccion.qualified = false
               if nueva_seccion.save
 

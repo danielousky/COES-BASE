@@ -335,8 +335,13 @@ class Section < ApplicationRecord
       aux = ""
       aux += timeblocks.any? ? schedule_short_name : 'Sin Horario Asignado'
       aux += teacher ? " | #{teacher&.user&.reverse_name }" : " | Sin profesor Asignado"
-      # aux += classroom.blank? ? " | Sin aula" : " | #{classroom}"
       return aux
+  end
+
+  # Las aulas de sus bloques, sin repetir: «A-12» o «A-12, B-3». El aula vive en el bloque; la columna
+  # sections.classroom es de antes de jun-2025 y ya no se lee (Daniel, 20-nov).
+  def aulas
+    timeblocks.map { |bloque| bloque.classroom.to_s.strip }.reject(&:blank?).uniq.join(', ')
   end
 
   def schedule_short_name
@@ -471,8 +476,9 @@ class Section < ApplicationRecord
         end
       end      
 
-      field :classroom do
-        filterable false 
+      field :aulas do
+        label 'Aula'
+        filterable false
         sortable false
       end
 
@@ -630,12 +636,6 @@ class Section < ApplicationRecord
         inline_add false
       end
 
-      # field :classroom do
-      #   html_attributes do
-      #     {:onInput => "$(this).val($(this).val().toUpperCase().replace(/[^A-Za-z0-9| ]/g,''))"}
-      #   end
-      # end
-
       field :capacity do
         html_attributes do
           {:min => 1}
@@ -677,12 +677,6 @@ class Section < ApplicationRecord
 
       field :qualified
 
-      # field :classroom do
-      #   html_attributes do
-      #     {:onInput => "$(this).val($(this).val().toUpperCase().replace(/[^A-Za-z0-9| ]/g,''))"}
-      #   end
-      # end
-
       field :capacity do
         html_attributes do
           {:min => 1}
@@ -695,7 +689,11 @@ class Section < ApplicationRecord
 
 
     export do
-      fields :school, :area, :subject, :code, :classroom, :user, :qualified, :modality, :capacity
+      fields :school, :area, :subject, :code
+      field :aulas do
+        label 'Aula'
+      end
+      fields :user, :qualified, :modality, :capacity
 
       field :process_name do
         label 'Período'

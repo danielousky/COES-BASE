@@ -94,7 +94,7 @@ class TimetablesController < ApplicationController
         subject_code: section.subject.code, 
         section_code: section.code,
         teacher: section.teacher&.user&.reverse_name || "Sin profesor",
-        classroom: block.classroom || section.classroom || "Sin aula",
+        classroom: block.classroom.presence || "Sin aula",
         start_time: start_time,
         end_time: end_time,
         modality: block.modality&.titleize,
