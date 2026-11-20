@@ -187,7 +187,8 @@ include AcademicProcessable
         choque = eap.choque_con(section.timetable)
         if choque && !admin
           estado = 'error'
-          mensaje = "¡Solapamiento de horarios! Por favor, seleccione otra sección que no choque con el horario del resto de sus asignaturas ya reservadas."
+          mensaje = "¡Solapamiento de horarios! Esta sección choca con una asignatura que ya reservó: " \
+                    "#{choque.descripcion_del_choque}. Por favor, seleccione otra sección."
           raise ActiveRecord::Rollback
         elsif creditos_intento > academic_process.max_credits
           estado = 'error'
