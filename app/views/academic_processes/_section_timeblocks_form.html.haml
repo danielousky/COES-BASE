@@ -57,25 +57,6 @@
         .form-text
           %span.label.label-danger Requerido
 
-    - # TEACHER FIELD:
-    #section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id_field.control-group.row.mb-3.belongs_to_association_type.teacher_field
-      %label.col-sm-2.col-form-label.text-md-end{for: "section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id"} Profesor
-      .col-sm-10.controls
-        .row
-          .col-sm-4
-            %select#section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id{"data-filteringselect" => "true", "data-options" => "{\"xhr\":true,\"remote_source\":\"/admin/teacher?associated_collection=teacher\\u0026compact=true\\u0026current_action=create\\u0026source_abstract_model=section\"}", :name => "section[teacher_id]", :placeholder => "Buscar", :style => "display: none;"}
-              %option{:label => " ", :value => ""}
-              %option{:value => ""}
-            .input-group.filtering-select{"data-input-for" => "section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id"}
-              = text_field_tag nil, nil, id: 'section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id_filter', class: 'form-control ra-filtering-select-input ui-autocomplete-input', autocomplete: 'off', placeholder: 'Buscar', style: '', type: 'text'
-              %span.input-group-btn
-                %label.btn.btn-info.dropdown-toggle{:role => "button", for: 'section_timetable_attributes_timeblocks_attributes_new_timeblocks_teacher_id_filter'}
-        .form-text
-          %span.label.label-default> Opcional
-
-
-
-
     - # CLASSROOM FIELD:
     #section_timetable_attributes_timeblocks_attributes_new_timeblocks_classroom_field.control-group.row.mb-3.string_type.classroom_field
       %label.col-sm-2.col-form-label.text-md-end{:for => "section_timetable_attributes_timeblocks_attributes_new_timeblocks_classroom"} Aula

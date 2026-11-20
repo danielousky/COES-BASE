@@ -107,12 +107,6 @@ class Timeblock < ApplicationRecord
     "#{ApplicationController.helpers.select_tag 'bloquehorarios[modalidad][]', ApplicationController.helpers.options_for_select(Timeblock.modalities.keys{|mo| mo.titleize}, self.modality) , class: ' form-control form-control-sm'}"
   end
 
-  def description_section_to_teacher
-    aux =  teacher ? "#{teacher.user_description} <br>" : ""
-    aux += " #{timetable.description_section} : #{timetable.section&.subject&.desc}"
-    return aux
-  end
-
   def name
     "#{day} : #{start_time_to_schedule} a #{end_time_to_schedule} (#{virtual_letter}) "    
   end
@@ -138,11 +132,6 @@ class Timeblock < ApplicationRecord
       day.first.upcase
     end
   end
-
-  def desc_teacher_busy
-    teacher ? "#{teacher.user&.first_name} está ocupad#{teacher.user.genero} en éste horario con #{timetable.section&.number} de #{timetable.section&.subject&.code}" : ""
-  end
-
 
   def same_block? timetable_id
     aux = Timetable.find timetable_id
@@ -191,11 +180,6 @@ class Timeblock < ApplicationRecord
       end
       field :modality
       field :timetable
-      field :teacher do
-        formatted_value do
-          value ? value.user_description : ''
-        end
-      end
     end
     edit do
       field :day
@@ -207,16 +191,8 @@ class Timeblock < ApplicationRecord
 
       field :end_time
       field :modality
-      field :teacher do
-        # associated_collection_scope do
-        #   Proc.new { |scope|
-        #     scope = scope.joins(:section).where(timetables: {id: bindings[:object].timetable_id})
-        #     scope = scope.limit(10)
-        #   }
-        # end
-        inline_edit false
-        inline_add false        
-      end
+      # Sin profesor por bloque (Daniel, 20-nov): ninguna pantalla lo mostraba, todas usan el de la sección, y
+      # confundía. La columna teacher_id sigue en la base con lo que ya tenía.
       field :classroom do
         html_attributes do
           {:onInput => "$(this).val($(this).val().toUpperCase().replace(/[^A-Za-z0-9| ]/g,''))"}
