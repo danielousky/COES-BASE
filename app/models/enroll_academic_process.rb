@@ -262,11 +262,8 @@ include AcademicProcessable
                           .where(academic_records: {enroll_academic_process_id: id})
                           .where.not(academic_records: {status: AcademicRecord.statuses[:retirado]})
                           .distinct.preload(timetable: {section: :subject}).to_a
-    timetable.timeblocks.each do |nuevo|
-      choque = reservados.find { |reservado| reservado.se_pisa_con?(nuevo) }
-      return choque if choque
-    end
-    nil
+    nuevos = timetable.timeblocks.to_a
+    reservados.find { |reservado| nuevos.any? { |nuevo| reservado.se_pisa_con?(nuevo) } }
   end
 
 
