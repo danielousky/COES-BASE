@@ -92,7 +92,9 @@ class Section < ApplicationRecord
   # has_and_belongs_to_many :secondary_teachers, through: :section_teachers, class_name: 'Teacher'
 
   #ENUMERIZE:
-  enum modality: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3, reparacion: 4, diferido: 5}
+  # Toda sección nace nota_final (23-nov, como en FAU): la columna no tiene default en la base y el panel de la
+  # Programación no pregunta el tipo. Las equivalencias lo cambian desde el admin.
+  enum modality: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3, reparacion: 4, diferido: 5}, _default: :nota_final
 
   # VALIDATIONS:
   validates :code, presence: true, uniqueness: { scope: :course_id, message: 'Ya existe la sesión para el curso', case_sensitive: false, field_name: false}, length: { in: 1..7, too_long: "%{count} caracteres es el máximo permitido", too_short: "%{count} caracter es el mínimo permitido"}
