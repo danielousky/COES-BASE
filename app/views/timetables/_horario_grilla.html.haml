@@ -1,0 +1,15 @@
+-# La grilla de la semana, con su guía (dentro de un .horario-semanal, que tiene el controlador).
+.hs-guia{data: {horario_semanal_target: 'guia'}}= guia
+.hs-grilla
+  .hs-encabezado
+    .hs-esquina
+    .hs-nombres
+      - Timeblock.days.each_key do |dia|
+        .hs-nombre-dia= dia
+  .hs-cuerpo
+    .hs-horas{'aria-hidden': true}
+      - (Timeblock::HORA_MINIMA..Timeblock::HORA_MAXIMA).each_with_index do |h, i|
+        .hs-hora{style: "--i: #{i}", class: ('hs-hora--fuerte' if [12, 18].include?(h))}= "#{(h + 11) % 12 + 1} #{h < 12 ? 'am' : 'pm'}"
+    .hs-dias{data: {horario_semanal_target: 'dias', action: 'pointerdown->horario-semanal#presionar pointermove->horario-semanal#arrastrar pointerup->horario-semanal#soltar pointercancel->horario-semanal#cancelar pointerleave->horario-semanal#salir'}}
+      - Timeblock.days.each_key do
+        .hs-columna{data: {horario_semanal_target: 'columna'}}

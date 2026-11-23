@@ -38,6 +38,18 @@ Rails.application.routes.draw do
   resources :period_types
   resources :academic_records, :periods, :profiles, :sections, :courses
   
+  # La sección en la Programación, en la fila de la asignatura y sin recargar (23-nov, como en FAU)
+  # (sin módulo: en FHE, Programacion es el modelo de la tabla vieja «programaciones»)
+  scope :programacion, as: :programacion do
+    get    'secciones/nueva',      to: 'programacion_secciones#new',            as: :nueva_seccion
+    post   'secciones',            to: 'programacion_secciones#create',         as: :secciones
+    get    'secciones/profesores', to: 'programacion_secciones#profesores',     as: :profesores
+    get    'secciones/:id/editar', to: 'programacion_secciones#edit',           as: :editar_seccion
+    patch  'secciones/:id',        to: 'programacion_secciones#update',         as: :seccion
+    delete 'secciones/:id',        to: 'programacion_secciones#destroy'
+    delete 'secciones',            to: 'programacion_secciones#eliminar_todas'
+  end
+
   resources :sections do
     member do
       get :export

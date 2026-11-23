@@ -134,13 +134,6 @@ module ApplicationHelper
 		btn_toggle classes, 'fa fa-download', href, title_tooltip, value, onclick_action
 	end
 	
-	def button_add_section course_id
-		content_tag :button, 'data-bs-target': "#NewSectionModal", class: "btn btn-sm btn-success mx-1 addSection", "data-bs-toggle": :modal, course_id: course_id, onclick: "$('#section_course_id').val(this.attributes['course_id'].value);" do
-			capture_haml{"<i class='fas fa-plus'></i>".html_safe }
-		end
-		
-	end
-
 	def total_sections_stiky total
 		sticky_label 0, 0, 'bg-success', 'text-dark', 'Total Secciones', total
 	end

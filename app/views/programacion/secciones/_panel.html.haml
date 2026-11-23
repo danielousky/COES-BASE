@@ -1,0 +1,79 @@
+-# El panel de una sección en la Programación (FHE 23-nov; nació en FAU el 17-nov): nueva, duplicada de otra
+-# («origen») o la misma para corregirla. Vive en una fila debajo de la asignatura y lo abre o cierra
+-# ProgramacionSeccionesController con Turbo Stream. El tipo no se pregunta: toda sección nace nota_final.
+-#
+-# Dos columnas, como en FAU: a la izquierda los datos, los bloques en lista y la acción; a la derecha la grilla,
+-# más baja que la del admin. Las dos viven dentro del controlador «horario-semanal», que necesita la lista y la
+-# grilla juntas. El aula va en cada bloque, no en la sección (Daniel, 20-nov).
+- ayuda = ApplicationController.helpers
+- nueva = seccion.new_record?
+- otras = curso.sections.where.not(id: seccion.id).sort_by { |s| Section.orden_del_codigo(s.code) }
+- codigos = otras.map(&:code)
+- dom = "panel_curso_#{curso.id}"
+- mensajes = seccion.errors.map { |e| e.attribute.to_s.start_with?('timetable') ? e.message : e.full_message }.uniq
+%tr.programacion-panel{id: dom, data: {controller: 'seccion-panel', action: 'keydown@window->seccion-panel#tecla', seccion_panel_existentes_value: codigos.to_json}}
+  %td{colspan: 8}
+    .sp-tarjeta{tabindex: -1, data: {seccion_panel_target: 'tarjeta'}}
+      .sp-cabecera
+        %strong.sp-titulo
+          - if !nueva
+            = "Sección #{seccion.code_was}"
+          - elsif origen
+            = "Nueva sección, como la #{origen.code}"
+          - else
+            Nueva sección
+        %span.sp-asignatura= curso.subject.desc
+        - if nueva && codigos.any?
+          %span.sp-como
+            Como la:
+            - otras.each do |sec|
+              = link_to sec.code, main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: sec.id), class: "btn btn-sm #{origen&.id == sec.id ? 'btn-primary' : 'btn-outline-primary'}", title: 'Copia su cupo, profesor y horario, con el código que sigue', data: {turbo_stream: true}
+        %button.btn-close.ms-auto{type: 'button', title: 'Cerrar sin guardar (Esc)', 'aria-label': 'Cerrar', data: {action: 'seccion-panel#cerrar'}}
+
+      = form_with model: seccion, url: (nueva ? main_app.programacion_secciones_path : main_app.programacion_seccion_path(seccion)), method: (nueva ? :post : :patch) do |f|
+        - if nueva
+          = f.hidden_field :course_id
+        - if mensajes.any?
+          .alert.alert-danger.py-2.px-3.small.mb-2
+            %strong= nueva ? 'No se creó la sección:' : 'No se guardaron los cambios:'
+            - mensajes.each do |mensaje|
+              %div= mensaje
+
+        %div{ayuda.horario_semanal_atributos(seccion, 'section[timetable_attributes]', clase: 'horario-semanal--compacta sp-cuerpo')}
+          .sp-izquierda
+            .sp-campos
+              .sp-campo.sp-campo--codigo
+                = f.label :code, 'Código', class: 'sp-etiqueta', for: "#{dom}_codigo"
+                = f.text_field :code, id: "#{dom}_codigo", maxlength: 7, required: true, autocomplete: 'off', class: 'form-control form-control-sm', data: {seccion_panel_target: 'codigo', action: 'input->seccion-panel#escribirCodigo'}
+              .sp-campo.sp-campo--cupo
+                = f.label :capacity, 'Cupo', class: 'sp-etiqueta', for: "#{dom}_cupo"
+                = f.number_field :capacity, id: "#{dom}_cupo", min: 1, required: true, class: 'form-control form-control-sm'
+              .sp-ayuda
+                = codigos.any? ? "Ya hay: #{codigos.join(' · ')}." : 'Es la primera de la asignatura.'
+                %span.text-danger{data: {seccion_panel_target: 'avisoCodigo'}}
+              .sp-campo.sp-campo--profesor
+                %label.sp-etiqueta{for: "#{dom}_profesor"} Profesor
+                .position-relative{data: {controller: 'buscar-profesor', buscar_profesor_url_value: main_app.programacion_profesores_path}}
+                  = f.hidden_field :teacher_id, data: {buscar_profesor_target: 'id'}
+                  %input.form-control.form-control-sm{id: "#{dom}_profesor", type: 'search', value: seccion.teacher&.user&.reverse_name, placeholder: 'Nombre, apellido o cédula', autocomplete: 'off', data: {buscar_profesor_target: 'texto', action: 'input->buscar-profesor#buscar keydown->buscar-profesor#tecla blur->buscar-profesor#salir'}}
+                  .list-group.bp-resultados{data: {buscar_profesor_target: 'resultados'}}
+
+            = render 'timetables/horario_lista', titulo: 'Horario'
+
+            .sp-acciones
+              = f.button type: 'submit', class: 'btn btn-primary btn-sm' do
+                %i.fas.fa-check
+                = nueva ? 'Crear sección' : 'Guardar cambios'
+              - unless nueva
+                = link_to main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: seccion.id), class: 'btn btn-outline-primary btn-sm', title: 'Una sección nueva con el mismo cupo, profesor y horario', data: {turbo_stream: true} do
+                  %i.fas.fa-clone
+                  Duplicar
+                = link_to "/admin/section/#{seccion.id}", class: 'btn btn-link btn-sm px-1' do
+                  Ver la sección
+                  %i.fas.fa-arrow-up-right-from-square
+              %span.sp-pista Esc cierra sin guardar
+
+          .sp-derecha
+            = render 'timetables/horario_grilla', guia: 'Arrastre de la hora de inicio a la final, o un clic en cada una. Si abarca varios días, se repite en cada uno.'
+
+          = render 'timetables/horario_campos'

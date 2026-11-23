@@ -1,0 +1,5 @@
+-# El campo «Horario» de la sección en el admin: la grilla semanal (timetables/_horario_semanal) en vez del formulario
+-# anidado de rails_admin (horario → bloques), que traía un campo de hora de 24 h sin am/pm (23-nov). rails_admin no
+-# envuelve los campos anidados en .controls: va aquí.
+.col-sm-10.controls
+  = render 'timetables/horario_semanal', seccion: form.object, prefijo: "#{form.object_name}[timetable_attributes]"

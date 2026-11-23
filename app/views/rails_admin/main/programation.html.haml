@@ -1,16 +1,9 @@
 %h4.bg-primary.text-light.text-center.mb-4
-  .btn.bg-success.text-dark{'data-bs-toggle': :tooltip, title: 'Total Secciones'}
+  .btn.bg-success.text-dark{id: 'programacion_total_secciones', 'data-bs-toggle': :tooltip, title: 'Total Secciones'}
     = @object.sections.count
   = "Programación #{@object.short_desc}"
 
-
-
-- if (current_user&.admin&.authorized_manage? 'Course')
-  - @section = Section.new
-  - content = render("/academic_processes/form_section", return_id: @object.id)
-
-  = render partial: 'layouts/scaffold-modal', locals: {id: "NewSectionModal", title: "Nueva Sección", content: content}
-
+-# La sección nueva ya no va en un modal: se crea en la fila de su asignatura (programacion/secciones/_panel, 23-nov).
 - if (current_user&.admin&.authorized_read? 'Course')
   = render(partial: "/academic_processes/programation", locals: {academic_process: @object})
 - else

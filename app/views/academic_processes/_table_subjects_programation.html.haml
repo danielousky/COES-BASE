@@ -1,5 +1,6 @@
 
-.table-responsive{style: 'max-height:400px; overflow:scroll;font-size: small;'}
+-# La caja (programacion-tabla) se estira mientras hay un panel de sección abierto (programacion/secciones/_panel).
+.programacion-tabla
   %table#programation.table.table-condensed.table-striped.table-hover.table-bordered
     %thead{style: "position: sticky;top: 0; background-color:#F4F4F4"}
       %tr
@@ -21,9 +22,7 @@
         - subj_desc = subject.desc
         - @course = subject.courses.where(academic_process_id: academic_process_id).first
 
-        - sections = @course&.sections
-        - has_sections = sections&.any?
-        %tr.align-middle.trFiltrable{style: 'overflow: scroll;'}
+        %tr.align-middle.trFiltrable{id: "programacion_asignatura_#{@subj_id}"}
           %td= i+1
           %td= subject.ordinal_to_cardinal_short
           %td{'data-bs-toggle': :tooltip, title: subj_desc}= link_to_if (current_user&.admin&.authorized_read? 'Subject'), subj_desc, "/admin/subject/#{@subj_id}"
@@ -45,27 +44,8 @@
           %th.text-center
             - if @course
               = @course.label_numbery_total
-          - # Sections
-          - if false
-            %td.overflow-scroll{id: "sections#{@subj_id}"}
-          %th{id: "sections#{@subj_id}"}
+          - # Secciones: se crean, duplican, corrigen y borran en la fila, sin recargar (programacion/secciones/_secciones)
+          %th.secciones{id: "sections#{@subj_id}"}
             - if @course
-              %table
-                %tr
-                  =# ApplicationController.helpers.label_status_with_tooltip('bg-info me-1', @course.total_sections, 'Total Secciones')
-                  =# ApplicationController.helpers.label_status('bg-info me-1', @course.total_sections)
-                  - if (current_user&.admin&.authorized_read? 'Section')
-                    %td
-                      - if has_sections  
-                        - url = "/admin/section?f[academic_process][39808][o]=like&f[academic_process][39808][v]=#{@course.academic_process.process_name}&f[school][40710][o]=like&f[school][40710][v]=#{@course.school.short_name}&f[subject][41128][o]=like&f[subject][41128][v]=#{@course.subject.code}&query="
-                        = ApplicationController.helpers.btn_link_with_tooptip(url,'btn-success', @course.total_sections, 'Total Secciones')
-                        = ":"
-                        = render partial: 'academic_processes/sections_list_inline', locals: {sections: sections, has_enrolled: @course.academic_records.any?}
-                      - else
-                        
-                        = ApplicationController.helpers.label_status('btn-sm btn-secondary disabled', @course.total_sections, 'btn')
-                        = ":"
-                      
-                  - if (current_user&.admin&.authorized_create? 'Section')
-                    %td.p-0= ApplicationController.helpers.button_add_section @course.id
+              = render 'programacion/secciones/secciones', curso: @course
 

@@ -7,7 +7,8 @@ class CoursesController < ApplicationController
       respond_to do |format|
         course = Course.new(course_params)
         if course.save
-          new_section = ApplicationController.helpers.button_add_section(course.id)
+          # Las secciones de la fila, con su «+»: las mismas de la programación (programacion/secciones/_secciones)
+          new_section = view_context.render partial: 'programacion/secciones/secciones', formats: [:html], locals: {curso: course}
 
           # Los interruptores «Ofertar» y «PCI» de la fila: los mismos de la programación
           @course = course

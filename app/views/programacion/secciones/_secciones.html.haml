@@ -1,0 +1,42 @@
+-# Las secciones de una asignatura en la Programación (FHE 23-nov, como en FAU): el total (lleva a la lista de
+-# secciones del admin), un botón por sección (abre su panel para corregirla o duplicarla; el globo dice su horario y
+-# su profesor), el borrar y el «+» para una nueva. Al guardar o borrar, Turbo Stream reemplaza este bloque entero
+-# (con la sección tocada resaltada), sin recargar. También lo devuelve CoursesController#create al activar la
+-# asignatura. Las rutas van con main_app: este bloque también se dibuja dentro de rails_admin.
+- admin = current_user&.admin
+- resaltar ||= nil
+- secciones = curso.sections.includes(:academic_records, :timeblocks, teacher: :user).sort_by { |s| Section.orden_del_codigo(s.code) }
+.programacion-secciones{id: "secciones_curso_#{curso.id}"}
+  - if admin&.authorized_read?('Section')
+    - lista = "/admin/section?f[academic_process][39808][o]=like&f[academic_process][39808][v]=#{curso.academic_process.process_name}&f[school][40710][o]=like&f[school][40710][v]=#{curso.school.short_name}&f[subject][41128][o]=like&f[subject][41128][v]=#{curso.subject.code}&query="
+    - if secciones.any?
+      = link_to secciones.size, lista, class: 'btn btn-sm btn-success', title: 'Total de secciones: abre la lista', data: {controller: 'globo'}
+    - else
+      %span.btn.btn-sm.btn-secondary.disabled 0
+  - if admin&.authorized_read?('Section') || admin&.authorized_update?('Section')
+    - secciones.each do |sec|
+      .chip-seccion{class: ('chip-seccion--resaltada' if sec.id == resaltar)}
+        - globo = sec.schedule_teacher_desc_short
+        - if admin.authorized_update?('Section')
+          = link_to sec.code, main_app.programacion_editar_seccion_path(sec), class: 'btn btn-info btn-sm', title: globo, data: {turbo_stream: true, controller: 'globo'}
+        - else
+          = link_to sec.code, "/admin/section/#{sec.id}", class: 'btn btn-info btn-sm', title: globo, data: {controller: 'globo'}
+        - if admin.authorized_delete?('Section')
+          - if sec.academic_records.any?
+            %span{title: 'Elimine las inscripciones para activar esta opción', data: {controller: 'globo'}}
+              %button.btn.btn-sm.btn-secondary.px-1{type: 'button', disabled: true}
+                %i.fas.fa-remove
+          - else
+            = link_to main_app.programacion_seccion_path(sec), class: 'btn btn-sm btn-danger px-1', title: "Eliminar #{sec.code}", data: {controller: 'globo', turbo_method: :delete, turbo_confirm: "¿Eliminar la sección #{sec.code}? Esta acción es irreversible."} do
+              %i.fas.fa-remove
+  - if admin&.authorized_create?('Section')
+    = link_to main_app.programacion_nueva_seccion_path(course_id: curso.id), class: 'btn btn-sm btn-success', title: 'Agregar una sección', data: {turbo_stream: true, controller: 'globo'} do
+      %i.fas.fa-plus
+  - if admin&.authorized_delete?('Section') && secciones.size > 1
+    - if secciones.any? { |s| s.academic_records.any? }
+      %span.ms-1{title: 'Elimine las inscripciones en la sección para activar esta opción', data: {controller: 'globo'}}
+        %button.btn.btn-sm.btn-danger{type: 'button', disabled: true}
+          %i.fas.fa-trash
+    - else
+      = link_to main_app.programacion_secciones_path(course_id: curso.id), class: 'btn btn-sm btn-danger ms-1', title: 'Eliminar todas las secciones', data: {controller: 'globo', turbo_method: :delete, turbo_confirm: "¿Eliminar las #{secciones.size} secciones de la asignatura? Esta acción es irreversible."} do
+        %i.fas.fa-trash

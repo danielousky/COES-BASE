@@ -140,6 +140,48 @@ class Section < ApplicationRecord
     "#{self.subject.code.upcase}#{self.code.upcase} - #{self.subject.name} (#{self.academic_process.process_name})"
   end
 
+  # El código que sigue en una asignatura (23-nov). Cada escuela numera a su manera (A1, B1, C1 · A, B, C · M1, M2,
+  # N1 · U), así que no hay una serie fija como la de FAU (01, 02… y E1, E2… en Barquisimeto):
+  #   1. si la asignatura sigue la numeración de la vez anterior que se dictó, el primero de esa vez que esté libre;
+  #   2. si no, el que sigue en la serie de los que ya tiene: A1, B1 → C1 · A1, A2 → A3 · A, B → C · 01, 02 → 03;
+  #   3. si todavía no tiene ninguno, el más usado en el período («frecuente»).
+  # Si no sale de ninguna parte (una «U» sola, por ejemplo), queda vacío y se escribe.
+  def self.siguiente_codigo(codigos, anteriores = [], frecuente = nil)
+    tomados = en_orden(codigos.map { |c| c.to_s.upcase })
+    antes = en_orden(anteriores.map { |c| c.to_s.upcase })
+    libre = (antes - tomados).first if (tomados - antes).empty?
+    return libre if libre
+    return frecuente.to_s if tomados.empty?
+
+    siguiente_en_la_serie(tomados).to_s
+  end
+
+  # A1, A2, A10, y no A1, A10, A2.
+  def self.en_orden(codigos)
+    codigos.sort_by { |c| orden_del_codigo(c) }
+  end
+
+  def self.orden_del_codigo(codigo)
+    [codigo[/\A\D*/], codigo[/\d+/].to_i, codigo]
+  end
+
+  # Con un solo código de letra y número (A1) sigue la letra (B1): en FHE, B1 se usa más que A2 (425 contra 91).
+  def self.siguiente_en_la_serie(codigos)
+    if codigos.all? { |c| c.match?(/\A\d+\z/) }
+      format('%02d', codigos.map(&:to_i).max + 1)
+    elsif codigos.all? { |c| c.match?(/\A[A-Z]\z/) }
+      codigos.max.next
+    elsif codigos.all? { |c| c.match?(/\A[A-Z]\d+\z/) }
+      letras = codigos.map { |c| c[0] }.uniq
+      numeros = codigos.map { |c| c[1..].to_i }.uniq
+      return "#{letras.max.next}#{numeros.first}" if numeros.one?
+      return "#{letras.first}#{numeros.max + 1}" if letras.one?
+
+      letra = codigos.last[0]
+      "#{letra}#{codigos.select { |c| c[0] == letra }.map { |c| c[1..].to_i }.max + 1}"
+    end
+  end
+
   def has_teachers?
     !teacher.nil? or secondary_teachers.any?
   end
@@ -644,7 +686,10 @@ class Section < ApplicationRecord
         end
       end
 
-      field :timetable
+      field :timetable do
+        # La grilla semanal, de lunes a sábado y en hora normal (23-nov): rails_admin/main/_form_horario_semanal.
+        partial 'form_horario_semanal'
+      end
 
     end
 
@@ -685,7 +730,10 @@ class Section < ApplicationRecord
         end
       end
 
-      field :timetable
+      field :timetable do
+        # La grilla semanal, de lunes a sábado y en hora normal (23-nov): rails_admin/main/_form_horario_semanal.
+        partial 'form_horario_semanal'
+      end
 
     end
 

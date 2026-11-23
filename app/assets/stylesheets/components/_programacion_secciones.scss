@@ -1,0 +1,171 @@
+// La Programación (FHE 23-nov; nació en FAU el 17-nov): las secciones de cada asignatura y el panel para crearlas,
+// duplicarlas o corregirlas (programacion/secciones/_secciones y _panel, con los controladores seccion-panel,
+// buscar-profesor y horario-semanal). En FHE no hay sedes, y el aula va en cada bloque y no en la sección.
+
+// La caja de la tabla tiene 400 px de alto; mientras hay un panel abierto se estira para que se vea completo.
+.programacion-tabla {
+  max-height: 400px;
+  overflow: auto;
+  font-size: small;
+
+  // Con el panel abierto, la caja crece. Si la asignatura es la última, el panel queda al final de la página, debajo
+  // del pie del admin (layouts/_footer, fixed-bottom), y el pie tapaba «Agregar bloque» y «Crear sección» (23-nov):
+  // el hueco de abajo es para el pie.
+  &.con-panel { max-height: none; padding-bottom: 3rem; }
+}
+
+// La celda de las secciones es un <th> (así venía en FHE): sin la negrita.
+.secciones { font-weight: normal; }
+
+.programacion-secciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3rem;
+
+  .chip-seccion {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  // La que se acaba de crear o corregir, para encontrarla de un vistazo.
+  .chip-seccion--resaltada .btn-info { animation: chip-resaltada 2.6s ease-out 1; }
+}
+
+@keyframes chip-resaltada {
+  0%, 35% { box-shadow: 0 0 0 4px #f4a261; }
+  100% { box-shadow: 0 0 0 0 rgba(244, 162, 97, 0); }
+}
+
+// La fila del panel no lleva el rayado ni el resaltado al pasar de la tabla, ni el recorte que rails_admin le
+// pone a toda celda (body.rails_admin .table td: una sola línea, 150 px): partía la guía de la grilla, dejaba
+// «7:30 am – 12:0» en los bloques y bajaba de línea la papelera de cada horario.
+.table > tbody > tr.programacion-panel > td {
+  --bs-table-accent-bg: transparent;
+  max-width: none;
+  overflow: visible;
+  padding: .25rem .25rem 1rem;
+  background: transparent;
+  border-bottom: 0;
+  white-space: normal;
+}
+
+.sp-tarjeta {
+  // Al abrirse queda a la vista sin meterse debajo de la barra de arriba ni del pie del admin (los dos fijos).
+  scroll-margin: 4rem 0 3.5rem;
+  padding: .8rem 1rem 1rem;
+  border: 1px solid #c9d3dd;
+  border-left: 4px solid #457b9d;
+  border-radius: .5rem;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(29, 53, 87, .12);
+  font-size: .875rem;
+
+  &:focus { outline: none; }
+}
+
+.sp-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .6rem;
+  margin-bottom: .75rem;
+}
+
+.sp-titulo { color: #1d3557; font-size: 1rem; }
+.sp-asignatura { color: #6c757d; }
+
+.sp-como {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem;
+  margin-left: .5rem;
+  color: #6c757d;
+  font-size: .8rem;
+
+  .btn { padding: 0 .45rem; font-size: .78rem; }
+}
+
+.sp-campos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .75rem 1.25rem;
+  margin-bottom: .9rem;
+}
+
+.sp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.sp-etiqueta {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: #5c6670;
+}
+
+.sp-campo--codigo input,
+.sp-campo--cupo input { width: 6.5rem; }
+.sp-campo--codigo input { text-transform: uppercase; }
+.sp-campo--profesor { flex: 1 1 18rem; max-width: 26rem; }
+
+.sp-ayuda { max-width: 14rem; color: #6c757d; font-size: .75rem; }
+
+.bp-resultados {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow: auto;
+  box-shadow: 0 8px 18px rgba(29, 53, 87, .18);
+  font-size: .82rem;
+
+  small { color: inherit; opacity: .7; }
+}
+
+.sp-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .9rem;
+}
+
+.sp-pista { margin-left: auto; color: #8a939c; font-size: .75rem; }
+
+// Dos columnas (Daniel): los datos, el horario en lista y la acción a la izquierda; la grilla baja a la derecha.
+// En pantallas angostas, una debajo de la otra.
+.sp-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(24rem, 27rem) minmax(0, 1fr);
+  gap: 1rem 1.75rem;
+  align-items: start;
+
+  > .hs-campos { display: none; }  // solo campos ocultos: viajan igual con el formulario
+}
+
+// Los datos en una retícula de dos columnas, con los bordes alineados: Código | Cupo, y la ayuda del código y el
+// profesor a lo ancho. Los campos llenan su celda.
+.sp-izquierda .sp-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .7rem 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+
+  .sp-campo input { width: 100%; }
+  .sp-campo--profesor { grid-column: 1 / -1; max-width: none; }
+  .sp-ayuda { grid-column: 1 / -1; max-width: none; margin-top: -.35rem; }
+}
+
+@media (max-width: 1100px) {
+  .sp-cuerpo { grid-template-columns: minmax(0, 1fr); }
+}

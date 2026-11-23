@@ -20,7 +20,7 @@
     %li.nav-item.bg-info.py-2.px-3{style: 'margin-top: 90px;'} Departamento: 
     %li.nav-item.bg-primary
       .nav-link
-        = select nil, 'Dpto', @dpts.map{|dpto| [dpto.total_section_by_process_and_name(@academic_process_id), dpto.id]}, {selected: @current_dpt&.id}, {class: 'form-control', onchange: "select_dpt(this)"}
+        = select nil, 'Dpto', @dpts.map{|dpto| [dpto.total_section_by_process_and_name(@academic_process_id), dpto.id, {id: "programacion_conteo_dpto_#{dpto.id}"}]}, {selected: @current_dpt&.id}, {class: 'form-control', onchange: "select_dpt(this)"}
     
     %li.nav-item.bg-info.py-2.px-3.mt-3 Área/Cátedra:
 
@@ -30,7 +30,7 @@
         - url = "/admin/academic_process/#{@academic_process_id}/programation?area=#{area.id}"
         - url += "&dpt_id="+params[:dpt_id] if params[:dpt_id]
         %a.nav-link{:href => url, class: active_area_tab, style: 'font-size: small;'}
-          = ApplicationController.helpers.total_sections_stiky area.sections.joins(:departament).where('courses.academic_process_id': @academic_process_id, 'departaments.id': params[:dpt_id]).count
+          %span{id: "programacion_conteo_area_#{area.id}"}= ApplicationController.helpers.total_sections_stiky ApplicationController.helpers.secciones_del_area(area, @academic_process_id, params[:dpt_id])
           = area.name.titleize
 
   .tab-content.col-9.p-1
@@ -43,7 +43,6 @@
       - active_area_cont = active_area ? 'active' : 'text-light'
       - show_area_cont = active_area ? 'show' : ''
 
-      - sections = area.sections.where('courses.academic_process_id': @academic_process_id)
       - if area.subjects.where(school_id: @school.id, departament_id: params[:dpt_id]).any?
         .tab-pane.fade{class: "#{active_area_cont} #{show_area_cont}", role: :tabpanel} 
           %ul#moda_selector.nav.nav-tabs
@@ -55,7 +54,7 @@
                 - url = "/admin/academic_process/#{@academic_process_id}/programation?area=#{area.id}&moda=#{moda.code}"
                 - url += "&dpt_id="+params[:dpt_id] if params[:dpt_id]
                 %a.nav-link.position-relative{:href => url, class: active_moda, style: 'font-size: small;'}
-                  = ApplicationController.helpers.total_sections_stiky sections.joins(:subject_type).where('subject_types.code': moda.code).count
+                  %span{id: "programacion_conteo_area_#{area.id}_#{moda.code}"}= ApplicationController.helpers.total_sections_stiky ApplicationController.helpers.secciones_de_la_tipologia(area, @academic_process_id, moda.code)
                   = moda&.name&.downcase.pluralize.titleize
 
           .tab-content.border-bottom.border-end.border-start.p-3

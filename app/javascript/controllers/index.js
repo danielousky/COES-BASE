@@ -21,3 +21,18 @@ application.register("mapa-prelaciones", MapaPrelacionesController)
 
 import FieldUpdateController from "./field_update_controller"
 application.register("field-update", FieldUpdateController)
+
+import AvisoController from "./aviso_controller"
+application.register("aviso", AvisoController)
+
+import BuscarProfesorController from "./buscar_profesor_controller"
+application.register("buscar-profesor", BuscarProfesorController)
+
+import GloboController from "./globo_controller"
+application.register("globo", GloboController)
+
+import HorarioSemanalController from "./horario_semanal_controller"
+application.register("horario-semanal", HorarioSemanalController)
+
+import SeccionPanelController from "./seccion_panel_controller"
+application.register("seccion-panel", SeccionPanelController)

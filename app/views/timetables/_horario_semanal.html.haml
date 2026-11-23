@@ -1,0 +1,18 @@
+-# El horario de una sección en una grilla semanal: de lunes a sábado, de 6:00 am a 10:00 pm, en hora normal (FHE
+-# 23-nov; nació en FAU el 17-nov). Así, apilado, va en el formulario de la sección del admin
+-# (rails_admin/main/_form_horario_semanal). El panel de la Programación (programacion/secciones/_panel) usa las
+-# mismas piezas en dos columnas, con la grilla más baja. El controlador «horario-semanal» dibuja los bloques y
+-# escribe los campos del horario con el prefijo que se le pase.
+-#   seccion   la sección, con su horario tal como quedó (también lo no guardado, si el servidor lo rechazó)
+-#   prefijo   «section[timetable_attributes]»
+- ayuda = ApplicationController.helpers
+- errores = ayuda.horario_semanal_errores(seccion)
+%div{ayuda.horario_semanal_atributos(seccion, prefijo)}
+  - if errores.any?
+    .alert.alert-danger.py-2.px-3.small.mb-2{data: {horario_semanal_target: 'servidor'}}
+      %strong No se guardó el horario:
+      - errores.each do |error|
+        %div= error
+  = render 'timetables/horario_grilla', guia: 'Arrastre desde la hora de inicio hasta la final, o haga clic en una y luego en la otra. Si abarca varios días, la clase queda igual en cada uno.'
+  = render 'timetables/horario_lista', titulo: 'Bloques: ajuste fino de 5 en 5 minutos, modalidad y aula'
+  = render 'timetables/horario_campos'

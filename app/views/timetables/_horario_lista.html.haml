@@ -1,0 +1,8 @@
+-# La lista de los bloques: el ajuste fino de 5 en 5 minutos, el día, la modalidad y el aula, también con el
+-# teclado (dentro de un .horario-semanal, que tiene el controlador).
+.hs-ajuste
+  .hs-ajuste-titulo= titulo
+  %ul.hs-lista{data: {horario_semanal_target: 'lista'}}
+  %button.btn.btn-sm.btn-outline-primary.hs-agregar{type: 'button', data: {action: 'horario-semanal#agregar'}}
+    %i.fas.fa-plus
+    Agregar bloque
