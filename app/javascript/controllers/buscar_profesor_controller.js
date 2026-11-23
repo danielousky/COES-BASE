@@ -3,6 +3,8 @@ import { Controller } from "@hotwired/stimulus"
 // El profesor de una sección, buscado mientras se escribe: nombre, apellido o cédula, sin importar los acentos
 // (Programacion::SeccionesController#profesores). Al elegirlo, su id queda en el campo oculto. Flechas y Enter
 // eligen sin el ratón; Esc o salir sin elegir devuelven el que estaba; borrar el texto deja la sección sin profesor.
+// Cuando el id cambia, el campo oculto avisa con un «change», como un campo de verdad: la grilla del horario lo usa
+// para mostrar las otras clases del profesor (FHE, 23-nov; el de FAU todavía no lo tiene).
 const escapar = (texto) => String(texto).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
 
 export default class extends Controller {
@@ -19,7 +21,7 @@ export default class extends Controller {
     clearTimeout(this.espera)
     const consulta = this.textoTarget.value.trim()
     if (consulta === "") {
-      this.idTarget.value = ""
+      this.ponerId("")
       this.elegido = ""
       return this.limpiar()
     }
@@ -67,7 +69,7 @@ export default class extends Controller {
   elegir(indice) {
     const profesor = this.lista[indice]
     if (!profesor) return
-    this.idTarget.value = profesor.id
+    this.ponerId(profesor.id)
     this.textoTarget.value = this.elegido = profesor.nombre
     this.limpiar()
   }
@@ -79,12 +81,18 @@ export default class extends Controller {
 
   restaurar() {
     if (this.textoTarget.value.trim() === "") {
-      this.idTarget.value = ""
+      this.ponerId("")
       this.elegido = ""
     } else {
       this.textoTarget.value = this.elegido
     }
     this.limpiar()
+  }
+
+  ponerId(id) {
+    if (this.idTarget.value === String(id)) return
+    this.idTarget.value = id
+    this.idTarget.dispatchEvent(new Event("change", { bubbles: true }))
   }
 
   limpiar() {

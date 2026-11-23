@@ -44,6 +44,7 @@ Rails.application.routes.draw do
     get    'secciones/nueva',      to: 'programacion_secciones#new',            as: :nueva_seccion
     post   'secciones',            to: 'programacion_secciones#create',         as: :secciones
     get    'secciones/profesores', to: 'programacion_secciones#profesores',     as: :profesores
+    get    'secciones/ocupacion',  to: 'programacion_secciones#ocupacion',      as: :ocupacion
     get    'secciones/:id/editar', to: 'programacion_secciones#edit',           as: :editar_seccion
     patch  'secciones/:id',        to: 'programacion_secciones#update',         as: :seccion
     delete 'secciones/:id',        to: 'programacion_secciones#destroy'

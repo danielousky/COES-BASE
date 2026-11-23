@@ -7,6 +7,11 @@
 #   Crear / Guardar     ─► POST o PATCH         ─► las secciones de esa fila, ya sin el panel
 #                                                  └─ si no se guardó, el panel otra vez, con el motivo
 #   × o 🗑              ─► DELETE               ─► las secciones de esa fila
+#   otro profesor       ─► GET en JSON          ─► sus otras clases, para la grilla (ocupacion)
+#
+# Alrededor del horario, la grilla muestra las otras clases del profesor, las otras secciones y el semestre
+# (CapasDelHorario). Si el cambio trae un choque nuevo del profesor, no se guarda hasta que se elija qué hacer
+# (ChoqueDelProfesor): el admin no lo revisa.
 #
 # Al crear o borrar también se ponen al día los contadores de la página (el total, el departamento, el área y la
 # tipología). Lo que se guarda es lo mismo que en el admin (también el horario, con la misma grilla), así que las
@@ -22,7 +27,7 @@ class ProgramacionSeccionesController < ApplicationController
   before_action :autorizar_crear, only: %i[new create]
   before_action :autorizar_editar, only: %i[edit update]
   before_action :autorizar_borrar, only: %i[destroy eliminar_todas]
-  before_action :autorizar_buscar, only: :profesores
+  before_action :autorizar_buscar, only: %i[profesores ocupacion]
 
   # Nueva, o duplicada de otra («desde»): el mismo cupo, profesor y horario, con el código que sigue.
   def new
@@ -38,12 +43,12 @@ class ProgramacionSeccionesController < ApplicationController
   end
 
   def create
-    @seccion = Section.new(seccion_params.merge(course: @curso))
+    @seccion = Section.new(seccion_params.merge(course: @curso, revisar_choques: true))
     guardar
   end
 
   def update
-    @seccion.assign_attributes(seccion_params)
+    @seccion.assign_attributes(seccion_params.merge(revisar_choques: true))
     guardar
   end
 
@@ -74,6 +79,12 @@ class ProgramacionSeccionesController < ApplicationController
                             .map { |t| {id: t.id, nombre: t.user.reverse_name, ci: t.user.ci} }
   end
 
+  # Las otras clases del profesor que se acaba de elegir en el buscador, para la capa de la grilla.
+  def ocupacion
+    seccion = @curso.sections.find_by(id: params[:seccion_id]) || Section.new(course: @curso)
+    render json: {profesor: CapasDelHorario.new(seccion, profesor_id: params[:profesor_id]).profesor}
+  end
+
   private
 
   def abrir_panel
@@ -91,7 +102,7 @@ class ProgramacionSeccionesController < ApplicationController
   # Al crear, también los contadores. El aviso dice qué pasó, como al borrar (Daniel, 23-nov: al crear no había).
   def guardar
     nueva = @seccion.new_record?
-    cambio = @seccion.changed_for_autosave?
+    cambio = @seccion.changed_for_autosave? || @seccion.cambia_el_dictado_conjunto?
     if @seccion.save
       render turbo_stream: [
         turbo_stream.remove("panel_curso_#{@curso.id}"),
@@ -155,8 +166,9 @@ class ProgramacionSeccionesController < ApplicationController
     turbo_stream.append_all('body', helpers.tag.div(data: {controller: 'aviso', aviso_tipo_value: tipo, aviso_texto_value: mensaje}))
   end
 
+  # Con lo que la grilla muestra alrededor del horario: el profesor, las otras secciones y el semestre.
   def panel
-    {curso: @curso, seccion: @seccion, origen: @origen}
+    {curso: @curso, seccion: @seccion, origen: @origen, capas: CapasDelHorario.new(@seccion).para_grilla}
   end
 
   # El horario de la sección de origen, en bloques nuevos: la grilla los muestra y los manda como nuevos.
@@ -196,7 +208,8 @@ class ProgramacionSeccionesController < ApplicationController
   end
 
   def seccion_params
-    params.require(:section).permit(:code, :capacity, :teacher_id,
+    params.require(:section).permit(:code, :capacity, :teacher_id, :separar_del_dictado, :choque_confirmado,
+                                    juntar_con: [],
                                     timetable_attributes: [:id, :_destroy,
                                                            {timeblocks_attributes: %i[id day start_time end_time modality classroom _destroy]}])
   end

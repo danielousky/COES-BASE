@@ -6,6 +6,10 @@
 -# más baja que la del admin. Las dos viven dentro del controlador «horario-semanal», que necesita la lista y la
 -# grilla juntas. El aula va en cada bloque, no en la sección (Daniel, 20-nov). Los globos son los de Bootstrap
 -# (controlador «globo»): el panel llega por Turbo Stream, y ui.js solo los prepara al cargar la página.
+-#
+-# Alrededor del horario (23-nov), la grilla muestra las otras clases del profesor, las otras secciones y el semestre
+-# («capas», de CapasDelHorario), y avisa si el profesor ya tiene clase a esa hora (ChoqueDelProfesor). Arriba de la
+-# grilla van los botones de cada capa; arriba de Crear o Guardar, los avisos.
 - ayuda = ApplicationController.helpers
 - nueva = seccion.new_record?
 - otras = curso.sections.where.not(id: seccion.id).sort_by { |s| Section.orden_del_codigo(s.code) }
@@ -40,7 +44,7 @@
             - mensajes.each do |mensaje|
               %div= mensaje
 
-        %div{ayuda.horario_semanal_atributos(seccion, 'section[timetable_attributes]', clase: 'horario-semanal--compacta sp-cuerpo')}
+        %div{ayuda.horario_semanal_atributos(seccion, 'section[timetable_attributes]', clase: 'horario-semanal--compacta sp-cuerpo', capas: capas, url_capas: main_app.programacion_ocupacion_path(course_id: curso.id, seccion_id: seccion.id))}
           .sp-izquierda
             .sp-campos
               .sp-campo.sp-campo--codigo
@@ -55,11 +59,13 @@
               .sp-campo.sp-campo--profesor
                 %label.sp-etiqueta{for: "#{dom}_profesor"} Profesor
                 .position-relative{data: {controller: 'buscar-profesor', buscar_profesor_url_value: main_app.programacion_profesores_path}}
-                  = f.hidden_field :teacher_id, data: {buscar_profesor_target: 'id'}
+                  = f.hidden_field :teacher_id, data: {buscar_profesor_target: 'id', action: 'change->horario-semanal#cambiarProfesor'}
                   %input.form-control.form-control-sm{id: "#{dom}_profesor", type: 'search', value: seccion.teacher&.user&.reverse_name, placeholder: 'Nombre, apellido o cédula', autocomplete: 'off', data: {buscar_profesor_target: 'texto', action: 'input->buscar-profesor#buscar keydown->buscar-profesor#tecla blur->buscar-profesor#salir'}}
                   .list-group.bp-resultados{data: {buscar_profesor_target: 'resultados'}}
 
             = render 'timetables/horario_lista', titulo: 'Horario'
+
+            .hs-avisos{tabindex: -1, data: {horario_semanal_target: 'avisos'}}
 
             .sp-acciones
               = f.button type: 'submit', class: 'btn btn-primary btn-sm' do
@@ -75,6 +81,9 @@
               %span.sp-pista Esc cierra sin guardar
 
           .sp-derecha
+            .hs-ver{data: {horario_semanal_target: 'ver'}}
             = render 'timetables/horario_grilla', guia: 'Arrastre de la hora de inicio a la final, o un clic en cada una. Si abarca varios días, se repite en cada uno.'
 
           = render 'timetables/horario_campos'
+          -# Lo de la sección que deciden los avisos: juntar_con, separar_del_dictado y choque_confirmado.
+          .d-none{data: {horario_semanal_target: 'camposSeccion'}}

@@ -12,6 +12,7 @@
   --hs-manana: #fffaf0;
   --hs-tarde: #ffffff;
   --hs-noche: #f2f4fa;
+  --hs-choque: #d97706;             // el ámbar del choque del profesor
   max-width: 1000px;
 
   // La mañana, la tarde y la noche con un fondo apenas distinto: la 1 de la tarde no se confunde con la madrugada.
@@ -135,6 +136,10 @@
 
     &.hs-bloque--virtual { background: var(--hs-virtual); }
 
+    // Pisa una clase del profesor (las capas, 23-nov): borde punteado ámbar y ⚠ en la hora, para que no dependa
+    // solo del color. Va después de :focus, que quita el outline.
+    &.hs-bloque--choca { outline: 2px dashed var(--hs-choque); outline-offset: 1px; }
+
     // La hora arriba y el lugar (el aula, o «Virtual») debajo, cada uno en su línea.
     .hs-rango,
     .hs-lugar {
@@ -234,6 +239,224 @@
   }
 
   .hs-vacia { padding: .25rem .4rem; color: #6c757d; font-size: .85rem; }
+
+  // ── Las capas (23-nov, solo en el panel de la Programación): lo que rodea al horario ──
+  // Van debajo de los bloques, en su propia rejilla de seis días (la arma horario_semanal_controller.js). Las columnas
+  // dejan pasar el ratón para que salgan los globos de las capas; los bloques lo reciben como siempre.
+  .hs-capas {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .hs-capas-dia { position: relative; }
+
+  &.con-capas .hs-columna { pointer-events: none; }
+  &.con-capas .hs-bloque:not(.hs-bloque--fantasma) { pointer-events: auto; }
+
+  .hs-capa {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    overflow: hidden;
+    padding: 1px 3px;
+    border-radius: 4px;
+    font-size: .64rem;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  .hs-capa-rotulo {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // Cada capa con su dibujo, el mismo en su botón: rayado el profesor, punteado las otras secciones, un tono suave el
+  // semestre. Lo que se dicta junto va en verde, y lo que choca con borde ámbar.
+  .hs-capa--profesor,
+  .hs-muestra--profesor {
+    background: repeating-linear-gradient(135deg, rgba(166, 99, 16, .28) 0 4px, rgba(166, 99, 16, .1) 4px 8px);
+    border: 1px solid rgba(166, 99, 16, .55);
+    color: #6b3f0d;
+  }
+
+  .hs-capa--junta {
+    background: repeating-linear-gradient(135deg, rgba(42, 127, 116, .24) 0 4px, rgba(42, 127, 116, .08) 4px 8px);
+    border-color: rgba(42, 127, 116, .6);
+    color: #1f5f57;
+  }
+
+  .hs-capa--choca { border: 2px solid var(--hs-choque); }
+
+  .hs-capa--asignatura,
+  .hs-muestra--asignatura {
+    background: rgba(255, 255, 255, .6);
+    border: 1px dashed #6b8db0;
+    color: #3d5873;
+  }
+
+  .hs-capa--semestre,
+  .hs-muestra--semestre { background: rgba(111, 66, 193, .12); }
+
+  .hs-capa--semestre {
+    left: 0;
+    right: 0;
+    border-radius: 0;
+  }
+
+  .hs-ver {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .3rem;
+    margin-bottom: .35rem;
+
+    &:empty { display: none; }
+  }
+
+  .hs-ver-titulo {
+    margin-right: .1rem;
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #6c757d;
+  }
+
+  .hs-ver-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .05rem .5rem;
+    border: 1px solid var(--hs-borde);
+    border-radius: 1rem;
+    background: #fff;
+    color: #33414e;
+    font-size: .72rem;
+    line-height: 1.5;
+    cursor: pointer;
+
+    &[aria-pressed="false"] {
+      background: #f2f4f7;
+      color: #8a949e;
+
+      .hs-muestra { opacity: .35; }
+    }
+
+    &[aria-disabled="true"] { opacity: .55; cursor: default; }
+  }
+
+  .hs-ver-cuenta { font-weight: 700; }
+
+  .hs-muestra {
+    display: inline-block;
+    width: .9rem;
+    height: .6rem;
+    border-radius: 2px;
+  }
+
+  // Los avisos, arriba de Crear o Guardar: el choque (ámbar, con sus tres salidas), lo que ya se decidió y lo que
+  // no tiene combinación.
+  .hs-avisos {
+    display: grid;
+    gap: .35rem;
+    margin: .1rem 0 .5rem;
+    font-size: .78rem;
+
+    &:empty { display: none; }
+    &:focus { outline: none; }
+  }
+
+  .hs-aviso {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .3rem .5rem;
+    padding: .4rem .55rem;
+    border: 1px solid;
+    border-radius: .4rem;
+    line-height: 1.35;
+
+    > i { flex: none; }
+    > span { flex: 1 1 12rem; }
+  }
+
+  .hs-aviso--choque {
+    display: block;
+    background: #fff4e0;
+    border-color: #f0b44c;
+    color: #6b3f0d;
+  }
+
+  .hs-aviso--aceptado {
+    background: #fff9ee;
+    border-color: #f3d29a;
+    color: #6b3f0d;
+  }
+
+  .hs-aviso--junta {
+    background: #eef7f5;
+    border-color: #bfe0da;
+    color: #1f5f57;
+  }
+
+  .hs-aviso--info {
+    background: #f1f5fa;
+    border-color: #d3dfec;
+    color: #34506b;
+  }
+
+  .hs-aviso-titulo { margin-bottom: .2rem; font-weight: 700; }
+
+  .hs-aviso-linea {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .25rem .5rem;
+    padding: .1rem 0;
+  }
+
+  .hs-aviso-nota { color: #8a6a3d; font-weight: 400; }
+
+  .hs-aviso-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .35rem;
+  }
+
+  .hs-aviso-boton {
+    padding: .05rem .5rem;
+    border: 1px solid currentColor;
+    background: rgba(255, 255, 255, .7);
+    color: inherit;
+    font-size: .74rem;
+    line-height: 1.45;
+
+    &:hover,
+    &:focus-visible { background: #fff; color: inherit; border-color: currentColor; }
+  }
+
+  // Crear o Guardar con un choque nuevo sin decidir: el aviso se sacude dos veces.
+  .hs-avisos--brinca .hs-aviso--choque { animation: hs-brinca .45s ease-in-out 2; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hs-avisos--brinca .hs-aviso--choque { animation: none; box-shadow: 0 0 0 3px #f0b44c; }
+  }
+}
+
+@keyframes hs-brinca {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 // La variante baja, para el panel de la Programación (dos columnas, Daniel): las mismas piezas, con filas de 20 px
@@ -259,6 +482,7 @@
 
   .hs-x { font-size: .8rem; }
   .hs-tirador { height: 5px; }
+  .hs-capa { padding: 0 2px; border-radius: 3px; font-size: .56rem; }
   .hs-ajuste { margin-top: 0; }
 
   // Cada bloque en dos líneas: día | inicio | a | fin | 🗑, y debajo modalidad | aula. Los selectores llenan su

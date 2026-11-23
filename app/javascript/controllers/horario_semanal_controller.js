@@ -22,6 +22,17 @@ import { Controller } from "@hotwired/stimulus"
 //   · un bloque guardado que cambia de día u hora viaja como borrar + nuevo. Rails borra primero, después actualiza
 //     y al final crea, así que el índice único de la base (día + inicio, día + fin) nunca ve dos bloques iguales.
 //
+// En el panel de la Programación (23-nov), la grilla muestra además lo que rodea al horario, en tres capas que se
+// prenden y se apagan arriba de la grilla (los datos son de CapasDelHorario):
+//
+//   el profesor        sus otras clases del período, rayadas. Si un bloque pisa una, el bloque lleva un aro ámbar
+//                      y el aviso dice con cuál, con tres salidas (Daniel): mover el bloque, «Se dictan juntas» o
+//                      «Guardar igual». Si el choque es nuevo, Crear o Guardar esperan a que se elija una; si ya
+//                      estaba al abrir la sección, solo se avisa
+//   las otras secciones de la asignatura, con borde punteado
+//   el semestre        las otras asignaturas del semestre y las que se cursaron junto con esta, en un tono suave. Si
+//                      con una de estas no queda combinación posible, el aviso lo dice
+//
 // El servidor valida igual que siempre y tiene la última palabra.
 const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
 const MODALIDADES = ["Presencial", "Virtual"]
@@ -49,10 +60,24 @@ const escapar = (texto) => String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&"
 // bloque con el ratón saltaban uno tras otro los globos de sus bordes.
 const globo = (texto, lugar = "top") =>
   `title="${texto}" data-controller="globo" data-bs-placement="${lugar}" data-bs-delay='{"show":500,"hide":0}'`
+const sePisan = (a, b) => a.dia === b.dia && a.inicio < b.fin && b.inicio < a.fin
+const enLista = (textos) => (textos.length < 2 ? textos.join("") : `${textos.slice(0, -1).join(", ")} y ${textos[textos.length - 1]}`)
+// Los bloques de las capas, como los de la sección: el día por su número y las horas en minutos.
+const enMinutos = (bloques = []) => bloques
+  .map((b) => ({ dia: DIAS.indexOf(b.dia), inicio: aMinutos(b.inicio), fin: aMinutos(b.fin), aula: b.aula || "" }))
+  .filter((b) => b.dia >= 0 && valido(b))
+// Las capas que cada quien apaga se recuerdan en su navegador. Es solo una comodidad: sin eso, se ven todas.
+const OCULTAS = "coes.horario-semanal.capas-ocultas"
+const capasOcultas = () => {
+  try { const guardadas = JSON.parse(localStorage.getItem(OCULTAS)); return Array.isArray(guardadas) ? guardadas : [] } catch { return [] }
+}
+const guardarCapasOcultas = (capas) => {
+  try { localStorage.setItem(OCULTAS, JSON.stringify([...capas])) } catch { /* el navegador no deja guardar: no pasa nada */ }
+}
 
 export default class extends Controller {
-  static targets = ["dias", "columna", "lista", "campos", "guia", "anuncio", "servidor"]
-  static values = { bloques: Array, prefijo: String, horario: String }
+  static targets = ["dias", "columna", "lista", "campos", "guia", "anuncio", "servidor", "ver", "avisos", "camposSeccion"]
+  static values = { bloques: Array, prefijo: String, horario: String, capas: Object, ocupacion: String }
 
   connect() {
     this.siguiente = 0
@@ -71,7 +96,12 @@ export default class extends Controller {
       },
     }))
     this.guiaInicial = this.guiaTarget.textContent.trim()
+    if (this.hasCapasValue) this.prepararCapas()
     this.dibujar()
+  }
+
+  disconnect() {
+    this.formulario?.removeEventListener("submit", this.alEnviar)
   }
 
   // ── La grilla ────────────────────────────────────────────────────────────────────────────────────
@@ -285,10 +315,11 @@ export default class extends Controller {
   }
 
   cambio(mensaje, { enfocar } = {}) {
+    if (this.conPista) this.guiar()
     this.normalizar()
     if (this.hasServidorTarget) this.servidorTarget.remove()
     this.dibujar({ enfocar })
-    this.anuncioTarget.textContent = mensaje
+    this.anuncioTarget.textContent = [mensaje, this.textoDelChoque()].filter(Boolean).join(" ")
   }
 
   // Dos bloques del mismo día que se pisan o se tocan quedan en uno solo: el que ya estaba guardado, si alguno lo
@@ -325,11 +356,14 @@ export default class extends Controller {
   }
 
   dibujarGrilla() {
+    const choques = this.capas && this.choquesActuales()
+    this.queChocan = new Set(choques ? [...choques.values()].flatMap((c) => c.mios) : [])
     const porDia = DIAS.map(() => [])
     this.activos().forEach((b) => porDia[b.dia].push(b))
     this.columnaTargets.forEach((columna, dia) => {
       columna.innerHTML = porDia[dia].map((b) => (valido(b) ? this.htmlBloque(b) : this.htmlMarca(b))).join("")
     })
+    if (choques) this.actualizarAlrededor(choques)
   }
 
   // La vista previa mientras se arrastra (o después del primer clic): el rectángulo en cada día que abarca.
@@ -348,13 +382,14 @@ export default class extends Controller {
   }
 
   htmlBloque(b) {
-    const clases = ["hs-bloque", b.modalidad === "Virtual" && "hs-bloque--virtual",
+    const choca = this.queChocan?.has(b.clave)
+    const clases = ["hs-bloque", b.modalidad === "Virtual" && "hs-bloque--virtual", choca && "hs-bloque--choca",
       b.clave === this.seleccionado && "is-seleccionado", b.fin - b.inicio <= MINIMO && "hs-bloque--corto"]
     const lugar = this.lugar(b)
     return `<div class="${clases.filter(Boolean).join(" ")}" data-clave="${b.clave}" tabindex="0" role="button"
-        aria-label="${DIAS[b.dia]} de ${hora(b.inicio)} a ${hora(b.fin)}${lugar ? `, ${escapar(lugar)}` : ""}. Suprimir lo quita." style="${this.posicion(b.inicio, b.fin)}">
+        aria-label="${DIAS[b.dia]} de ${hora(b.inicio)} a ${hora(b.fin)}${lugar ? `, ${escapar(lugar)}` : ""}${choca ? ", choca con otra clase del profesor" : ""}. Suprimir lo quita." style="${this.posicion(b.inicio, b.fin)}">
       <span class="hs-tirador" data-borde="inicio" ${globo("Arrastre para cambiar la hora de inicio")}></span>
-      <span class="hs-rango">${hora(b.inicio)} – ${hora(b.fin)}</span>
+      <span class="hs-rango">${choca ? "⚠ " : ""}${hora(b.inicio)} – ${hora(b.fin)}</span>
       ${lugar ? `<span class="hs-lugar">${escapar(lugar)}</span>` : ""}
       <button type="button" class="hs-x" ${globo("Quitar")} aria-label="Quitar" data-action="horario-semanal#quitar">×</button>
       <span class="hs-tirador" data-borde="fin" ${globo("Arrastre para cambiar la hora final", "bottom")}></span>
@@ -492,6 +527,364 @@ export default class extends Controller {
     return !o || b.dia !== o.dia || b.inicio !== o.inicio || b.fin !== o.fin
   }
 
+  // ── Las capas: lo que rodea al horario (solo en el panel de la Programación) ──────────────────────
+
+  // Las capas van en su propia capa de la grilla, debajo de los bloques: mientras se arrastra solo se redibujan los
+  // bloques, y las capas cuando algo de lo que muestran cambia. «Choques iniciales» son los que ya había al abrir la
+  // sección, con su horario guardado: esos solo se avisan.
+  prepararCapas() {
+    this.capas = this.leerCapas(this.capasValue)
+    this.juntar = new Set()
+    this.confirmados = new Set()
+    this.separar = false
+    this.ocultas = new Set(capasOcultas())
+    this.profesorInicial = this.capas.profesor?.id ?? null
+    const guardados = this.bloques.filter((b) => b.original && valido(b.original)).map((b) => b.original)
+    this.choquesIniciales = new Set(this.choquesCon(guardados).keys())
+    this.capasEl = document.createElement("div")
+    this.capasEl.className = "hs-capas"
+    this.capasEl.innerHTML = DIAS.map(() => `<div class="hs-capas-dia"></div>`).join("")
+    this.diasTarget.prepend(this.capasEl)
+    this.element.classList.add("con-capas")
+    // El envío se escucha en el formulario, que envuelve a este controlador: una acción de Stimulus (data-action) solo
+    // llega a los controladores del mismo elemento o de más arriba. Corre antes que Turbo, que respeta preventDefault.
+    this.formulario = this.element.closest("form")
+    this.alEnviar = (event) => this.enviar(event)
+    this.formulario?.addEventListener("submit", this.alEnviar)
+    this.dibujarVer()
+  }
+
+  leerCapas(datos) {
+    const secciones = (lista) => (lista || []).map((s) => ({ ...s, bloques: enMinutos(s.bloques) }))
+    const { profesor, semestre } = datos
+    return {
+      profesor: profesor ? { ...profesor, secciones: secciones(profesor.secciones) } : null,
+      asignatura: secciones(datos.asignatura),
+      semestre: semestre && { ...semestre, materias: (semestre.materias || []).map((m) => ({ ...m, secciones: secciones(m.secciones) })) },
+      juntas: datos.juntas || [],
+    }
+  }
+
+  // El buscador eligió otro profesor, o lo quitó: su capa se pide al servidor. Lo que se había decidido sobre los
+  // choques era con las clases del anterior.
+  async cambiarProfesor(event) {
+    if (!this.capas) return
+    const campo = event.target
+    const id = campo.value
+    this.juntar.clear()
+    this.confirmados.clear()
+    this.capas.profesor = null
+    this.alCambiarProfesor()
+    if (!id || !this.hasOcupacionValue) return
+    const url = new URL(this.ocupacionValue, window.location.href)
+    url.searchParams.set("profesor_id", id)
+    try {
+      const respuesta = await fetch(url, { headers: { Accept: "application/json" } })
+      if (!respuesta.ok || campo.value !== id) return
+      this.capas.profesor = this.leerCapas(await respuesta.json()).profesor
+      this.alCambiarProfesor()
+    } catch {
+      // Sin la capa del profesor: el servidor igual revisa el choque al guardar.
+    }
+  }
+
+  alCambiarProfesor() {
+    this.dibujarVer()
+    this.dibujar()
+  }
+
+  profesorActual() {
+    return this.capas.profesor?.id ?? null
+  }
+
+  // Las que no cuentan como choque: las que ya se dictan junto con esta (salvo que se vaya a separar), las que se
+  // marcaron «Se dictan juntas» y las de sus grupos, que al guardar quedan todas en uno (ChoqueDelProfesor).
+  juntas() {
+    const ids = new Set(this.separar ? [] : this.capas.juntas.map((j) => j.id))
+    const delProfesor = this.capas.profesor?.secciones || []
+    const grupos = new Set(delProfesor.filter((s) => this.juntar.has(s.id) && s.grupo).map((s) => s.grupo))
+    delProfesor.forEach((s) => { if (this.juntar.has(s.id) || grupos.has(s.grupo)) ids.add(s.id) })
+    return ids
+  }
+
+  // {id de la sección del profesor => { seccion, suyos, mios }}: sus bloques que pisan estos, y las claves de estos.
+  choquesCon(bloques) {
+    const choques = new Map()
+    const juntas = this.juntas()
+    for (const seccion of this.capas.profesor?.secciones || []) {
+      if (juntas.has(seccion.id)) continue
+      const suyos = seccion.bloques.filter((s) => bloques.some((m) => sePisan(m, s)))
+      if (!suyos.length) continue
+      const mios = bloques.filter((m) => suyos.some((s) => sePisan(m, s))).map((m) => m.clave)
+      choques.set(seccion.id, { seccion, suyos, mios })
+    }
+    return choques
+  }
+
+  choquesActuales() {
+    return this.choquesCon(this.activos().filter(valido))
+  }
+
+  // Con otro profesor, todos los choques son nuevos (como en el servidor: CapasDelHorario#choques_nuevos).
+  iniciales() {
+    return this.profesorActual() === this.profesorInicial ? this.choquesIniciales : new Set()
+  }
+
+  nuevos(choques) {
+    const iniciales = this.iniciales()
+    return [...choques.keys()].filter((id) => !iniciales.has(id))
+  }
+
+  // Las asignaturas que se cursaron junto con esta y con las que no queda combinación: cada sección suya choca con
+  // cada sección de esta asignatura (esta, con el horario de ahora, y las otras).
+  sinRemedio() {
+    const mias = [this.activos().filter(valido), ...this.capas.asignatura.map((s) => s.bloques)]
+    return (this.capas.semestre?.materias || []).filter((m) => m.juntos > 0 && m.secciones.every((s) =>
+      mias.every((bloques) => bloques.some((a) => s.bloques.some((b) => sePisan(a, b))))))
+  }
+
+  // Las otras secciones de la asignatura que tienen horario. Las del mismo profesor van en su capa.
+  otrasSecciones() {
+    const delProfesor = new Set((this.capas.profesor?.secciones || []).map((s) => s.id))
+    return this.capas.asignatura.filter((s) => s.bloques.length && !delProfesor.has(s.id))
+  }
+
+  // Las capas, los avisos y los campos de la sección, solo si cambió algo de lo que muestran: dibujarGrilla corre en
+  // cada movimiento del ratón mientras se arrastra.
+  actualizarAlrededor(choques) {
+    const sinRemedio = this.sinRemedio()
+    const clave = JSON.stringify([this.profesorActual(), [...choques.values()].map((c) => [c.seccion.id, c.suyos, c.mios]),
+      [...this.confirmados], [...this.juntar], this.separar, sinRemedio.map((m) => m.id), [...this.ocultas]])
+    if (clave === this.claveAlrededor) return
+    this.claveAlrededor = clave
+    this.dibujarCapas(choques)
+    this.dibujarAvisos(choques, sinRemedio)
+    this.escribirCamposSeccion(choques)
+  }
+
+  dibujarCapas(choques) {
+    const porDia = DIAS.map(() => [])
+    const { profesor, semestre } = this.capas
+    const delProfesor = new Set((profesor?.secciones || []).map((s) => s.id))
+    const poner = (b, html) => porDia[b.dia].push(html)
+    if (!this.ocultas.has("semestre")) {
+      for (const m of semestre?.materias || []) {
+        for (const s of m.secciones.filter((x) => !delProfesor.has(x.id))) {
+          s.bloques.forEach((b) => poner(b, this.htmlCapa("semestre", b, "", `${m.nombre} (${s.codigo}) · ${this.porQueSeCursaJunto(m)}`)))
+        }
+      }
+    }
+    if (!this.ocultas.has("asignatura")) {
+      for (const s of this.otrasSecciones()) {
+        s.bloques.forEach((b) => poner(b, this.htmlCapa("asignatura", b, s.codigo, `Sección ${s.codigo}${s.profesor ? ` · ${s.profesor}` : ""}`)))
+      }
+    }
+    if (profesor && !this.ocultas.has("profesor")) {
+      const juntas = this.juntas()
+      for (const s of profesor.secciones) {
+        const nombre = `${s.asignatura} (${s.codigo})${s.escuela ? ` · ${s.escuela}` : ""}`
+        const pisados = choques.get(s.id)?.suyos || []
+        s.bloques.forEach((b) => {
+          const estado = juntas.has(s.id) ? "junta" : pisados.includes(b) ? "choca" : null
+          const nota = { junta: " · se dicta junto con esta", choca: " · choca con esta sección" }[estado] || ""
+          poner(b, this.htmlCapa("profesor", b, nombre, `${profesor.nombre}: ${nombre}${nota}`, estado))
+        })
+      }
+    }
+    this.capasEl.querySelectorAll(".hs-capas-dia").forEach((dia, i) => { dia.innerHTML = porDia[i].join("") })
+  }
+
+  htmlCapa(tipo, b, rotulo, detalle, estado) {
+    const texto = `${detalle} · ${nombreDia(b.dia)} de ${hora(b.inicio)} a ${hora(b.fin)}${b.aula ? ` · aula ${b.aula}` : ""}`
+    const clases = ["hs-capa", `hs-capa--${tipo}`, estado && `hs-capa--${estado}`].filter(Boolean).join(" ")
+    return `<div class="${clases}" style="${this.posicion(b.inicio, b.fin)}" ${globo(escapar(texto))}>${rotulo
+      ? `<span class="hs-capa-rotulo">${escapar(rotulo)}</span>` : ""}</div>`
+  }
+
+  porQueSeCursaJunto(m) {
+    const { rotulo, anterior } = this.capas.semestre
+    return [m.semestre && rotulo, m.juntos && `la cursaron junto con esta ${m.juntos} estudiantes en ${anterior}`]
+      .filter(Boolean).join(" · ")
+  }
+
+  // Los botones de las capas, arriba de la grilla: cada uno dice cuántas hay y, en su globo, qué son.
+  dibujarVer() {
+    if (!this.hasVerTarget) return
+    const { profesor, semestre } = this.capas
+    const otras = this.otrasSecciones()
+    const materias = semestre?.materias || []
+    const clases = (profesor?.secciones || []).filter((s) => s.bloques.length)
+    const ayudaProfesor = !profesor ? "Elija el profesor para ver sus otras clases"
+      : clases.length ? `Las otras clases de ${profesor.nombre} en ${profesor.periodo}, en cualquier escuela, rayadas`
+        : `${profesor.nombre} no tiene otras clases con horario en ${profesor.periodo}`
+    const ayudaOtras = otras.length ? "Las otras secciones de la asignatura, con borde punteado" : "La asignatura no tiene otras secciones con horario"
+    const cursadas = semestre?.anterior ? `las que se cursaron junto con esta en ${semestre.anterior} (5 estudiantes o más)` : ""
+    const delSemestre = semestre?.rotulo?.match(/^(Semestre|Año) /) ? `las otras asignaturas del ${semestre.rotulo.toLowerCase()}` : ""
+    const ayudaSemestre = materias.length ? `${enLista([delSemestre, cursadas].filter(Boolean))}, en un tono suave`.replace(/^./, (c) => c.toUpperCase())
+      : "Ninguna asignatura del semestre, ni de las que se cursan junto con esta, tiene horario todavía"
+    this.verTarget.innerHTML = `<span class="hs-ver-titulo">Ver</span>${[
+      this.htmlChip("profesor", "Profesor", clases.length, ayudaProfesor),
+      this.htmlChip("asignatura", "Otras secciones", otras.length, ayudaOtras),
+      this.htmlChip("semestre", semestre?.rotulo || "Semestre", materias.length, ayudaSemestre),
+    ].join("")}`
+  }
+
+  // Sin nada que mostrar, el botón queda apagado con aria-disabled y no con disabled: así su globo sigue saliendo.
+  htmlChip(capa, rotulo, cuantas, ayuda) {
+    return `<button type="button" class="hs-ver-chip" data-capa="${capa}" aria-pressed="${!this.ocultas.has(capa)}"
+        ${cuantas ? "" : `aria-disabled="true"`} data-action="horario-semanal#alternarCapa" ${globo(escapar(ayuda), "bottom")}>
+      <span class="hs-muestra hs-muestra--${capa}"></span>${escapar(rotulo)} <span class="hs-ver-cuenta">${cuantas || 0}</span>
+    </button>`
+  }
+
+  alternarCapa(event) {
+    const chip = event.currentTarget
+    if (chip.getAttribute("aria-disabled") === "true") return
+    const capa = chip.dataset.capa
+    if (!this.ocultas.delete(capa)) this.ocultas.add(capa)
+    chip.setAttribute("aria-pressed", String(!this.ocultas.has(capa)))
+    guardarCapasOcultas(this.ocultas)
+    this.actualizarAlrededor(this.choquesActuales())
+  }
+
+  // El aviso ámbar del choque, con sus tres salidas, y debajo lo que ya se decidió y lo que no tiene combinación.
+  dibujarAvisos(choques, sinRemedio) {
+    if (!this.hasAvisosTarget) return
+    const { profesor, semestre } = this.capas
+    const iniciales = this.iniciales()
+    const lista = [...choques.values()]
+    const abiertos = lista.filter((c) => !this.confirmados.has(c.seccion.id))
+    const aceptados = lista.filter((c) => this.confirmados.has(c.seccion.id))
+    const nombre = (s) => escapar(`${s.asignatura} (${s.codigo})`)
+    const horas = (bloques) => bloques.map((b) => `${nombreDia(b.dia)} de ${hora(b.inicio)} a ${hora(b.fin)}`).join(" y ")
+    const boton = (texto, accion, extra = "") =>
+      `<button type="button" class="btn btn-sm hs-aviso-boton" data-action="horario-semanal#${accion}" ${extra}>${texto}</button>`
+    const linea = (clase, icono, texto, accion = "") =>
+      `<div class="hs-aviso hs-aviso--${clase}"><i class="fas fa-${icono}"></i><span>${texto}</span>${accion}</div>`
+    const avisos = []
+    if (abiertos.length) {
+      const filas = abiertos.map(({ seccion, suyos }) => `<div class="hs-aviso-linea">
+          <span>${nombre(seccion)}${seccion.escuela ? ` · ${escapar(seccion.escuela)}` : ""}: ${horas(suyos)}${iniciales.has(seccion.id)
+            ? ` <span class="hs-aviso-nota">(ya chocaba)</span>` : ""}</span>
+          ${boton("Se dictan juntas", "juntarCon", `data-seccion="${seccion.id}"`)}
+        </div>`).join("")
+      avisos.push(`<div class="hs-aviso hs-aviso--choque">
+        <div class="hs-aviso-titulo"><i class="fas fa-triangle-exclamation"></i> ${escapar(profesor.nombre)} ya tiene clase a esa hora</div>
+        ${filas}
+        <div class="hs-aviso-acciones">${boton("Mover el bloque", "moverBloque")}${boton("Guardar igual", "guardarIgual")}</div>
+      </div>`)
+    }
+    if (aceptados.length) {
+      avisos.push(linea("aceptado", "triangle-exclamation", `Se guardará aunque choca con ${enLista(aceptados.map((c) => nombre(c.seccion)))}.`,
+        boton("Deshacer", "deshacerGuardarIgual")))
+    }
+    const guardadas = enLista(this.capas.juntas.map((j) => escapar(j.texto)))
+    if (guardadas && this.separar) {
+      avisos.push(linea("junta", "link-slash", `Al guardar, deja de dictarse junto con ${guardadas}.`, boton("Deshacer", "deshacerSeparar")))
+    } else if (guardadas) {
+      avisos.push(linea("junta", "link", `Se dicta junto con ${guardadas}.`, boton("Separar", "separarDictado")))
+    }
+    if (this.juntar.size) {
+      const nuevas = (profesor?.secciones || []).filter((s) => this.juntar.has(s.id)).map(nombre)
+      avisos.push(linea("junta", "link", `Al guardar, se dictará junto con ${enLista(nuevas)}.`, boton("Deshacer", "deshacerJuntar")))
+    }
+    sinRemedio.forEach((m) => avisos.push(linea("info", "circle-info", `Con ${escapar(m.nombre)} no queda combinación: cada una de sus ` +
+      `secciones choca con cada sección de esta asignatura, y en ${escapar(semestre.anterior)} la cursaron junto con esta ${m.juntos} estudiantes.`)))
+    this.avisosTarget.innerHTML = avisos.join("")
+  }
+
+  // Lo que deciden los avisos viaja con la sección: section[juntar_con][], section[separar_del_dictado] y
+  // section[choque_confirmado] (ChoqueDelProfesor). «section» sale del prefijo del horario.
+  escribirCamposSeccion(choques) {
+    if (!this.hasCamposSeccionTarget) return
+    const seccion = this.prefijoValue.replace(/\[timetable_attributes\]$/, "")
+    const campo = (nombre, valor) => `<input type="hidden" name="${seccion}${nombre}" value="${escapar(valor)}">`
+    const nuevos = this.nuevos(choques)
+    const confirmado = nuevos.length > 0 && nuevos.every((id) => this.confirmados.has(id))
+    this.camposSeccionTarget.innerHTML = [...this.juntar].map((id) => campo("[juntar_con][]", id)).join("") +
+      (this.separar ? campo("[separar_del_dictado]", "1") : "") + (confirmado ? campo("[choque_confirmado]", "1") : "")
+  }
+
+  // Para el lector de pantalla: el aviso no se lee solo, así que cada cambio dice si quedó chocando.
+  textoDelChoque() {
+    if (!this.capas) return ""
+    const abiertos = [...this.choquesActuales().values()].filter((c) => !this.confirmados.has(c.seccion.id))
+    if (!abiertos.length) return ""
+    return `${this.capas.profesor.nombre} ya tiene clase a esa hora: ${enLista(abiertos.map((c) => `${c.seccion.asignatura} (${c.seccion.codigo})`))}.`
+  }
+
+  // Crear o Guardar con un choque nuevo sin decidir: no se envía, y el aviso se sacude para que se vea.
+  enviar(event) {
+    const choques = this.choquesActuales()
+    const iniciales = this.iniciales()
+    if (!this.hasAvisosTarget || ![...choques.keys()].some((id) => !iniciales.has(id) && !this.confirmados.has(id))) return
+    event.preventDefault()
+    const avisos = this.avisosTarget
+    avisos.classList.remove("hs-avisos--brinca")
+    void avisos.offsetWidth // para que la animación corra otra vez
+    avisos.classList.add("hs-avisos--brinca")
+    avisos.scrollIntoView({ block: "nearest", behavior: "smooth" })
+    avisos.focus({ preventScroll: true })
+    this.anuncioTarget.textContent = `No se guardó: ${this.capas.profesor.nombre} ya tiene clase a esa hora. Elija mover el ` +
+      "bloque, «Se dictan juntas» o «Guardar igual»."
+  }
+
+  juntarCon(event) {
+    const id = Number(event.currentTarget.dataset.seccion)
+    const s = this.capas.profesor?.secciones.find((x) => x.id === id)
+    if (!s) return
+    this.juntar.add(id)
+    this.confirmados.delete(id)
+    this.cambioDeCapas(`Al guardar, ${s.asignatura} (${s.codigo}) queda dictándose junto con esta sección.`)
+  }
+
+  deshacerJuntar() {
+    this.juntar.clear()
+    this.cambioDeCapas("Ya no se marcan como dictadas juntas.")
+  }
+
+  guardarIgual() {
+    this.choquesActuales().forEach((_, id) => this.confirmados.add(id))
+    this.cambioDeCapas("Se guardará aunque choca.")
+  }
+
+  deshacerGuardarIgual() {
+    this.confirmados.clear()
+    this.cambioDeCapas("Hay que decidir otra vez qué hacer con el choque.")
+  }
+
+  separarDictado() {
+    this.separar = true
+    this.cambioDeCapas("Al guardar, deja de dictarse junto con las otras.")
+  }
+
+  deshacerSeparar() {
+    this.separar = false
+    this.cambioDeCapas("Se sigue dictando junto con las otras.")
+  }
+
+  // El primer bloque que choca queda elegido en la grilla, con las clases del profesor a la vista.
+  moverBloque() {
+    const clave = [...this.choquesActuales().values()].flatMap((c) => c.mios)[0]
+    const b = clave && this.bloque(clave)
+    if (!b) return
+    if (this.ocultas.delete("profesor")) {
+      guardarCapasOcultas(this.ocultas)
+      this.dibujarVer()
+    }
+    this.seleccionado = clave
+    this.dibujar()
+    this.enfocarBloque(clave)
+    this.pista(`Arrastre el bloque del ${nombreDia(b.dia)} a una hora libre, o cámbiele la hora en la lista: lo rayado es ` +
+      `donde ${this.capas.profesor.nombre} ya tiene clase.`)
+  }
+
+  cambioDeCapas(mensaje) {
+    this.dibujar()
+    this.avisosTarget.focus({ preventScroll: true })
+    this.anuncioTarget.textContent = mensaje
+  }
+
   // ── Utilidades ───────────────────────────────────────────────────────────────────────────────────
 
   punto(event) {
@@ -503,8 +896,18 @@ export default class extends Controller {
   }
 
   guiar(texto) {
+    this.conPista = false
     this.guiaTarget.textContent = texto || this.guiaInicial
     this.guiaTarget.classList.toggle("hs-guia--activa", Boolean(texto))
+  }
+
+  // Una indicación en el lugar de la guía, sin la marca de gesto a medias: con «hs-guia--activa», el Esc no cerraría el
+  // panel (seccion_panel_controller.js). Se va con el próximo cambio.
+  pista(texto) {
+    this.guiaTarget.textContent = texto
+    this.guiaTarget.classList.remove("hs-guia--activa")
+    this.conPista = true
+    this.anuncioTarget.textContent = texto
   }
 
   enfocarBloque(clave) {
