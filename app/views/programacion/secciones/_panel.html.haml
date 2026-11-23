@@ -4,7 +4,8 @@
 -#
 -# Dos columnas, como en FAU: a la izquierda los datos, los bloques en lista y la acción; a la derecha la grilla,
 -# más baja que la del admin. Las dos viven dentro del controlador «horario-semanal», que necesita la lista y la
--# grilla juntas. El aula va en cada bloque, no en la sección (Daniel, 20-nov).
+-# grilla juntas. El aula va en cada bloque, no en la sección (Daniel, 20-nov). Los globos son los de Bootstrap
+-# (controlador «globo»): el panel llega por Turbo Stream, y ui.js solo los prepara al cargar la página.
 - ayuda = ApplicationController.helpers
 - nueva = seccion.new_record?
 - otras = curso.sections.where.not(id: seccion.id).sort_by { |s| Section.orden_del_codigo(s.code) }
@@ -27,8 +28,8 @@
           %span.sp-como
             Como la:
             - otras.each do |sec|
-              = link_to sec.code, main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: sec.id), class: "btn btn-sm #{origen&.id == sec.id ? 'btn-primary' : 'btn-outline-primary'}", title: 'Copia su cupo, profesor y horario, con el código que sigue', data: {turbo_stream: true}
-        %button.btn-close.ms-auto{type: 'button', title: 'Cerrar sin guardar (Esc)', 'aria-label': 'Cerrar', data: {action: 'seccion-panel#cerrar'}}
+              = link_to sec.code, main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: sec.id), class: "btn btn-sm #{origen&.id == sec.id ? 'btn-primary' : 'btn-outline-primary'}", title: 'Copia su cupo, profesor y horario, con el código que sigue', data: {turbo_stream: true, controller: 'globo'}
+        %button.btn-close.ms-auto{type: 'button', title: 'Cerrar sin guardar (Esc)', 'aria-label': 'Cerrar', data: {controller: 'globo', action: 'seccion-panel#cerrar'}}
 
       = form_with model: seccion, url: (nueva ? main_app.programacion_secciones_path : main_app.programacion_seccion_path(seccion)), method: (nueva ? :post : :patch) do |f|
         - if nueva
@@ -65,7 +66,7 @@
                 %i.fas.fa-check
                 = nueva ? 'Crear sección' : 'Guardar cambios'
               - unless nueva
-                = link_to main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: seccion.id), class: 'btn btn-outline-primary btn-sm', title: 'Una sección nueva con el mismo cupo, profesor y horario', data: {turbo_stream: true} do
+                = link_to main_app.programacion_nueva_seccion_path(course_id: curso.id, desde: seccion.id), class: 'btn btn-outline-primary btn-sm', title: 'Una sección nueva con el mismo cupo, profesor y horario', data: {turbo_stream: true, controller: 'globo'} do
                   %i.fas.fa-clone
                   Duplicar
                 = link_to "/admin/section/#{seccion.id}", class: 'btn btn-link btn-sm px-1' do

@@ -45,6 +45,10 @@ const abajo = (m) => Math.floor(m / PASO) * PASO
 const nombreDia = (d) => DIAS[d].toLowerCase()
 const porDiaYHora = (x, y) => x.dia - y.dia || x.inicio - y.inicio
 const escapar = (texto) => String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
+// El globo de Bootstrap de lo que dibuja la grilla (controlador «globo»), con media espera: sin ella, al cruzar un
+// bloque con el ratón saltaban uno tras otro los globos de sus bordes.
+const globo = (texto, lugar = "top") =>
+  `title="${texto}" data-controller="globo" data-bs-placement="${lugar}" data-bs-delay='{"show":500,"hide":0}'`
 
 export default class extends Controller {
   static targets = ["dias", "columna", "lista", "campos", "guia", "anuncio", "servidor"]
@@ -349,11 +353,11 @@ export default class extends Controller {
     const lugar = this.lugar(b)
     return `<div class="${clases.filter(Boolean).join(" ")}" data-clave="${b.clave}" tabindex="0" role="button"
         aria-label="${DIAS[b.dia]} de ${hora(b.inicio)} a ${hora(b.fin)}${lugar ? `, ${escapar(lugar)}` : ""}. Suprimir lo quita." style="${this.posicion(b.inicio, b.fin)}">
-      <span class="hs-tirador" data-borde="inicio" title="Arrastre para cambiar la hora de inicio"></span>
+      <span class="hs-tirador" data-borde="inicio" ${globo("Arrastre para cambiar la hora de inicio")}></span>
       <span class="hs-rango">${hora(b.inicio)} – ${hora(b.fin)}</span>
       ${lugar ? `<span class="hs-lugar">${escapar(lugar)}</span>` : ""}
-      <button type="button" class="hs-x" title="Quitar" aria-label="Quitar" data-action="horario-semanal#quitar">×</button>
-      <span class="hs-tirador" data-borde="fin" title="Arrastre para cambiar la hora final"></span>
+      <button type="button" class="hs-x" ${globo("Quitar")} aria-label="Quitar" data-action="horario-semanal#quitar">×</button>
+      <span class="hs-tirador" data-borde="fin" ${globo("Arrastre para cambiar la hora final", "bottom")}></span>
     </div>`
   }
 
@@ -362,7 +366,7 @@ export default class extends Controller {
   htmlMarca(b) {
     const inicio = entre(b.inicio, DESDE, HASTA - 60)
     return `<div class="hs-bloque hs-bloque--error${b.clave === this.seleccionado ? " is-seleccionado" : ""}" data-clave="${b.clave}"
-        tabindex="0" role="button" title="Este horario no es válido: corríjalo en la lista"
+        tabindex="0" role="button" ${globo("Este horario no es válido: corríjalo en la lista")}
         aria-label="${DIAS[b.dia]} de ${hora(b.inicio)} a ${hora(b.fin)}: no es válido, corríjalo en la lista" style="${this.posicion(inicio, inicio + 60)}">
       <span class="hs-rango">⚠ ${hora(b.inicio)} – ${hora(b.fin)}</span>
     </div>`
@@ -397,7 +401,7 @@ export default class extends Controller {
       <select class="form-select form-select-sm hs-campo-hora" aria-label="Hora final" data-campo="fin"
         data-action="horario-semanal#cambiarHora">${this.opciones(b.fin, valido(b) ? b.inicio + MINIMO : DESDE, HASTA)}</select>
       <span class="hs-duracion">${valido(b) ? duracion(b.fin - b.inicio) : ""}</span>
-      <button type="button" class="btn btn-sm hs-quitar" title="Quitar" aria-label="Quitar este bloque"
+      <button type="button" class="btn btn-sm hs-quitar" ${globo("Quitar")} aria-label="Quitar este bloque"
         data-action="horario-semanal#quitar"><i class="fas fa-trash"></i></button>
       <select class="form-select form-select-sm hs-campo-modalidad" aria-label="Modalidad" data-campo="modalidad"
         data-action="horario-semanal#cambiarModalidad">${modalidades}</select>

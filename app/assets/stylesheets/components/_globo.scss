@@ -1,0 +1,4 @@
+// Los globos del controlador «globo» (app/javascript/controllers/globo_controller.js) solo se leen: el ratón los
+// atraviesa. Mientras uno se desvanece todavía está en pantalla, y un clic rápido en lo que tapaba le caía a él
+// (23-nov: la sección de la fila no abría su panel).
+.tooltip.globo { pointer-events: none; }
