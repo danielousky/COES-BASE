@@ -17,20 +17,74 @@
 // La celda de las secciones es un <th> (así venía en FHE): sin la negrita.
 .secciones { font-weight: normal; }
 
+// Las secciones de la fila (programacion/secciones/_secciones), con la letra y el alto de las insignias de «Números»
+// (.badge: 9,75 px y 17 px de alto). Antes eran botones de 31 px y cada sección caía en su renglón (Daniel, 23-nov:
+// «botones muy grandes, no corresponden con el resto de los elementos»).
+//
+//   [3] [V1 ×] [W1 ×] [X1 ×]     [🗑] [+]     los datos con relleno, como las insignias; las acciones solo con borde
+//
+// Las acciones van al final de la celda, así el + queda en el mismo sitio en todas las filas. En un renglón caben el
+// total y dos secciones (86 % de las asignaturas desde 2025; con una sola, 78 %), y en pantallas de 1400 px o más, tres
+// (91 %): más angosto, el ancho se le quitaba al nombre de la asignatura. Si hay más, las secciones bajan a otro
+// renglón y las acciones se quedan arriba.
 .programacion-secciones {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .3rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .5rem;
+  min-width: 9.5rem;
+  @media (min-width: 1400px) { min-width: 12rem; }
+  font-size: .75em;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 
-  .chip-seccion {
+  .ps-lista, .ps-acciones { display: flex; gap: .25rem; }
+  .ps-lista { flex-wrap: wrap; }
+
+  .ps-total, .ps-seccion, .ps-agregar, .ps-borrar-todas {
     display: inline-flex;
-    align-items: center;
-    gap: 1px;
+    height: 1.75em;
+    border-radius: 2px;
   }
 
+  // Cada parte, con su texto o su ícono al centro (el código y la × de una sección también).
+  .ps-total, .ps-codigo, .ps-quitar, .ps-agregar, .ps-borrar-todas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75em;
+    padding: 0 .5em;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ps-total { background: rgb(var(--bs-success-rgb)); color: rgb(var(--bs-dark-rgb)); }
+  .ps-total--cero { background: rgb(var(--bs-secondary-rgb)); color: #fff; }
+  a.ps-total:hover { filter: brightness(.9); }
+
+  // Una sección: el código abre su panel y la × la borra.
+  .ps-seccion { overflow: hidden; background: rgb(var(--bs-info-rgb)); color: rgb(var(--bs-dark-rgb)); }
+  .ps-codigo:hover { background: rgba(0, 0, 0, .1); }
+  .ps-quitar {
+    min-width: 0;
+    padding: 0 .4em;
+    border-left: 1px solid rgba(0, 0, 0, .12);
+    color: rgba(0, 0, 0, .5);
+    font-size: .9em;
+  }
+  a.ps-quitar:hover { background: rgb(var(--bs-danger-rgb)); color: #fff; }
+
+  .ps-agregar { border: 1px solid rgb(var(--bs-success-rgb)); background: #fff; color: rgb(var(--bs-dark-rgb)); }
+  .ps-agregar:hover { background: rgb(var(--bs-success-rgb)); }
+  .ps-borrar-todas { border: 1px solid rgba(var(--bs-danger-rgb), .6); background: #fff; color: rgb(var(--bs-danger-rgb)); }
+  a.ps-borrar-todas:hover { background: rgb(var(--bs-danger-rgb)); color: #fff; }
+
+  // Lo que no se puede borrar porque tiene inscritos: se ve, tenue, y su globo dice por qué.
+  .ps-inactivo { opacity: .4; cursor: not-allowed; }
+
   // La que se acaba de crear o corregir, para encontrarla de un vistazo.
-  .chip-seccion--resaltada .btn-info { animation: chip-resaltada 2.6s ease-out 1; }
+  .ps-seccion--resaltada { animation: chip-resaltada 2.6s ease-out 1; }
 }
 
 @keyframes chip-resaltada {
