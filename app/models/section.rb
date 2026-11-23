@@ -7,6 +7,7 @@
 #  capacity               :integer
 #  classroom              :string
 #  code                   :string
+#  dictado_conjunto       :bigint
 #  enabled                :boolean
 #  modality               :integer
 #  qualified              :boolean          default(FALSE), not null
@@ -20,6 +21,7 @@
 #  idx_sections_qualified_course         (qualified,course_id)
 #  index_sections_on_code_and_course_id  (code,course_id) UNIQUE
 #  index_sections_on_course_id           (course_id)
+#  index_sections_on_dictado_conjunto    (dictado_conjunto)
 #  index_sections_on_teacher_id          (teacher_id)
 #
 # Foreign Keys
@@ -30,6 +32,8 @@
 class Section < ApplicationRecord
   include Totalizable
   include AcademicProcessable
+  # Si el profesor ya tiene clase a esa hora, y las que se dictan juntas (23-nov): choque_del_profesor.rb.
+  include ChoqueDelProfesor
   # HISTORY:
   has_paper_trail on: [:create, :destroy, :update]
 

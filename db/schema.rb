@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_11_20_120000) do
+ActiveRecord::Schema[7.0].define(version: 2026_11_23_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -782,8 +782,10 @@ ActiveRecord::Schema[7.0].define(version: 2026_11_20_120000) do
     t.bigint "teacher_id"
     t.string "classroom"
     t.integer "academic_records_count", default: 0, null: false
+    t.bigint "dictado_conjunto"
     t.index ["code", "course_id"], name: "index_sections_on_code_and_course_id", unique: true
     t.index ["course_id"], name: "index_sections_on_course_id"
+    t.index ["dictado_conjunto"], name: "index_sections_on_dictado_conjunto"
     t.index ["qualified", "course_id"], name: "idx_sections_qualified_course"
     t.index ["teacher_id"], name: "index_sections_on_teacher_id"
   end
