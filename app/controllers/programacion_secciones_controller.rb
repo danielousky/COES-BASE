@@ -39,7 +39,7 @@ class ProgramacionSeccionesController < ApplicationController
 
   def create
     @seccion = Section.new(seccion_params.merge(course: @curso))
-    guardar(contar: true)
+    guardar
   end
 
   def update
@@ -88,17 +88,29 @@ class ProgramacionSeccionesController < ApplicationController
     end
   end
 
-  def guardar(contar: false)
+  # Al crear, también los contadores. El aviso dice qué pasó, como al borrar (Daniel, 23-nov: al crear no había).
+  def guardar
+    nueva = @seccion.new_record?
+    cambio = @seccion.changed_for_autosave?
     if @seccion.save
       render turbo_stream: [
         turbo_stream.remove("panel_curso_#{@curso.id}"),
         secciones_de_la_fila(resaltar: @seccion.id),
-        *(contar ? contadores : [])
+        *(nueva ? contadores : []),
+        aviso(aviso_al_guardar(nueva, cambio), 'success')
       ]
     else
       render turbo_stream: turbo_stream.replace("panel_curso_#{@curso.id}", partial: 'programacion/secciones/panel', locals: panel),
              status: :unprocessable_entity
     end
+  end
+
+  # Si era nueva o si cambió algo se mira antes de guardar; el código, después (el guardado pone «03» por «3»).
+  def aviso_al_guardar(nueva, cambio)
+    return "Se creó la sección #{@seccion.code}." if nueva
+    return "La sección #{@seccion.code} no tenía cambios." unless cambio
+
+    "Se guardaron los cambios de la sección #{@seccion.code}."
   end
 
   # Si el panel abierto era de la que se borró, se cierra también.
