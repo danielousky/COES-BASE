@@ -59,12 +59,15 @@
     text-decoration: none;
   }
 
-  .ps-total { background: rgb(var(--bs-success-rgb)); color: rgb(var(--bs-dark-rgb)); }
-  .ps-total--cero { background: rgb(var(--bs-secondary-rgb)); color: #fff; }
+  // Los colores son los de Bootstrap: var(--bs-…), o una variable de Sass si llevan transparencia. Nada de var()
+  // dentro de rgb() o rgba(): en producción, sassc-rails vuelve a comprimir el CSS con libsass, que no lo acepta, y
+  // el despliegue falla al compilar los assets (23-nov).
+  .ps-total { background: var(--bs-success); color: var(--bs-dark); }
+  .ps-total--cero { background: var(--bs-secondary); color: #fff; }
   a.ps-total:hover { filter: brightness(.9); }
 
   // Una sección: el código abre su panel y la × la borra.
-  .ps-seccion { overflow: hidden; background: rgb(var(--bs-info-rgb)); color: rgb(var(--bs-dark-rgb)); }
+  .ps-seccion { overflow: hidden; background: var(--bs-info); color: var(--bs-dark); }
   .ps-codigo:hover { background: rgba(0, 0, 0, .1); }
   .ps-quitar {
     min-width: 0;
@@ -73,12 +76,12 @@
     color: rgba(0, 0, 0, .5);
     font-size: .9em;
   }
-  a.ps-quitar:hover { background: rgb(var(--bs-danger-rgb)); color: #fff; }
+  a.ps-quitar:hover { background: var(--bs-danger); color: #fff; }
 
-  .ps-agregar { border: 1px solid rgb(var(--bs-success-rgb)); background: #fff; color: rgb(var(--bs-dark-rgb)); }
-  .ps-agregar:hover { background: rgb(var(--bs-success-rgb)); }
-  .ps-borrar-todas { border: 1px solid rgba(var(--bs-danger-rgb), .6); background: #fff; color: rgb(var(--bs-danger-rgb)); }
-  a.ps-borrar-todas:hover { background: rgb(var(--bs-danger-rgb)); color: #fff; }
+  .ps-agregar { border: 1px solid var(--bs-success); background: #fff; color: var(--bs-dark); }
+  .ps-agregar:hover { background: var(--bs-success); }
+  .ps-borrar-todas { border: 1px solid rgba($danger, .6); background: #fff; color: var(--bs-danger); }
+  a.ps-borrar-todas:hover { background: var(--bs-danger); color: #fff; }
 
   // Lo que no se puede borrar porque tiene inscritos: se ve, tenue, y su globo dice por qué.
   .ps-inactivo { opacity: .4; cursor: not-allowed; }
