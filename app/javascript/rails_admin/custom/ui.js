@@ -65,3 +65,11 @@ function dismissModalsAndTooltips() {
 }
 
 document.addEventListener("turbo:before-render", dismissModalsAndTooltips);
+
+// El letrero «cargando» del pie: rails_admin lo muestra con turbo:click y lo esconde al dibujar la página nueva
+// (turbo:before-render). Lo que responde por Turbo Stream no dibuja página (la Programación: abrir el panel de una
+// sección, crearla, guardarla), y el letrero se quedaba a la vista (23-nov). Se esconde también al llegar la respuesta.
+document.addEventListener("turbo:before-fetch-response", function() {
+  var cargando = document.getElementById("loading");
+  if (cargando) cargando.style.display = "none";
+});
