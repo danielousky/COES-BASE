@@ -25,6 +25,11 @@
 #  fk_rails_...  (timetable_id => timetables.id)
 #
 class Timeblock < ApplicationRecord
+  # Hasta el 23-nov, de los horarios no quedaba historia: no se sabía quién movió un bloque ni cuál era la hora
+  # anterior. Desde entonces cada bloque deja su versión al crearse, cambiar o borrarse, con quién, la ip y el
+  # navegador (ApplicationController#info_for_paper_trail). La grilla mueve un bloque guardado como borrar + nuevo.
+  has_paper_trail
+
   belongs_to :teacher, optional: true
   belongs_to :timetable
   has_one :section, through: :timetable
