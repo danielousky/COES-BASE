@@ -31,6 +31,22 @@ class Timetable < ApplicationRecord
   after_initialize :set_default_color, if: :new_record?
 
   validates :timeblocks, presence: true, length: { minimum: 1, message: 'Debe tener al menos un bloque horario.' }
+  validate :bloques_sin_repetir_hora
+
+  # Dos bloques del mismo día no empiezan ni terminan a la misma hora (lo mismo piden los índices únicos de la base).
+  # Se revisan los bloques que se van a guardar, en memoria (23-nov). Antes cada bloque se revisaba contra la base,
+  # donde siguen los que se van a mover o a borrar, y al juntar o mover bloques en la grilla salía un error falso:
+  # «Ya existe un bloque horario con una hora de entrada igual para el horario».
+  def bloques_sin_repetir_hora
+    quedan = timeblocks.reject(&:marked_for_destruction?)
+    { inicio_en_minutos: 'empiezan', fin_en_minutos: 'terminan' }.each do |hora, verbo|
+      quedan.group_by { |b| [b.day, b.send(hora)] }.each do |(dia, minutos), iguales|
+        next if dia.nil? || minutos.nil? || iguales.size < 2
+
+        errors.add(:base, "Dos bloques del #{dia} #{verbo} a la misma hora: #{iguales.map(&:dia_y_horas).join(' y ')}")
+      end
+    end
+  end
 
   scope :without_timeblocks, -> {left_outer_joins(:timeblocks).where(timeblocks: { id: nil }) }
 

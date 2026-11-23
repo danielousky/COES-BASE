@@ -7,8 +7,9 @@ class TimetablesController < ApplicationController
   def show
 
     @days = Timeblock.days.keys
-    @start_hour = Timeblock::ALLOWED_START #7 # 7 AM
-    @end_hour = Timeblock::ALLWOED_END #21  # 9 PM
+    # Una fila por hora, de las 6 am a la de las 9 pm, que llega hasta las 10 pm (Timeblock::HORA_MAXIMA)
+    @start_hour = Timeblock::HORA_MINIMA
+    @end_hour = Timeblock::HORA_MAXIMA - 1
     
     case @viewable_type
     when 'Teacher'

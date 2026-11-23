@@ -29,8 +29,11 @@ class Timeblock < ApplicationRecord
   belongs_to :timetable
   has_one :section, through: :timetable
 
-  ALLOWED_START= 6
-  ALLWOED_END= 21
+  # El horario de clases, de 6:00 am a 10:00 pm, como en FAU (23-nov). Hasta entonces la regla miraba solo la hora
+  # (de las 6 a las 21) y decía «9:00pm», pero dejaba pasar hasta las 9:59 pm: hay clases que terminan a las 9:45.
+  HORA_MINIMA = 6       # 6:00 am
+  HORA_MAXIMA = 22      # 10:00 pm
+  DURACION_MINIMA = 30  # minutos
 
   enum modality: { Presencial: 0, Virtual: 1 }
   enum day: { Lunes: 0, Martes: 1, Miércoles: 2, Jueves: 3, Viernes: 4, Sábado: 5 }
@@ -38,23 +41,24 @@ class Timeblock < ApplicationRecord
   validates :day, presence: true
   validates :start_time, presence: true
   validates :end_time, presence: true
-  validate :start_time_must_be_at_least_thirty_minutes_before_end_time
+  validate :dentro_del_horario_de_clases
 
-  validate :start_and_end_time_within_allowed_range
+  # Dentro del horario de clases y de media hora por lo menos, en minutos del día. El mensaje dice de qué bloque se
+  # trata («Lunes de 7:00 pm a 7:15 pm: dura menos de 30 minutos»): la grilla los guarda todos a la vez.
+  def dentro_del_horario_de_clases
+    return unless start_time && end_time
 
-  def start_and_end_time_within_allowed_range
-    if start_time.present? && (start_time.hour < ALLOWED_START || start_time.hour > ALLWOED_END)
-      errors.add(:start_time, "debe estar entre las 6:00am y las 9:00pm", field_name: false)
+    fuera = { start_time: inicio_en_minutos, end_time: fin_en_minutos }
+            .reject { |_, minutos| minutos.between?(HORA_MINIMA * 60, HORA_MAXIMA * 60) }
+    fuera.each_key do |campo|
+      errors.add(campo, "#{dia_y_horas}: #{hora_corta(send(campo))} está fuera del horario de clases (6:00 am a 10:00 pm)")
     end
-    if end_time.present? && (end_time.hour < ALLOWED_START || end_time.hour > ALLWOED_END)
-      errors.add(:end_time, "debe estar entre las 6:00am y las 9:00pm", field_name: false)
-    end
-  end
+    return if fuera.any?
 
-  def start_time_must_be_at_least_thirty_minutes_before_end_time
-    return if start_time.blank? || end_time.blank?
-    if fin_en_minutos - inicio_en_minutos < 30
-      errors.add(:start_time, :too_close_to_end)
+    if fin_en_minutos <= inicio_en_minutos
+      errors.add(:end_time, "#{dia_y_horas}: termina antes de empezar")
+    elsif fin_en_minutos - inicio_en_minutos < DURACION_MINIMA
+      errors.add(:end_time, "#{dia_y_horas}: dura menos de #{DURACION_MINIMA} minutos")
     end
   end
 
@@ -80,14 +84,38 @@ class Timeblock < ApplicationRecord
   # «LINGÜÍSTICA I (A1), Lunes de 6:00 pm a 8:30 pm»: para avisar con qué choca una reserva.
   def descripcion_del_choque
     seccion = timetable&.section
-    "#{seccion&.subject&.name} (#{seccion&.code}), #{day} de #{start_time&.strftime('%-I:%M %P')} " \
-      "a #{end_time&.strftime('%-I:%M %P')}"
+    "#{seccion&.subject&.name} (#{seccion&.code}), #{dia_y_horas}"
+  end
+
+  # «Lunes de 6:00 pm a 8:30 pm»
+  def dia_y_horas
+    "#{day} de #{hora_corta(start_time)} a #{hora_corta(end_time)}"
+  end
+
+  # «6:00 pm»
+  def hora_corta(hora)
+    hora&.strftime('%-I:%M %P')
+  end
+
+  # Lo que la grilla semanal necesita de cada bloque (timetables/_horario_semanal y el panel de la Programación).
+  # «original» es lo que tiene la base: un bloque guardado que cambió de día u hora viaja como borrar + nuevo (ver
+  # horario_semanal_controller.js). «borrados»: el horario entero se va a borrar, porque no le quedó ningún bloque.
+  def self.para_grilla(bloques, borrados: false)
+    hhmm = ->(hora) { hora&.strftime('%H:%M') }
+    bloques.map do |b|
+      original = if b.persisted?
+                   {dia: b.day_in_database, inicio: hhmm.(b.start_time_in_database), fin: hhmm.(b.end_time_in_database),
+                    modalidad: b.modality_in_database, aula: b.classroom_in_database.to_s}
+                 end
+      {id: b.id, dia: b.day, inicio: hhmm.(b.start_time), fin: hhmm.(b.end_time), modalidad: b.modality,
+       aula: b.classroom.to_s, borrar: borrados || b.marked_for_destruction?, original: original}
+    end
   end
 
   validates :modality, presence: true
   
-  validates_uniqueness_of :timetable_id, scope: [:day, :start_time], message: 'Ya existe un bloque horario con una hora de entrada igual para el horario.', field_name: false
-  validates_uniqueness_of :timetable_id, scope: [:day, :end_time], message: 'Ya existe un bloque horario con una hora de salida igual para el horario.', field_name: false
+  # Que dos bloques del mismo día no empiecen ni terminen a la misma hora lo revisa el horario, con los bloques que
+  # se van a guardar y no con la base: Timetable#bloques_sin_repetir_hora.
 
   after_save :update_timetable_name
   
