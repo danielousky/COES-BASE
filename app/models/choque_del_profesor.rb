@@ -7,13 +7,18 @@
 # sections.dictado_conjunto (el id de una de ellas: no es una referencia, es el número del grupo), y la grilla no avisa
 # el choque entre ellas. Lo que viaja con el formulario lo escribe la grilla (horario_semanal_controller.js):
 #
-#   juntar_con            ids de otras secciones del período: al guardar, esta queda en su grupo; si ya eran de
-#                         grupos distintos, los grupos se funden
+#   juntar_con            ids de otras secciones del período y de la misma escuela: al guardar, esta queda en su
+#                         grupo; si ya eran de grupos distintos, los grupos se funden
 #   separar_del_dictado   «1»: al guardar, esta sale de su grupo; si en el grupo queda una sola, deja de ser grupo
-#   revisar_choques       lo pone la Programación (ProgramacionSeccionesController): no guarda si el cambio trae un
-#                         choque nuevo del profesor (CapasDelHorario#choques_nuevos). La grilla ya lo avisó: esto
-#                         cubre lo que otro asistente guardó mientras tanto. El admin no lo revisa
-#   choque_confirmado     «1»: el asistente eligió «Guardar igual»
+#   revisar_choques       lo pone el panel de la Programación: no guarda si el cambio trae un choque nuevo del
+#                         profesor (CapasDelHorario#choques_nuevos). La grilla ya lo avisó: esto cubre lo que otro
+#                         asistente guardó mientras tanto. El admin no lo revisa
+#   choque_confirmado     ids de las secciones con que el asistente eligió «Guardar igual»: el choque con esas se
+#                         guarda; uno con otra que alguien cargó mientras tanto, no
+#
+# Solo se juntan secciones de la misma escuela (24-nov): juntar escribe en las otras, y quien programa una escuela no
+# siempre administra las demás. En la copia local de FHE, de los 57 pares del mismo profesor con el mismo horario en
+# 2026-02, ninguno es de dos escuelas.
 #
 # Cada período lleva sus grupos. Clonar la Programación copia el número a las secciones del período nuevo, que quedan
 # juntas entre ellas (AcademicProcessesController#clone_sections).
@@ -48,16 +53,27 @@ module ChoqueDelProfesor
     secciones_para_juntar.exists? || (separar_del_dictado? && dictado_conjunto_in_database.present?)
   end
 
+  # Lo que se decidió en el aviso y todavía no se guardó. Si el panel vuelve porque no se guardó por otro motivo (un
+  # código repetido), la grilla lo retoma (CapasDelHorario#para_grilla): sin eso, «Separar» o «Se dictan juntas» se
+  # perdían al corregir el código y guardar otra vez.
+  def decidido_en_el_aviso
+    {juntar: secciones_para_juntar.ids, separar: separar_del_dictado?, confirmados: choques_confirmados}
+  end
+
   private
 
   def separar_del_dictado?
     ActiveModel::Type::Boolean.new.cast(separar_del_dictado) || false
   end
 
-  def sin_choques_nuevos_del_profesor
-    return if course.nil? || ActiveModel::Type::Boolean.new.cast(choque_confirmado)
+  def choques_confirmados
+    Array(choque_confirmado).compact_blank.map(&:to_i)
+  end
 
-    CapasDelHorario.new(self).choques_nuevos.each { |texto| errors.add(:base, texto) }
+  def sin_choques_nuevos_del_profesor
+    return if course.nil?
+
+    CapasDelHorario.new(self).choques_nuevos(excepto: choques_confirmados).each { |texto| errors.add(:base, texto) }
   end
 
   def del_periodo
@@ -72,7 +88,9 @@ module ChoqueDelProfesor
 
   def secciones_para_juntar
     ids = Array(juntar_con).compact_blank.map(&:to_i) - [id]
-    ids.empty? ? Section.none : del_periodo.where(id: ids)
+    return Section.none if ids.empty? || course.nil?
+
+    del_periodo.where(id: ids, academic_processes: {school_id: course.academic_process.school_id})
   end
 
   def preparar_dictado_conjunto
@@ -104,8 +122,15 @@ module ChoqueDelProfesor
     disolver_si_queda_una(dictado_conjunto) if dictado_conjunto
   end
 
+  # Si en el grupo queda una sola, deja de ser grupo. Si el número del grupo era el id de la que sale, las que quedan
+  # toman el de una de ellas: si no, la que salió podía armar después otro grupo con su mismo número, y los dos se
+  # fundían sin que nadie lo eligiera.
   def disolver_si_queda_una(grupo)
     quedan = del_dictado(grupo).ids
-    Section.where(id: quedan).update_all(dictado_conjunto: nil) if quedan.size == 1
+    if quedan.size == 1
+      Section.where(id: quedan).update_all(dictado_conjunto: nil)
+    elsif grupo == id && quedan.any?
+      Section.where(id: quedan).update_all(dictado_conjunto: quedan.min)
+    end
   end
 end

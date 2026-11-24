@@ -16,7 +16,7 @@
 - codigos = otras.map(&:code)
 - dom = "panel_curso_#{curso.id}"
 - mensajes = seccion.errors.map { |e| e.attribute.to_s.start_with?('timetable') ? e.message : e.full_message }.uniq
-%tr.programacion-panel{id: dom, data: {controller: 'seccion-panel', action: 'keydown@window->seccion-panel#tecla', seccion_panel_existentes_value: codigos.to_json}}
+%tr.programacion-panel{id: dom, data: {turbo_cache: 'false', controller: 'seccion-panel', action: 'keydown@window->seccion-panel#tecla', seccion_panel_existentes_value: codigos.to_json}}
   %td{colspan: 8}
     .sp-tarjeta{tabindex: -1, data: {seccion_panel_target: 'tarjeta'}}
       .sp-cabecera

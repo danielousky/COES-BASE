@@ -530,17 +530,22 @@ export default class extends Controller {
   // ── Las capas: lo que rodea al horario (solo en el panel de la Programación) ──────────────────────
 
   // Las capas van en su propia capa de la grilla, debajo de los bloques: mientras se arrastra solo se redibujan los
-  // bloques, y las capas cuando algo de lo que muestran cambia. «Choques iniciales» son los que ya había al abrir la
-  // sección, con su horario guardado: esos solo se avisan.
+  // bloques, y las capas cuando algo de lo que muestran cambia.
+  //
+  // Si el servidor devolvió el panel sin guardar (un código repetido), trae lo que ya se había decidido en el aviso
+  // («decidido») y el profesor con que está guardada la sección («profesor_guardado»): sin eso, «Separar» o «Se
+  // dictan juntas» se perdían, y con otro profesor sus choques pasaban por viejos y «Guardar igual» no servía.
   prepararCapas() {
     this.capas = this.leerCapas(this.capasValue)
-    this.juntar = new Set()
-    this.confirmados = new Set()
-    this.separar = false
+    const decidido = this.capasValue.decidido || {}
+    this.juntar = new Set(decidido.juntar || [])
+    this.confirmados = new Set(decidido.confirmados || [])
+    this.separar = Boolean(decidido.separar)
     this.ocultas = new Set(capasOcultas())
-    this.profesorInicial = this.capas.profesor?.id ?? null
-    const guardados = this.bloques.filter((b) => b.original && valido(b.original)).map((b) => b.original)
-    this.choquesIniciales = new Set(this.choquesCon(guardados).keys())
+    this.profesorInicial = this.capasValue.profesor_guardado ?? null
+    this.choquesIniciales = null
+    // Si Turbo devolvió una copia de la página con la grilla ya dibujada, las capas viejas se van.
+    this.diasTarget.querySelectorAll(":scope > .hs-capas").forEach((capa) => capa.remove())
     this.capasEl = document.createElement("div")
     this.capasEl.className = "hs-capas"
     this.capasEl.innerHTML = DIAS.map(() => `<div class="hs-capas-dia"></div>`).join("")
@@ -608,9 +613,8 @@ export default class extends Controller {
   }
 
   // {id de la sección del profesor => { seccion, suyos, mios }}: sus bloques que pisan estos, y las claves de estos.
-  choquesCon(bloques) {
+  choquesCon(bloques, juntas = this.juntas()) {
     const choques = new Map()
-    const juntas = this.juntas()
     for (const seccion of this.capas.profesor?.secciones || []) {
       if (juntas.has(seccion.id)) continue
       const suyos = seccion.bloques.filter((s) => bloques.some((m) => sePisan(m, s)))
@@ -625,9 +629,16 @@ export default class extends Controller {
     return this.choquesCon(this.activos().filter(valido))
   }
 
-  // Con otro profesor, todos los choques son nuevos (como en el servidor: CapasDelHorario#choques_nuevos).
+  // Los choques que ya había, con el horario, el profesor y el grupo guardados: esos solo se avisan. Con otro profesor,
+  // todos son nuevos (como en el servidor, CapasDelHorario#choques_nuevos). Se cuentan la primera vez que la capa es
+  // la del profesor guardado.
   iniciales() {
-    return this.profesorActual() === this.profesorInicial ? this.choquesIniciales : new Set()
+    if (this.profesorActual() !== this.profesorInicial) return new Set()
+    if (!this.choquesIniciales) {
+      const guardados = this.bloques.filter((b) => b.original && valido(b.original)).map((b) => b.original)
+      this.choquesIniciales = new Set(this.choquesCon(guardados, new Set(this.capas.juntas.map((j) => j.id))).keys())
+    }
+    return this.choquesIniciales
   }
 
   nuevos(choques) {
@@ -766,7 +777,7 @@ export default class extends Controller {
       const filas = abiertos.map(({ seccion, suyos }) => `<div class="hs-aviso-linea">
           <span>${nombre(seccion)}${seccion.escuela ? ` · ${escapar(seccion.escuela)}` : ""}: ${horas(suyos)}${iniciales.has(seccion.id)
             ? ` <span class="hs-aviso-nota">(ya chocaba)</span>` : ""}</span>
-          ${boton("Se dictan juntas", "juntarCon", `data-seccion="${seccion.id}"`)}
+          ${seccion.escuela ? "" : boton("Se dictan juntas", "juntarCon", `data-seccion="${seccion.id}"`)}
         </div>`).join("")
       avisos.push(`<div class="hs-aviso hs-aviso--choque">
         <div class="hs-aviso-titulo"><i class="fas fa-triangle-exclamation"></i> ${escapar(profesor.nombre)} ya tiene clase a esa hora</div>
@@ -794,15 +805,16 @@ export default class extends Controller {
   }
 
   // Lo que deciden los avisos viaja con la sección: section[juntar_con][], section[separar_del_dictado] y
-  // section[choque_confirmado] (ChoqueDelProfesor). «section» sale del prefijo del horario.
+  // section[choque_confirmado][], con cada sección con que se aceptó el choque (ChoqueDelProfesor). «section» sale
+  // del prefijo del horario.
   escribirCamposSeccion(choques) {
     if (!this.hasCamposSeccionTarget) return
     const seccion = this.prefijoValue.replace(/\[timetable_attributes\]$/, "")
     const campo = (nombre, valor) => `<input type="hidden" name="${seccion}${nombre}" value="${escapar(valor)}">`
-    const nuevos = this.nuevos(choques)
-    const confirmado = nuevos.length > 0 && nuevos.every((id) => this.confirmados.has(id))
+    const aceptados = this.nuevos(choques).filter((id) => this.confirmados.has(id))
     this.camposSeccionTarget.innerHTML = [...this.juntar].map((id) => campo("[juntar_con][]", id)).join("") +
-      (this.separar ? campo("[separar_del_dictado]", "1") : "") + (confirmado ? campo("[choque_confirmado]", "1") : "")
+      (this.separar ? campo("[separar_del_dictado]", "1") : "") +
+      aceptados.map((id) => campo("[choque_confirmado][]", id)).join("")
   }
 
   // Para el lector de pantalla: el aviso no se lee solo, así que cada cambio dice si quedó chocando.
@@ -823,6 +835,9 @@ export default class extends Controller {
     avisos.classList.remove("hs-avisos--brinca")
     void avisos.offsetWidth // para que la animación corra otra vez
     avisos.classList.add("hs-avisos--brinca")
+    // Se sacude una vez: si la clase se quedaba, el aviso volvía a sacudirse cada vez que se redibujaba.
+    clearTimeout(this.finDelBrinco)
+    this.finDelBrinco = setTimeout(() => avisos.classList.remove("hs-avisos--brinca"), 1500)
     avisos.scrollIntoView({ block: "nearest", behavior: "smooth" })
     avisos.focus({ preventScroll: true })
     this.anuncioTarget.textContent = `No se guardó: ${this.capas.profesor.nombre} ya tiene clase a esa hora. Elija mover el ` +

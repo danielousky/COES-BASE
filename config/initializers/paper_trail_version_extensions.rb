@@ -3,15 +3,32 @@
 
 module PaperTrailVersionExtensions
 
-  # Hash con cambios ya parseados desde object_changes (compat con versiones antiguas)
+  # Hash con cambios ya parseados desde object_changes (compat con versiones antiguas).
+  # Las columnas time llegan como ActiveRecord::Type::Time::Value, con la hora en UTC. Desde el 23-nov, los bloques del
+  # horario tienen historia, y sin esa clase la bitácora del admin que había movido uno daba 500
+  # (Psych::DisallowedClass). Se muestran en la hora de Caracas: «7:00 pm».
   def formatted_object_change
     return {} unless object_changes.present?
-    permitted = [Time, Date, Symbol]
-    begin
+    permitted = [Time, Date, Symbol, ActiveRecord::Type::Time::Value]
+    cambios = begin
       YAML.safe_load(object_changes, permitted_classes: permitted + [ActiveSupport::TimeWithZone, ActiveSupport::Duration, BigDecimal], aliases: true).reject { |k, _| %w[updated_at created_at].include?(k) }
     rescue NameError, ArgumentError
       YAML.safe_load(object_changes, permitted_classes: permitted).reject { |k, _| %w[updated_at created_at].include?(k) }
     end || {}
+    cambios.transform_values { |valores| valores.is_a?(Array) ? valores.map { |v| hora_del_dia(v) } : valores }
+  end
+
+  # «7:00 pm», si es la hora de una columna time; si no, el valor tal cual.
+  def hora_del_dia(valor)
+    return valor unless valor.is_a?(ActiveRecord::Type::Time::Value)
+
+    valor.in_time_zone.strftime('%-I:%M %P')
+  end
+
+  # «Sábado», si el campo es un enum del modelo y el valor es su número (la versión guarda el número); si no, el
+  # valor tal cual.
+  def nombre_del_enum(field, valor)
+    item_type.to_s.safe_constantize&.defined_enums&.dig(field.to_s)&.key(valor) || valor
   end
 
   # Traduce atributos usando I18n, con fallback a humanize
@@ -174,7 +191,7 @@ module PaperTrailVersionExtensions
           return "Asignación de #{translate_attr(field)} a <b>#{curr_val.humanize}</b>".html_safe
         end
       else
-        return "Cambio de #{translate_attr(field)}: #{prev} → #{curr}"
+        return "Cambio de #{translate_attr(field)}: #{nombre_del_enum(field, prev)} → #{nombre_del_enum(field, curr)}"
       end
     end
   end

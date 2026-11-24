@@ -14,8 +14,11 @@
 # (ChoqueDelProfesor): el admin no lo revisa.
 #
 # Al crear o borrar también se ponen al día los contadores de la página (el total, el departamento, el área y la
-# tipología). Lo que se guarda es lo mismo que en el admin (también el horario, con la misma grilla), así que las
-# validaciones del modelo son las mismas en los dos lados.
+# tipología). Lo que se guarda es lo mismo que en el admin (también el horario, con la misma grilla), con las mismas
+# validaciones del modelo y una más, que el admin no tiene: el choque nuevo del profesor (revisar_choques).
+#
+# El panel no se guarda en la copia de la página que Turbo usa al volver atrás (data-turbo-cache="false"): esa
+# copia traía la grilla ya dibujada y el profesor elegido, con las capas de otro.
 #
 # En FAU es Programacion::SeccionesController. En FHE, Programacion es el modelo de la tabla vieja «programaciones»,
 # así que no puede ser también un módulo: aquí va sin módulo, con las mismas rutas y los mismos nombres de ruta.
@@ -208,8 +211,8 @@ class ProgramacionSeccionesController < ApplicationController
   end
 
   def seccion_params
-    params.require(:section).permit(:code, :capacity, :teacher_id, :separar_del_dictado, :choque_confirmado,
-                                    juntar_con: [],
+    params.require(:section).permit(:code, :capacity, :teacher_id, :separar_del_dictado,
+                                    juntar_con: [], choque_confirmado: [],
                                     timetable_attributes: [:id, :_destroy,
                                                            {timeblocks_attributes: %i[id day start_time end_time modality classroom _destroy]}])
   end

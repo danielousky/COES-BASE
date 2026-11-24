@@ -25,8 +25,11 @@ class CapasDelHorario
     @profesor_id = profesor_id.presence&.to_i
   end
 
+  # «profesor_guardado» y «decidido», por si el panel vuelve sin guardar: con qué profesor está guardada (sus choques
+  # de antes solo se avisan) y lo que ya se había decidido en el aviso.
   def para_grilla
-    {profesor: profesor, asignatura: asignatura, semestre: semestre, juntas: juntas}
+    {profesor: profesor, asignatura: asignatura, semestre: semestre, juntas: juntas,
+     profesor_guardado: @seccion.teacher_id_in_database, decidido: @seccion.decidido_en_el_aviso}
   end
 
   # Las otras clases del profesor en el período. «grupo» es el número de las que se dictan juntas: la grilla lo usa para
@@ -73,13 +76,14 @@ class CapasDelHorario
     @seccion.juntas.preload(course: :subject).map { |s| {id: s.id, texto: "#{s.course.subject.name} (#{s.code})"} }
   end
 
-  # Los choques del profesor que trae el cambio: los que habrá al guardar y no había antes. Hay secciones que ya
-  # chocaban (87 pares en 2026-02), y corregirles el cupo no debe pedir nada. Un texto por cada sección con que choca.
-  def choques_nuevos
+  # Los choques del profesor que trae el cambio: los que habrá al guardar y no había antes, sin los que el asistente
+  # aceptó con «Guardar igual» («excepto», ids de secciones). Hay secciones que ya chocaban (87 pares en 2026-02), y
+  # corregirles el cupo no debe pedir nada. Un texto por cada sección con que choca.
+  def choques_nuevos(excepto: [])
     return [] unless @seccion.teacher_id
 
     antes = @seccion.new_record? ? {} : choques(@seccion.teacher_id_in_database, bloques_guardados, @seccion.juntas.ids)
-    nuevos = choques(@seccion.teacher_id, bloques_al_guardar, @seccion.juntas_al_guardar).except(*antes.keys)
+    nuevos = choques(@seccion.teacher_id, bloques_al_guardar, @seccion.juntas_al_guardar).except(*antes.keys, *excepto)
     return [] if nuevos.empty?
 
     nombre = nombre_del_profesor(Teacher.includes(:user).find_by(user_id: @seccion.teacher_id))
