@@ -109,7 +109,10 @@ class Section < ApplicationRecord
   validate :no_pasar_a_equivalencia_con_calificaciones, on: :update
 
   #CALLBACKS
-  before_save :set_code_to_02i
+  # El cero del código («1» → «01») se pone antes de validar. Con before_save, «1» pasaba la validación aunque la
+  # asignatura ya tuviera la 01, y el guardado se caía en el índice único (RecordNotUnique: 500 en el admin y en el
+  # panel de la Programación).
+  before_validation :set_code_to_02i
   after_save :update_academic_records
 
   
