@@ -101,7 +101,7 @@ class Section < ApplicationRecord
   enum modality: {nota_final: 0, equivalencia_externa: 1, equivalencia_interna: 2, suficiencia: 3, reparacion: 4, diferido: 5}, _default: :nota_final
 
   # VALIDATIONS:
-  validates :code, presence: true, uniqueness: { scope: :course_id, message: 'Ya existe la sesión para el curso', case_sensitive: false, field_name: false}, length: { in: 1..7, too_long: "%{count} caracteres es el máximo permitido", too_short: "%{count} caracter es el mínimo permitido"}
+  validates :code, presence: true, uniqueness: { scope: :course_id, message: ->(_seccion, dato) { "#{dato[:value]} ya existe en esta asignatura" }, case_sensitive: false}, length: { in: 1..7, too_long: "%{count} caracteres es el máximo permitido", too_short: "%{count} caracter es el mínimo permitido"}
   validates :capacity, presence: true
   validates :course, presence: true
   validates :modality, presence: true
