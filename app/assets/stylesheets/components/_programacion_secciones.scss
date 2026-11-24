@@ -226,3 +226,25 @@
 @media (max-width: 1100px) {
   .sp-cuerpo { grid-template-columns: minmax(0, 1fr); }
 }
+
+// La columna de las áreas de la Programación (_index_programation) mide 300 px desde 1200 px, lo mismo que col-3 a ese
+// ancho, y la tabla toma el resto: con más pantalla, lo que sobra va al panel de la sección, a su grilla y a los
+// botones de las secciones (Daniel, 24-nov). No va col-xxl-2: entre 1400 y 1600 px la columna bajaba a 233–267 px y
+// cortaba los nombres de los departamentos y de las áreas.
+@media (min-width: 1200px) {
+  #area_selector {
+    flex: 0 0 300px;
+  }
+
+  #area_selector + .tab-content {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+}
+
+// Un nombre largo baja a una segunda línea alineada con el texto, y no debajo del contador: van en fila.
+#area_selector a.nav-link {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
