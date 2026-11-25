@@ -248,3 +248,10 @@
   align-items: center;
   gap: .3rem;
 }
+
+// El selector del departamento (solo FHE lo tiene en la columna) va con la letra de las áreas (13 px) y el relleno de
+// form-control-sm: con la columna de 300 px caben 69 de los 89 nombres, y no 55 (Daniel, 24-nov).
+#area_selector select {
+  font-size: small;
+  padding: .25rem .5rem;
+}
